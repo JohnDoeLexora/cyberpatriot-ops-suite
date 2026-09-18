@@ -11,3 +11,9 @@ out/
 coverage/
 .turbo/
 *.local
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+apps/dashboard/test-results/
+apps/dashboard/playwright-report/
