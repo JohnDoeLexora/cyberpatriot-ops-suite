@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
 import { describe, it } from "node:test";
 import { getOp } from "@cyberpatriot/ops-catalog";
+import { runOp } from "../src/index.ts";
 import { bendDisabled, resolveBendBinary, tryRunBend } from "../src/bend/runner.ts";
 import { findRepoRoot } from "../src/paths.ts";
 import type { EngineContext } from "../src/types.ts";
@@ -54,5 +57,38 @@ describe("Bend accelerator", () => {
     const result = await tryRunBend({ ...ctx(), op }, "ports");
     assert.ok(result);
     assert.equal(result.ok, true);
+  });
+
+  it("typechecks Bend 2 programs against fixture inventories", () => {
+    const bin = resolveBendBinary();
+    if (!bin || bendDisabled()) return;
+    const root = findRepoRoot();
+    const cases: Array<[string, string, string]> = [
+      ["score-files.bend", "files.tsv", "suid_bash"],
+      ["score-users.bend", "users.tsv", "toor"],
+      ["score-ports.bend", "ports.tsv", "31337"],
+      ["agg-checks.bend", "agg.tsv", "telnet"],
+    ];
+    for (const [prog, tsv, needle] of cases) {
+      const result = spawnSync(bin, [path.join(root, "engines/bend", prog)], {
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          CP_BEND_INPUT: path.join(root, "engines/bend/fixtures", tsv),
+          PATH: `${path.dirname(bin)}:${process.env.PATH ?? ""}`,
+        },
+      });
+      assert.equal(result.status, 0, `${prog}: ${result.stderr}`);
+      assert.ok(result.stdout.includes(needle), `${prog} should mention ${needle}`);
+      assert.ok(result.stdout.includes('"engine":"bend"'), prog);
+    }
+  });
+
+  it("live find-world-writable prefers Bend then fallback", async () => {
+    if (process.platform === "win32") return;
+    const result = await runOp({ opId: "find-world-writable", mode: "live" });
+    assert.equal(result.ok, true);
+    assert.ok(result.engine === "bend" || result.engine === "linux");
+    assert.ok(Array.isArray(result.data.files));
   });
 });
