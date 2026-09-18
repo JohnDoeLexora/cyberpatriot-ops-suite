@@ -1,4 +1,6 @@
-export type Platform = 'linux' | 'windows' | 'both'
+import type { Category, OpDefinition as CatalogOp, Platform, Risk } from '@cyberpatriot/ops-catalog'
+
+export type { CatalogOp, Category, Platform, Risk }
 
 export type OpView =
   | 'standard'
@@ -10,28 +12,20 @@ export type OpView =
   | 'favorites'
   | 'preflight'
 
-export type OpCategoryId =
-  | 'users'
-  | 'auth'
-  | 'services'
-  | 'network'
-  | 'files'
-  | 'logging'
-  | 'software'
-  | 'windows'
-  | 'linux'
-  | 'team'
+export type OpCategoryId = Category | 'team'
 
-export type OpDefinition = {
+export type UiOp = {
   id: string
   title: string
   category: OpCategoryId
   description: string
   keywords: string[]
   platform: Platform
+  risk: Risk | 'local'
   view: OpView
-  /** Short hint shown in the pane chrome. */
   runLabel: string
+  /** False for workspace-only panes (notes, journal, pins). */
+  engine: boolean
 }
 
 export type Severity = 'ok' | 'info' | 'warn' | 'crit'

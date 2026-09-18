@@ -1,5 +1,5 @@
 export { runOp } from "./run.js";
-export { runDemo, demoNow, demoContext } from "./demo/runner.js";
+export { runDemo, demoNow, demoContext, DEFAULT_DEMO_ALLOWLIST } from "./demo/runner.js";
 export { demoUsers, demoServices, demoPorts, demoFiles, DEMO_NOW } from "./demo/fixtures.js";
 export {
   scoreUser,

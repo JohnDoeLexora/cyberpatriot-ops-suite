@@ -1,6 +1,5 @@
 import type { OpDefinition } from "@cyberpatriot/ops-catalog";
 import { findingsFromUsers, scoreUsers } from "../heuristics/suspicious-users.js";
-import { findRepoRoot, readNameList, resolveConfigFile } from "../paths.js";
 import { asBoolean, asString } from "../safety.js";
 import type {
   ChecklistItem,
@@ -25,18 +24,23 @@ import {
   demoUsers,
 } from "./fixtures.js";
 
+/** Default README allowlist used when no names are injected (browser demo fallback). */
+export const DEFAULT_DEMO_ALLOWLIST = ["root", "alice", "bob", "coach", "Administrator"] as const;
+
 function allowlistFrom(ctx: EngineContext): Set<string> {
-  const file = resolveConfigFile(ctx.repoRoot, ctx.params.allowlistPath, "config/allowed-users.txt");
-  const names = readNameList(file);
-  if (names.length) return new Set(names);
-  return new Set(["root", "alice", "bob", "coach", "Administrator"]);
+  const raw = ctx.params.allowlistNames;
+  if (Array.isArray(raw)) {
+    const names = raw.filter((n): n is string => typeof n === "string").map((n) => n.trim()).filter(Boolean);
+    if (names.length) return new Set(names);
+  }
+  return new Set(DEFAULT_DEMO_ALLOWLIST);
 }
 
 function scored(ctx: EngineContext) {
   return scoreUsers(demoUsers, { allowlist: allowlistFrom(ctx), now: ctx.now });
 }
 
-function findingsOf(data: RunData, extra: Finding[] = []): Finding[] {
+function findingsOf(_data: RunData, extra: Finding[] = []): Finding[] {
   return extra;
 }
 
@@ -648,7 +652,7 @@ export function demoNow(): Date {
 
 export function demoContext(op: OpDefinition, params: Record<string, unknown> = {}): EngineContext {
   return {
-    repoRoot: findRepoRoot(),
+    repoRoot: "",
     now: demoNow(),
     params,
     confirm: false,

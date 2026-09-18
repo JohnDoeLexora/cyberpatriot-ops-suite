@@ -1,7 +1,7 @@
 import { getOp } from "@cyberpatriot/ops-catalog";
 import { runDemo, demoNow } from "./demo/runner.js";
 import { runLinux } from "./linux/runner.js";
-import { findRepoRoot } from "./paths.js";
+import { findRepoRoot, readNameList, resolveConfigFile } from "./paths.js";
 import { asBoolean, mutationBlocked, redactDeep } from "./safety.js";
 import type { EngineContext, RunRequest, RunResult } from "./types.js";
 import { runWindows } from "./windows/runner.js";
@@ -28,10 +28,16 @@ export async function runOp(request: RunRequest, repoRoot = findRepoRoot()): Pro
     };
   }
 
-  const params = request.params ?? {};
+  let params = { ...(request.params ?? {}) };
   const confirm = request.confirm === true;
   const dryRun = asBoolean(params.dryRun, false);
   const mode = request.mode === "live" ? "live" : "demo";
+
+  if (mode === "demo" && params.allowlistNames == null) {
+    const file = resolveConfigFile(repoRoot, params.allowlistPath, "config/allowed-users.txt");
+    const names = readNameList(file);
+    if (names.length) params = { ...params, allowlistNames: names };
+  }
 
   const ctx: EngineContext = {
     repoRoot,

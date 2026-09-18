@@ -1,6 +1,6 @@
 # CyberPatriot Ops Suite
 
-Split-pane competition hardening dashboard for CyberPatriot teams.
+Split-pane competition hardening dashboard for CyberPatriot teams. Paper-white UI, wired to the typed catalog and demo/live engines.
 
 **Public repo:** https://github.com/JohnDoeLexora/cyberpatriot-ops-suite
 
@@ -10,7 +10,7 @@ Kosher / competition-legal only — defensive auditing and hardening on **author
 
 | Path | Lane | Status |
 | --- | --- | --- |
-| `apps/dashboard` | cp-01 dashboard shell | Vite + React + TypeScript + Tailwind |
+| `apps/dashboard` | cp-01 / cp-03 | Vite + React dashboard: paper-white mosaic, runs `POST /ops/:id/run` |
 | `apps/api` | cp-02 | Local HTTP API the dashboard can call (`@cyberpatriot/api`) |
 | `packages/ops-catalog` | cp-02 | Typed catalog of 70 CyberPatriot-legal ops |
 | `packages/ops-engine` | cp-02 | `demo` / `linux` / `windows` runners + suspicious-user heuristics |
@@ -72,11 +72,11 @@ CORS is open for a local dashboard. The API never returns password hashes or pri
 
 ## What this shell does
 
-- Left **operations catalog**: 50+ searchable, categorized ops. Press `/` to focus search, `Esc` to close menus.
-- Center **Cursor-style mosaic**: open an op into a pane, split horizontally/vertically, drag pane title bars (or catalog rows) onto drop zones, close panes. Layout persists in `localStorage`.
-- Each pane has title, status (`idle` / `running` / `done` / `error`), Run, and structured mock output.
-- **Users & Identity** panes render a live mock account table. Hover a row (or right-click) for Flag / Disable / Enable / Delete / Reset password / View details. Every action toasts and mutates row state via a mock API.
-- Header **DEMO** toggle defaults **ON** so Mac users can click everything.
+- Left **checks list**: the typed 70-op catalog plus team notes. Press `/` to search, `Esc` to close menus.
+- Center **mosaic**: open a check into a pane, split, drag, or use the tab strip when several panes are open. Tight widths scroll instead of crushing tables.
+- Each pane runs against the **demo** or **live** engine (`POST /ops/:id/run`). Practice data is the default (Mac-safe fixtures). Live mutations ask for confirmation.
+- Account panes show the engine user inventory. Hover a row for Flag / Turn off / Turn on / Expire password / Details.
+- Header **Practice data** toggle defaults **ON**. Switch to **This computer** for live engines.
 
 ## Engines
 

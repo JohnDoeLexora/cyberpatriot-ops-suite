@@ -1,13 +1,10 @@
 import type { OpDefinition } from "./types.js";
 import {
   allowlistParams,
-  emptyParams,
   mutateFlagParams,
   op,
   packageParams,
-  serviceParams,
   usernameDryRunParams,
-  usernameParams,
 } from "./schema.js";
 
 const KOSHER =

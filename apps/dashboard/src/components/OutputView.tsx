@@ -8,33 +8,40 @@ const sev: Record<Severity, string> = {
   crit: 'text-crit bg-crit-dim',
 }
 
+const sevLabel: Record<Severity, string> = {
+  ok: 'ok',
+  info: 'note',
+  warn: 'watch',
+  crit: 'urgent',
+}
+
 export function OutputView({ output }: { output: OpResult }) {
   return (
-    <div className="space-y-3 p-3" data-testid="op-output">
-      <p className="text-[12.5px] text-ink">{output.summary}</p>
+    <div className="space-y-3 p-4" data-testid="op-output">
+      <p className="text-[15px] leading-6 text-ink">{output.summary}</p>
       {output.meta && (
         <div className="flex flex-wrap gap-2">
           {Object.entries(output.meta).map(([k, v]) => (
-            <span key={k} className="rounded border border-line px-1.5 py-0.5 font-mono text-[10px] text-mute">
+            <span key={k} className="rounded-md border border-line bg-elev px-1.5 py-0.5 text-[12px] text-mute">
               {k}={v}
             </span>
           ))}
         </div>
       )}
       {output.findings.length > 0 && (
-        <ul className="space-y-1">
+        <ul className="space-y-1.5">
           {output.findings.map((f) => (
             <FindingRow key={f.id} finding={f} />
           ))}
         </ul>
       )}
       {output.checklist && (
-        <div className="rounded-md border border-line">
+        <div className="overflow-auto rounded-md border border-line">
           {output.checklist.map((c) => (
-            <div key={c.id} className="flex items-start gap-2 border-b border-line px-2 py-1.5 last:border-b-0">
+            <div key={c.id} className="flex min-w-[22rem] items-start gap-2 border-b border-line px-3 py-2 last:border-b-0">
               <span
                 className={cn(
-                  'mt-0.5 w-10 rounded text-center font-mono text-[9px] uppercase',
+                  'mt-0.5 w-12 rounded text-center text-[11px] font-medium uppercase',
                   c.status === 'pass' && 'bg-ok-dim text-ok',
                   c.status === 'fail' && 'bg-crit-dim text-crit',
                   c.status === 'warn' && 'bg-warn-dim text-warn',
@@ -44,8 +51,8 @@ export function OutputView({ output }: { output: OpResult }) {
                 {c.status}
               </span>
               <div>
-                <div className="text-[12px]">{c.label}</div>
-                {c.note && <div className="text-[11px] text-mute">{c.note}</div>}
+                <div className="text-[14px]">{c.label}</div>
+                {c.note && <div className="text-[13px] text-mute">{c.note}</div>}
               </div>
             </div>
           ))}
@@ -53,14 +60,14 @@ export function OutputView({ output }: { output: OpResult }) {
       )}
       {output.tables?.map((t) => (
         <div key={t.title} className="overflow-auto rounded-md border border-line">
-          <div className="border-b border-line bg-elev px-2 py-1 text-[10px] uppercase tracking-wide text-faint">
+          <div className="border-b border-line bg-elev px-3 py-1.5 text-[12px] font-medium text-faint">
             {t.title}
           </div>
-          <table className="w-full text-left text-[12px]">
+          <table className="w-full min-w-[28rem] text-left text-[13.5px]">
             <thead>
               <tr>
                 {t.columns.map((c) => (
-                  <th key={c.key} className="px-2 py-1 text-[10px] font-medium text-mute">
+                  <th key={c.key} className="px-3 py-1.5 text-[12px] font-medium text-mute">
                     {c.label}
                   </th>
                 ))}
@@ -68,9 +75,9 @@ export function OutputView({ output }: { output: OpResult }) {
             </thead>
             <tbody>
               {t.rows.map((row, i) => (
-                <tr key={i} className="border-t border-line/70">
+                <tr key={i} className="border-t border-line/80">
                   {t.columns.map((c) => (
-                    <td key={c.key} className={cn('px-2 py-1', c.mono && 'font-mono text-[11px] text-mute')}>
+                    <td key={c.key} className={cn('px-3 py-1.5', c.mono && 'font-mono text-[12.5px] text-mute')}>
                       {row[c.key]}
                     </td>
                   ))}
@@ -81,7 +88,7 @@ export function OutputView({ output }: { output: OpResult }) {
         </div>
       ))}
       {output.logs && (
-        <pre className="overflow-auto rounded-md border border-line bg-app p-2 font-mono text-[11px] leading-5">
+        <pre className="overflow-auto rounded-md border border-line bg-elev p-3 font-mono text-[12.5px] leading-6">
           {output.logs.map((l, i) => (
             <div key={i}>
               <span className="text-faint">{l.ts}</span>{' '}
@@ -106,15 +113,15 @@ export function OutputView({ output }: { output: OpResult }) {
 
 function FindingRow({ finding }: { finding: Finding }) {
   return (
-    <li className="flex gap-2 rounded border border-line bg-elev/50 px-2 py-1.5">
-      <span className={cn('h-fit rounded px-1 py-px font-mono text-[9px] uppercase', sev[finding.severity])}>
-        {finding.severity}
+    <li className="flex gap-2 rounded-md border border-line bg-elev px-2.5 py-2">
+      <span className={cn('h-fit rounded px-1.5 py-px text-[11px] font-medium uppercase', sev[finding.severity])}>
+        {sevLabel[finding.severity]}
       </span>
       <div className="min-w-0">
-        <div className="text-[12px] font-medium">{finding.title}</div>
-        <div className="text-[11.5px] text-mute">{finding.detail}</div>
+        <div className="text-[14px] font-medium">{finding.title}</div>
+        <div className="text-[13.5px] text-mute">{finding.detail}</div>
         {finding.remediation && (
-          <div className="text-[11px] text-accent">→ {finding.remediation}</div>
+          <div className="text-[13px] text-accent">Next: {finding.remediation}</div>
         )}
       </div>
     </li>
