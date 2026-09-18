@@ -86,6 +86,17 @@ export const mutateFlagParams: ParamsSchema = {
   },
 };
 
+export const expectedPortsParams: ParamsSchema = {
+  type: "object",
+  properties: {
+    expectedPortsPath: {
+      type: "string",
+      description: "Path to expected-ports.txt (proto/port per line)",
+      default: "config/expected-ports.txt",
+    },
+  },
+};
+
 export function op(
   id: string,
   title: string,

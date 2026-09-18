@@ -6,7 +6,7 @@ Source of truth: `packages/ops-docs`. The dashboard How-to drawer searches title
 Competition-legal only: authorized-image hardening. No offense, no exploit recipes, no CCS cheats.
 Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFETY.md).
 
-- **Guides:** 70
+- **Guides:** 79
 - **Open in the dashboard:** How-to button on each OpPanel, or the header How-to control. Press `?` to open the focused pane’s guide.
 
 ## Index
@@ -79,10 +79,19 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 | [`disable-autoplay`](./disable-autoplay.md) | Disable Autoplay | windows | mutate |
 | [`check-bitlocker-status`](./check-bitlocker-status.md) | Check BitLocker status | windows | read |
 | [`export-evidence-bundle`](./export-evidence-bundle.md) | Export evidence bundle | evidence | read |
+| [`package-forensics-evidence`](./package-forensics-evidence.md) | Package redacted forensics evidence | evidence | read |
 | [`one-click-hardening-checklist`](./one-click-hardening-checklist.md) | One-click hardening checklist | evidence | read |
 | [`score-image-heuristics`](./score-image-heuristics.md) | Score image heuristics | evidence | read |
 | [`find-backdoor-binaries`](./find-backdoor-binaries.md) | Find suspicious binaries | evidence | read |
 | [`audit-shared-folders`](./audit-shared-folders.md) | Audit shared folders | files | read |
+| [`diff-expected-ports`](./diff-expected-ports.md) | Diff listeners vs expected ports | ports | read |
+| [`audit-share-acls`](./audit-share-acls.md) | Dump unauthorized share ACLs | files | read |
+| [`audit-persistence-deep`](./audit-persistence-deep.md) | Deep startup persistence audit | scheduled | read |
+| [`hunt-remote-access-tools`](./hunt-remote-access-tools.md) | Hunt remote-access tools and browser extensions | packages | read |
+| [`report-password-never-expires`](./report-password-never-expires.md) | Report never-expires + blank password combo | auth | read |
+| [`audit-critical-perm-drift`](./audit-critical-perm-drift.md) | Audit critical permission drift | files | read |
+| [`scoreboard-preflight`](./scoreboard-preflight.md) | Scoreboard preflight checklist | evidence | read |
+| [`post-harden-checklist`](./post-harden-checklist.md) | Post-harden verification checklist | evidence | read |
 
 ## Browse by category
 
@@ -113,6 +122,7 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`disable-root-ssh`](./disable-root-ssh.md) — Disable SSH root login
 - [`audit-sudoers`](./audit-sudoers.md) — Audit sudoers
 - [`audit-uac`](./audit-uac.md) — Audit User Account Control
+- [`report-password-never-expires`](./report-password-never-expires.md) — Report never-expires + blank password combo
 
 ### services
 
@@ -127,6 +137,7 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 ### ports
 
 - [`audit-listening-ports`](./audit-listening-ports.md) — Audit listening ports
+- [`diff-expected-ports`](./diff-expected-ports.md) — Diff listeners vs expected ports
 
 ### network
 
@@ -154,12 +165,15 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`audit-ssh-authorized-keys`](./audit-ssh-authorized-keys.md) — Audit SSH authorized_keys
 - [`find-hidden-executables`](./find-hidden-executables.md) — Find hidden executables
 - [`audit-shared-folders`](./audit-shared-folders.md) — Audit shared folders
+- [`audit-share-acls`](./audit-share-acls.md) — Dump unauthorized share ACLs
+- [`audit-critical-perm-drift`](./audit-critical-perm-drift.md) — Audit critical permission drift
 
 ### packages
 
 - [`list-installed-packages`](./list-installed-packages.md) — List installed packages
 - [`find-prohibited-software`](./find-prohibited-software.md) — Find prohibited software
 - [`remove-package`](./remove-package.md) — Remove a package
+- [`hunt-remote-access-tools`](./hunt-remote-access-tools.md) — Hunt remote-access tools and browser extensions
 
 ### logging
 
@@ -176,6 +190,7 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`audit-cron`](./audit-cron.md) — Audit cron jobs
 - [`audit-at-jobs`](./audit-at-jobs.md) — Audit at jobs
 - [`list-scheduled-tasks`](./list-scheduled-tasks.md) — List scheduled tasks
+- [`audit-persistence-deep`](./audit-persistence-deep.md) — Deep startup persistence audit
 
 ### kernel
 
@@ -194,7 +209,10 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 ### evidence
 
 - [`export-evidence-bundle`](./export-evidence-bundle.md) — Export evidence bundle
+- [`package-forensics-evidence`](./package-forensics-evidence.md) — Package redacted forensics evidence
 - [`one-click-hardening-checklist`](./one-click-hardening-checklist.md) — One-click hardening checklist
 - [`score-image-heuristics`](./score-image-heuristics.md) — Score image heuristics
 - [`find-backdoor-binaries`](./find-backdoor-binaries.md) — Find suspicious binaries
+- [`scoreboard-preflight`](./scoreboard-preflight.md) — Scoreboard preflight checklist
+- [`post-harden-checklist`](./post-harden-checklist.md) — Post-harden verification checklist
 

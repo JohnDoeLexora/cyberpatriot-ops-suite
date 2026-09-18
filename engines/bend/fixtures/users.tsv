@@ -1,0 +1,6 @@
+root|0|/root|/bin/bash|0|0|0|1|1|1
+alice|1000|/home/alice|/bin/bash|0|0|0|1|1|1
+toor|0|/tmp/toor|/bin/bash|0|0|0|1|0|1
+hacker123|1010|/home/hacker123|/bin/bash|0|0|0|0|0|1
+Guest|501|C:\Users\Guest|/bin/nologin|1|0|1|0|0|1
+zygote|666|/var/tmp/zygote|/usr/bin/python3|0|0|0|1|0|1

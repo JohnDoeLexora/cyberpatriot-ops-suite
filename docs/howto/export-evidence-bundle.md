@@ -45,4 +45,5 @@ After major passes (users, firewall, files) and before you submit forensics answ
 - [`score-image-heuristics`](./score-image-heuristics.md) — Score image heuristics
 - [`list-users`](./list-users.md) — List local users
 - [`audit-listening-ports`](./audit-listening-ports.md) — Audit listening ports
+- [`package-forensics-evidence`](./package-forensics-evidence.md) — Package redacted forensics evidence
 

@@ -1,3 +1,4 @@
+import { hitsToFiles, hitsToFindings, tryRunBend, type BendKind } from "../bend/runner.js";
 import { findingsFromUsers, scoreUsers } from "../heuristics/suspicious-users.js";
 import { readNameList, resolveConfigFile } from "../paths.js";
 import { asBoolean, asString, isSafeUsername } from "../safety.js";
@@ -5,12 +6,16 @@ import { SUSPICIOUS_PORTS, type EngineContext, type Finding, type RunResult, typ
 import {
   collectLocalUsers,
   collectPorts,
+  collectPasswordAging,
+  collectPersistenceHints,
   collectSensitivePerms,
   collectServices,
+  collectSmbShareAcls,
   enrichLastLogin,
   existsSync,
   findFiles,
   inspectPath,
+  parseExpectedPorts,
   readKeyValueConfig,
   readText,
 } from "./collect.js";
@@ -34,6 +39,7 @@ function finish(
   findings: Finding[] = [],
   warnings: string[] = [],
   ok = true,
+  engine: RunResult["engine"] = "linux",
 ): RunResult {
   return {
     opId: ctx.op.id,
@@ -49,8 +55,31 @@ function finish(
     findings,
     data,
     warnings,
-    engine: "linux",
+    engine,
   };
+}
+
+async function bendFileOp(
+  ctx: EngineContext,
+  startedAt: string,
+  kind: BendKind,
+  summaryNoun: string,
+  remediationOpId?: string,
+): Promise<RunResult | undefined> {
+  const bend = await tryRunBend(ctx, kind);
+  if (!bend) return undefined;
+  const files = hitsToFiles(bend.findings);
+  const engine: RunResult["engine"] = bend.engine === "bend" ? "bend" : "linux";
+  return finish(
+    ctx,
+    startedAt,
+    `${files.length} ${summaryNoun} (${bend.engine} scorer).`,
+    { files, extra: { scorer: bend.engine, totalScore: bend.totalScore } },
+    hitsToFindings(bend.findings, remediationOpId),
+    [],
+    true,
+    engine,
+  );
 }
 
 function loadList(ctx: EngineContext, param: unknown, rel: string): Set<string> {
@@ -95,6 +124,30 @@ export async function runLinux(ctx: EngineContext): Promise<RunResult> {
     }
     case "flag-suspicious-users": {
       const { users, warnings, findings } = await liveUsers(ctx);
+      const bend = await tryRunBend(ctx, "users");
+      if (bend) {
+        const byPath = new Map(bend.findings.map((h) => [h.path, h]));
+        const scored = users.map((u) => {
+          const hit = byPath.get(u.name);
+          if (!hit) return u;
+          return {
+            ...u,
+            suspicionScore: Math.min(100, hit.score),
+            signals: hit.tags ? hit.tags.split(",").filter(Boolean) : u.signals,
+          };
+        });
+        const engine: RunResult["engine"] = bend.engine === "bend" ? "bend" : "linux";
+        return finish(
+          ctx,
+          startedAt,
+          `Heuristic pack scored ${scored.length} accounts via ${bend.engine}; ${bend.findings.length} above threshold.`,
+          { users: scored.filter((u) => (u.suspicionScore ?? 0) >= 10), extra: { scorer: bend.engine } },
+          hitsToFindings(bend.findings, "disable-user"),
+          warnings,
+          true,
+          engine,
+        );
+      }
       return finish(
         ctx,
         startedAt,
@@ -299,14 +352,26 @@ export async function runLinux(ctx: EngineContext): Promise<RunResult> {
       const hits = services.filter((s) => /smbd|nmbd|samba/i.test(s.name));
       return finish(ctx, startedAt, `${hits.length} SMB-related services.`, { services: hits }, [], warnings);
     }
-    case "audit-listening-ports": {
+    case "audit-listening-ports":
+    case "diff-expected-ports": {
+      const bend = await tryRunBend(ctx, "ports");
       const { ports, warnings } = await collectPorts();
       const required = loadList(ctx, undefined, "config/required-services.txt");
+      const expectedPorts = new Set(
+        parseExpectedPorts(
+          readNameList(resolveConfigFile(ctx.repoRoot, ctx.params.expectedPortsPath, "config/expected-ports.txt")),
+        ).map((p) => String(p.port)),
+      );
       const findings: Finding[] = [];
       for (const p of ports) {
         p.suspicious = SUSPICIOUS_PORTS.includes(p.port);
-        p.required = required.has((p.process ?? "").toLowerCase()) || p.port === 22 || p.port === 80 || p.port === 443;
-        if (p.suspicious && !p.required) {
+        p.required =
+          required.has((p.process ?? "").toLowerCase()) ||
+          expectedPorts.has(String(p.port)) ||
+          p.port === 22 ||
+          p.port === 80 ||
+          p.port === 443;
+        if ((p.suspicious || !p.required) && !expectedPorts.has(String(p.port))) {
           findings.push({
             id: `port:${p.port}`,
             severity: p.port === 31337 || p.port === 4444 ? "critical" : "high",
@@ -316,7 +381,33 @@ export async function runLinux(ctx: EngineContext): Promise<RunResult> {
           });
         }
       }
-      return finish(ctx, startedAt, `${ports.length} listeners, ${findings.length} suspicious.`, { ports }, findings, warnings);
+      const missing = [...expectedPorts].filter((port) => !ports.some((p) => String(p.port) === port));
+      for (const port of missing) {
+        findings.push({
+          id: `missing:${port}`,
+          severity: "medium",
+          title: `Expected port ${port} is not listening`,
+          detail: "Required by config/expected-ports.txt on this image.",
+          resource: port,
+        });
+      }
+      if (bend) {
+        const engine: RunResult["engine"] = bend.engine === "bend" ? "bend" : "linux";
+        return finish(
+          ctx,
+          startedAt,
+          `${ports.length} listeners, ${bend.findings.length} scored, ${missing.length} missing expected (${bend.engine}).`,
+          {
+            ports,
+            extra: { scorer: bend.engine, missingExpected: missing, bendHits: bend.findings.slice(0, 40) },
+          },
+          [...hitsToFindings(bend.findings), ...findings.filter((f) => f.id.startsWith("missing:"))],
+          warnings,
+          true,
+          engine,
+        );
+      }
+      return finish(ctx, startedAt, `${ports.length} listeners, ${findings.length} findings.`, { ports, extra: { missingExpected: missing } }, findings, warnings);
     }
     case "ssh-hardening-audit": {
       const cfg = readText("/etc/ssh/sshd_config") ?? "";
@@ -368,6 +459,8 @@ export async function runLinux(ctx: EngineContext): Promise<RunResult> {
       }, findings);
     }
     case "find-world-writable": {
+      const bend = await bendFileOp(ctx, startedAt, "files-ww", "world-writable paths");
+      if (bend) return bend;
       const files = await findFiles(
         ["/home", "/etc", "/opt", "/tmp", "/var", "/usr/local", "-xdev", "-perm", "-0002", "-type", "f"],
         "world-writable",
@@ -383,6 +476,8 @@ export async function runLinux(ctx: EngineContext): Promise<RunResult> {
       })));
     }
     case "find-suid-sgid": {
+      const bend = await bendFileOp(ctx, startedAt, "files-suid", "SUID/SGID files");
+      if (bend) return bend;
       const files = await findFiles(
         ["/", "-xdev", "(", "-perm", "-4000", "-o", "-perm", "-2000", ")", "-type", "f"],
         "suid/sgid",
@@ -399,6 +494,8 @@ export async function runLinux(ctx: EngineContext): Promise<RunResult> {
       })));
     }
     case "find-media-files": {
+      const bend = await bendFileOp(ctx, startedAt, "files-media", "media files");
+      if (bend) return bend;
       const files = await findFiles(
         [
           "/home",
@@ -459,7 +556,10 @@ export async function runLinux(ctx: EngineContext): Promise<RunResult> {
         }));
       return finish(ctx, startedAt, `Checked ${files.length} home directories.`, { files }, findings);
     }
-    case "check-sensitive-file-perms": {
+    case "check-sensitive-file-perms":
+    case "audit-critical-perm-drift": {
+      const bend = await bendFileOp(ctx, startedAt, "files-perms", "critical permission findings");
+      if (bend) return bend;
       const files = collectSensitivePerms();
       const findings: Finding[] = [];
       for (const f of files) {
@@ -486,6 +586,9 @@ export async function runLinux(ctx: EngineContext): Promise<RunResult> {
     }
     case "find-hidden-executables":
     case "find-backdoor-binaries": {
+      const kind = id === "find-hidden-executables" ? "files-hidden" : "files-hidden";
+      const bend = await bendFileOp(ctx, startedAt, kind, "hidden/backdoor binaries");
+      if (bend) return bend;
       const hidden = await findFiles(["/home", "/tmp", "/var/tmp", "-type", "f", "-name", ".*", "-perm", "-0111"], "hidden executable");
       const nc = await findFiles(["/tmp", "/home", "/opt", "/usr/local", "-type", "f", "(", "-name", "nc", "-o", "-name", "ncat", "-o", "-name", "netcat", "-o", "-name", "socat", ")"], "netcat-like");
       const files = [...hidden, ...nc];
@@ -591,26 +694,113 @@ export async function runLinux(ctx: EngineContext): Promise<RunResult> {
       }
       return finish(ctx, startedAt, "Enabled units + rc.local.", { extra: { enabled: enabled.stdout.split(/\r?\n/).slice(0, 80), rcLocal: rc.slice(0, 1500) } }, findings);
     }
-    case "audit-shared-folders": {
+    case "audit-shared-folders":
+    case "audit-share-acls": {
+      const shares = collectSmbShareAcls();
       const smb = readText("/etc/samba/smb.conf") ?? "";
-      return finish(ctx, startedAt, smb ? "Read smb.conf (truncated)." : "No smb.conf.", {
-        extra: { smb: smb.split(/\r?\n/).slice(0, 80) },
-      }, /guest ok\s*=\s*yes/i.test(smb) ? [{ id: "guest", severity: "high", title: "Samba guest ok = yes" }] : []);
+      const findings: Finding[] = shares
+        .filter((s) => s.guest || s.writable)
+        .map((s) => ({
+          id: `share:${s.name}`,
+          severity: s.guest && s.writable ? "critical" as const : "high" as const,
+          title: `Share ${s.name} guest=${Boolean(s.guest)} writable=${Boolean(s.writable)}`,
+          detail: s.path ?? s.note ?? "",
+          resource: s.name,
+        }));
+      return finish(ctx, startedAt, `${shares.length} Samba shares (ACL dump, local config only).`, {
+        shares,
+        extra: { smb: smb.split(/\r?\n/).slice(0, 60) },
+      }, findings);
+    }
+    case "audit-persistence-deep": {
+      const files = collectPersistenceHints();
+      const enabled = await runCmd("systemctl", ["list-unit-files", "--state=enabled", "--no-pager", "--no-legend"], 10000);
+      const rc = existsSync("/etc/rc.local") ? readText("/etc/rc.local") ?? "" : "";
+      const findings: Finding[] = [];
+      if (/\/tmp\/|nc\s|python3?\s+-c|curl.*\|/i.test(rc)) {
+        findings.push({ id: "rclocal", severity: "high", title: "Suspicious /etc/rc.local", detail: "Looks like a temp-path or interpreter plant." });
+      }
+      const cron = readText("/etc/crontab") ?? "";
+      if (/@reboot/i.test(cron) && /\/tmp\//i.test(cron)) {
+        findings.push({ id: "rebootcron", severity: "high", title: "@reboot cron points at /tmp", detail: "Persistence plant." });
+      }
+      return finish(ctx, startedAt, "Deeper persistence audit (systemd, rc.local, autostart, cron).", {
+        files,
+        extra: { enabled: enabled.stdout.split(/\r?\n/).slice(0, 80), rcLocal: rc.slice(0, 1500) },
+      }, findings);
+    }
+    case "hunt-remote-access-tools": {
+      const bend = await bendFileOp(ctx, startedAt, "files-rats", "remote-access tool hits", "remove-package");
+      if (bend) return bend;
+      const files = await findFiles(
+        ["/opt", "/usr/local", "/home", "-maxdepth", "4", "(", "-iname", "*vnc*", "-o", "-iname", "*teamviewer*", "-o", "-iname", "*anydesk*", ")"],
+        "remote-access",
+      );
+      return finish(ctx, startedAt, `${files.length} remote-access path hits.`, { files }, files.slice(0, 20).map((f) => ({
+        id: `rat:${f.path}`,
+        severity: "high" as const,
+        title: f.path,
+        resource: f.path,
+        remediationOpId: "remove-package",
+      })));
+    }
+    case "report-password-never-expires": {
+      const aging = collectPasswordAging();
+      const combo = aging.filter((r) => r.neverExpires && r.passwordEmpty && !r.locked);
+      const never = aging.filter((r) => r.neverExpires && !r.locked);
+      return finish(
+        ctx,
+        startedAt,
+        `${never.length} never-expire accounts; ${combo.length} blank+never-expire combo (hashes omitted).`,
+        { extra: { neverExpires: never.slice(0, 40), blankAndNever: combo } },
+        [
+          ...combo.map((r) => ({
+            id: `blanknever:${r.name}`,
+            severity: "critical" as const,
+            title: `Blank password and never-expires: ${r.name}`,
+            detail: "Classification only; hash not returned.",
+            resource: r.name,
+            remediationOpId: "lock-user",
+          })),
+          ...never
+            .filter((r) => !combo.some((c) => c.name === r.name))
+            .slice(0, 20)
+            .map((r) => ({
+              id: `never:${r.name}`,
+              severity: "medium" as const,
+              title: `Password never expires: ${r.name}`,
+              detail: `MAX_DAYS=${r.maxDays ?? "unset"}`,
+              resource: r.name,
+              remediationOpId: "enforce-password-policy",
+            })),
+        ],
+      );
     }
     case "export-evidence-bundle":
+    case "package-forensics-evidence":
     case "one-click-hardening-checklist":
+    case "scoreboard-preflight":
+    case "post-harden-checklist":
     case "score-image-heuristics": {
       const { users, warnings, findings } = await liveUsers(ctx);
       const { services } = await collectServices();
       const { ports } = await collectPorts();
       const files = collectSensitivePerms();
-      return finish(ctx, startedAt, `Live ${id} assembled from local collectors.`, {
+      const bend = await tryRunBend(ctx, "agg");
+      const engine: RunResult["engine"] = bend?.engine === "bend" ? "bend" : "linux";
+      const remaining = bend ? Math.min(100, bend.totalScore) : undefined;
+      return finish(ctx, startedAt, `Live ${id} assembled from local collectors${bend ? ` (${bend.engine} agg)` : ""}.`, {
         users: users.filter((u) => (u.suspicionScore ?? 0) >= 10).slice(0, 40),
         services: annotateServices(ctx, services).filter((s) => s.risky).slice(0, 40),
         ports: ports.slice(0, 40),
         files,
-        extra: { note: "Redacted live evidence. No shadow hashes, no private keys." },
-      }, findings.slice(0, 20), warnings);
+        extra: {
+          note: "Redacted live evidence. No shadow hashes, no private keys.",
+          remainingWork: remaining,
+          scorer: bend?.engine,
+          bendHits: bend?.findings.slice(0, 20),
+        },
+      }, [...(bend ? hitsToFindings(bend.findings) : []), ...findings.slice(0, 12)], warnings, true, engine);
     }
     case "disable-user":
     case "lock-user":

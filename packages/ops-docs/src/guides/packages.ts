@@ -131,6 +131,36 @@ export const PACKAGES: Record<string, HowToBody> = {
     related: ["apply-security-updates", "audit-hosts-file", "enable-windows-defender"],
     keywords: ["unattended-upgrades", "Windows Update", "pending patches"],
   },
+  "hunt-remote-access-tools": {
+    summary: "Find TeamViewer, AnyDesk, VNC, Chrome Remote Desktop, and similar on this image.",
+    what: "Looks for TeamViewer, AnyDesk, VNC, Chrome Remote Desktop, RustDesk and similar on the authorized image, plus browser extension directories (profile ids only — no extension source dump). Cross-checks config/remote-access-tools.txt. Discovery, not an exploit.",
+    whyItScores:
+      "Unauthorized remote-access tools are a frequent software finding and a persistence path. README-required remote support is the exception; everything else goes.",
+    whenToRun: "Software pass with find-prohibited-software, and again after persistence cleanup.",
+    steps: [
+      "Confirm the README does not require a named remote-support tool.",
+      "Run the op. Note packages, binaries, and browser extension ids — not extension source.",
+      "Remove unauthorized packages with remove-package (confirm:true) and delete leftover binaries/extension dirs.",
+      "Re-run plus flag-risky-services (VNC listeners) and audit-listening-ports.",
+    ],
+    goodLooksLike: [
+      "No TeamViewer/AnyDesk/VNC/RustDesk unless the README names it.",
+      "No surprise unpacked Chrome/Edge remote-desktop extensions.",
+      "No VNC listener on the host.",
+    ],
+    risks: [
+      "Read-only discovery. Removal is a separate confirm:true mutate.",
+      "Do not dump extension source or attack other hosts.",
+      "Do not keep a RAT ‘for testing’ on the scoring image.",
+    ],
+    related: [
+      "find-prohibited-software",
+      "flag-risky-services",
+      "audit-listening-ports",
+      "remove-package",
+    ],
+    keywords: ["TeamViewer", "AnyDesk", "x11vnc", "RustDesk", "Chrome Remote Desktop", "remote-access-tools.txt"],
+  },
   "apply-security-updates": {
     summary: "Install local security updates from the image’s own update channels.",
     what: "apt-get upgrade, dnf update --security, or Start-WindowsUpdate. Long-running. Live requires confirm:true. Stays on authorized-image channels.",

@@ -20,6 +20,12 @@ exploitation, and no “cheat the CCS” automation.
 
 - `{ "mode": "live" }` runs the Linux engine (this box / a Linux image) or the
   Windows PowerShell scripts on a Windows image.
+- On Linux, **Bend 2** (`bend` 2.0.5) scores embarrassingly parallel inventories
+  (world-writable / SUID / media / hidden / RAT paths, user heuristics, port
+  baseline diffs, checklist aggregation). A thin `engines/bend/collect.py`
+  gathers host facts; Bend never walks Windows APIs and is never used for
+  mutations. If `bend` is missing, the same collector scores in Python, then
+  the existing TypeScript `find` path.
 - **Read** ops inventory the local image: users, services, ports, files, policy.
 - **Mutate** ops (disable user, enable firewall, purge a package, …) are blocked
   unless the body includes `"confirm": true`.
@@ -57,6 +63,15 @@ Signals for suspicious users:
 `engines/windows/*.ps1` are written for a Windows CP image. They may not execute
 on this Linux builder. That is expected. Review them; run them on the Windows
 VM.
+
+## Bend 2 (Linux parallel scoring only)
+
+- Programs live in `engines/bend/*.bend` (Bend 2 syntax, not the old HVM dialect).
+- Input is a `|`-delimited inventory written by `collect.py` (paths, modes,
+  boolean flags). **Password hashes are never in that inventory.**
+- Windows ops stay on PowerShell. The React dashboard stays TypeScript.
+- `engine: "bend"` in a live result means Bend scored the inventory. Demo mode
+  never invokes Bend.
 
 ## Maximalist-but-kosher
 

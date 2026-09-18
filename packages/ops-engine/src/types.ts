@@ -37,6 +37,7 @@ export interface UserRecord {
   /** Classification only — hashes are never included. */
   passwordEmpty?: boolean;
   passwordSet?: boolean;
+  passwordNeverExpires?: boolean;
   passwordHidden: true;
   interactive?: boolean;
   suspicionScore?: number;
@@ -114,7 +115,7 @@ export interface RunResult {
   data: RunData;
   warnings: string[];
   blocked?: { reason: string };
-  engine: "demo" | "linux" | "windows" | "none";
+  engine: "demo" | "linux" | "windows" | "bend" | "none";
 }
 
 export interface EngineContext {

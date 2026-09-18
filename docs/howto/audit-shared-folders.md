@@ -46,4 +46,5 @@ With audit-smb. After you know whether file sharing is required.
 - [`disable-smbv1`](./disable-smbv1.md) — Disable SMBv1
 - [`disable-service`](./disable-service.md) — Disable a service
 - [`find-world-writable`](./find-world-writable.md) — Find world-writable files
+- [`audit-share-acls`](./audit-share-acls.md) — Dump unauthorized share ACLs
 

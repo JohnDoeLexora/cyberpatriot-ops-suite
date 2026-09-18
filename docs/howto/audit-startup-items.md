@@ -45,4 +45,5 @@ Persistence pass on both platforms, with cron/tasks and hidden executables.
 - [`list-scheduled-tasks`](./list-scheduled-tasks.md) — List scheduled tasks
 - [`find-hidden-executables`](./find-hidden-executables.md) — Find hidden executables
 - [`list-services`](./list-services.md) — List services
+- [`audit-persistence-deep`](./audit-persistence-deep.md) — Deep startup persistence audit
 

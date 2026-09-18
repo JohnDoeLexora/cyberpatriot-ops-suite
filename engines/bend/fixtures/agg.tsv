@@ -1,0 +1,6 @@
+guest|fail|8
+firewall|fail|8
+telnet|fail|10
+updates|warn|6
+ssh|pass|8
+media|fail|5

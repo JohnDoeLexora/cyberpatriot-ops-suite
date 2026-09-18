@@ -1,0 +1,6 @@
+# Local listeners the README says should be present.
+# Format: proto port [process]
+# Extra listeners are findings; missing required ports are reported separately.
+tcp 22 sshd
+tcp 80 apache2
+tcp 443

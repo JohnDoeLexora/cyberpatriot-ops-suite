@@ -114,10 +114,19 @@ const RUN_LABELS: Record<string, string> = {
   'disable-autoplay': 'Turn off AutoPlay',
   'check-bitlocker-status': 'Check BitLocker',
   'export-evidence-bundle': 'Export report',
+  'package-forensics-evidence': 'Pack forensics',
   'one-click-hardening-checklist': 'Run checklist',
   'score-image-heuristics': 'Score remaining work',
   'find-backdoor-binaries': 'Find leftover tools',
   'audit-shared-folders': 'Check shared folders',
+  'diff-expected-ports': 'Diff expected ports',
+  'audit-share-acls': 'Check share ACLs',
+  'audit-persistence-deep': 'Deep persistence scan',
+  'hunt-remote-access-tools': 'Hunt remote-access tools',
+  'report-password-never-expires': 'Find never-expire passwords',
+  'audit-critical-perm-drift': 'Check critical perms',
+  'scoreboard-preflight': 'Preflight checklist',
+  'post-harden-checklist': 'Post-harden check',
 }
 
 function viewFor(op: CatalogOp): OpView {

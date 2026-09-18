@@ -13,7 +13,13 @@ function assertShape(result: Awaited<ReturnType<typeof runOp>>) {
   assert.ok(Array.isArray(result.findings));
   assert.ok(Array.isArray(result.warnings));
   assert.equal(typeof result.data, "object");
-  assert.ok(result.engine === "demo" || result.engine === "linux" || result.engine === "windows" || result.engine === "none");
+  assert.ok(
+    result.engine === "demo" ||
+      result.engine === "linux" ||
+      result.engine === "windows" ||
+      result.engine === "bend" ||
+      result.engine === "none",
+  );
 }
 
 describe("demo runner output shape", () => {
@@ -114,7 +120,26 @@ describe("demo runner output shape", () => {
   it("evidence ops return checklist or score data", async () => {
     const check = await runOp({ opId: "one-click-hardening-checklist", mode: "demo" });
     const score = await runOp({ opId: "score-image-heuristics", mode: "demo" });
+    const pre = await runOp({ opId: "scoreboard-preflight", mode: "demo" });
+    const post = await runOp({ opId: "post-harden-checklist", mode: "demo" });
     assert.ok(check.data.checklist && check.data.checklist.length >= 8);
     assert.equal(typeof score.data.extra?.remainingWork, "number");
+    assert.ok(pre.data.checklist && pre.data.checklist.length >= 6);
+    assert.ok(post.data.checklist && post.data.checklist.length >= 8);
+  });
+
+  it("new cp-05 ops return specialized demo findings", async () => {
+    const ports = await runOp({ opId: "diff-expected-ports", mode: "demo" });
+    const acls = await runOp({ opId: "audit-share-acls", mode: "demo" });
+    const persist = await runOp({ opId: "audit-persistence-deep", mode: "demo" });
+    const rats = await runOp({ opId: "hunt-remote-access-tools", mode: "demo" });
+    const aging = await runOp({ opId: "report-password-never-expires", mode: "demo" });
+    const drift = await runOp({ opId: "audit-critical-perm-drift", mode: "demo" });
+    assert.ok(ports.findings.some((f) => /31337|23/.test(f.title)));
+    assert.ok(acls.findings.length >= 1);
+    assert.ok(persist.findings.length >= 1);
+    assert.ok(rats.findings.some((f) => /teamviewer|anydesk|vnc/i.test(f.title + f.detail)));
+    assert.ok(aging.findings.some((f) => /Guest/i.test(f.title)));
+    assert.ok(drift.findings.some((f) => /shadow/i.test(f.title)));
   });
 });

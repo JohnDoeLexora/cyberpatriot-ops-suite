@@ -1,0 +1,23 @@
+# Remote-access / RAT-like packages and path needles. Inventory only.
+# Authorized-image hunt — not an exploit list and not a scan of other hosts.
+teamviewer
+anydesk
+rustdesk
+tightvnc
+realvnc
+ultravnc
+tigervnc
+x11vnc
+vnc4server
+logmein
+splashtop
+chromoting
+chrome-remote-desktop
+ultrasurf
+ammyy
+supremo
+remotepc
+connectwise
+screenconnect
+dwagent
+nomachine

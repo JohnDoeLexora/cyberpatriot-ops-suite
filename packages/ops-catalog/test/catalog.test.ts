@@ -50,12 +50,21 @@ describe("ops catalog integrity", () => {
     assert.ok(search.some((o) => o.id === "flag-suspicious-users"));
   });
 
-  it("includes the heuristic pack and evidence ops", () => {
+  it("includes the heuristic pack, evidence ops, and cp-05 expansions", () => {
     for (const id of [
       "flag-suspicious-users",
       "one-click-hardening-checklist",
       "export-evidence-bundle",
       "score-image-heuristics",
+      "diff-expected-ports",
+      "audit-share-acls",
+      "audit-persistence-deep",
+      "hunt-remote-access-tools",
+      "report-password-never-expires",
+      "audit-critical-perm-drift",
+      "package-forensics-evidence",
+      "scoreboard-preflight",
+      "post-harden-checklist",
     ]) {
       assert.ok(getOp(id), id);
     }
