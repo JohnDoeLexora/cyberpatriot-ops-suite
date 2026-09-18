@@ -9,8 +9,11 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react'
-import { OPS_BY_ID } from '../catalog/ops'
+import { getEngineOp, OPS_BY_ID } from '../catalog/ops'
+import { adaptRunResult } from '../lib/adapt-result'
 import { uid } from '../lib/id'
+import { executeOp, fetchHealth, type EngineSource } from '../lib/run-client'
+import { liveUsers, upsertUsers, type UiUser } from '../lib/users'
 import {
   dockAtRoot,
   insertLeafAtEdge,
@@ -23,14 +26,13 @@ import {
   type DropEdge,
   type SplitDirection,
 } from '../layout/tree'
-import { runMockOp, type FirewallState } from '../mock/engine'
-import type { UserRecord } from '../mock/users'
 import {
   emptyPane,
   initialWorkspace,
   journalEntry,
   loadWorkspace,
   saveWorkspace,
+  type FirewallState,
   type JournalEntry,
   type PaneState,
   type PersistedWorkspace,
@@ -95,14 +97,17 @@ type WorkspaceApi = PersistedWorkspace & {
   closePane: (paneId: string) => void
   dropOnPane: (targetPaneId: string, edge: DropEdge, payload: DragPayload) => void
   setRatio: (splitId: string, ratio: number) => void
-  runPane: (paneId: string) => Promise<void>
+  runPane: (paneId: string, opts?: { confirm?: boolean }) => Promise<void>
   resetDemo: () => void
   resetLayout: () => void
-  mutateUser: (userId: string, patch: Partial<UserRecord>, label: string) => void
+  mutateUser: (userId: string, patch: Partial<UiUser>, label: string) => void
   bulkDisable: (userIds: string[]) => void
   toggleUserSelected: (paneId: string, userId: string) => void
   setUserSelected: (paneId: string, userIds: string[]) => void
   applyFirewall: (fw: FirewallState) => void
+  setPaneParam: (paneId: string, key: string, value: string) => void
+  engineSource: EngineSource | 'unknown'
+  apiOk: boolean | null
 }
 
 export type DragPayload =
@@ -121,6 +126,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [confirm, setConfirm] = useState<ConfirmState | null>(null)
   const [passwordModal, setPasswordModal] = useState<PasswordModalState | null>(null)
   const [detailsUserId, setDetailsUserId] = useState<string | null>(null)
+  const [engineSource, setEngineSource] = useState<EngineSource | 'unknown'>('unknown')
+  const [apiOk, setApiOk] = useState<boolean | null>(null)
   const searchRef = useRef<HTMLInputElement | null>(null)
   const stateRef = useRef(state)
   stateRef.current = state
@@ -129,6 +136,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const t = window.setTimeout(() => saveWorkspace(state), 120)
     return () => window.clearTimeout(t)
   }, [state])
+
+  useEffect(() => {
+    let cancelled = false
+    const ping = () => {
+      void fetchHealth().then((h) => {
+        if (cancelled) return
+        setApiOk(Boolean(h?.ok))
+      })
+    }
+    ping()
+    const id = window.setInterval(ping, 15_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [])
 
   const toast = useCallback((t: Omit<Toast, 'id'>) => {
     const id = uid('toast')
@@ -173,10 +196,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             output: null,
             error: null,
             selectedUserIds: [],
+            params: s.panes[paneId]?.params ?? {},
           },
         },
       }))
-      log('layout', `Opened ${op?.title ?? opId} in pane`)
+      log('layout', `Opened ${op?.title ?? opId}`)
     },
     [log],
   )
@@ -197,14 +221,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
       if (leafCount(s.tree) >= MAX_PANES) {
         assignOp(target, opId)
-        toast({ tone: 'warn', title: 'Pane cap', detail: `Replaced focused pane (max ${MAX_PANES}).` })
+        toast({ tone: 'warn', title: 'Pane cap', detail: `Replaced the focused pane (max ${MAX_PANES}).` })
         return
       }
       const newId = uid('pane')
       setState((cur) => {
         const count = leafCount(cur.tree)
         const splitFrom = cur.panes[target] ? target : walkLeaves(cur.tree)[0]
-        // 2 → 3: dock a third column so leaves stay ~even instead of 50/25/25.
         const tree =
           count === 2
             ? dockAtRoot(cur.tree, newId, 'right')
@@ -320,12 +343,66 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, tree: setSplitRatio(s.tree, splitId, ratio) }))
   }, [])
 
+  const setPaneParam = useCallback((paneId: string, key: string, value: string) => {
+    setState((s) => {
+      const pane = s.panes[paneId]
+      if (!pane) return s
+      return {
+        ...s,
+        panes: {
+          ...s.panes,
+          [paneId]: { ...pane, params: { ...pane.params, [key]: value } },
+        },
+      }
+    })
+  }, [])
+
   const runPane = useCallback(
-    async (paneId: string) => {
+    async (paneId: string, opts?: { confirm?: boolean }) => {
       const snapshot = stateRef.current
       const pane = snapshot.panes[paneId]
       if (!pane?.opId) return
-      const op = OPS_BY_ID[pane.opId]
+      const uiOp = OPS_BY_ID[pane.opId]
+      const mode = snapshot.demoMode ? 'demo' : 'live'
+      const catalogOp = getEngineOp(pane.opId)
+
+      if (uiOp && !uiOp.engine) {
+        const summary =
+          uiOp.view === 'notes'
+            ? `Notes snapshot (${snapshot.notes.length} characters).`
+            : uiOp.view === 'journal'
+              ? `Change log has ${snapshot.journal.length} entries.`
+              : `${snapshot.favorites.length} pinned checks.`
+        setState((s) => ({
+          ...s,
+          panes: {
+            ...s.panes,
+            [paneId]: {
+              ...s.panes[paneId],
+              status: 'done',
+              output: { summary, findings: [] },
+              error: null,
+            },
+          },
+          journal: [journalEntry('run', summary), ...s.journal].slice(0, 400),
+        }))
+        toast({ tone: 'ok', title: uiOp.title, detail: summary })
+        return
+      }
+
+      if (mode === 'live' && catalogOp?.risk === 'mutate' && opts?.confirm !== true) {
+        setConfirm({
+          title: `Change this computer?`,
+          body: `${uiOp?.title ?? pane.opId} will change the authorized CyberPatriot image. Practice data is off. Continue only on a competition image you are allowed to harden.`,
+          confirmLabel: 'Yes, apply',
+          danger: true,
+          onConfirm: () => {
+            void runPane(paneId, { confirm: true })
+          },
+        })
+        return
+      }
+
       setState((s) => ({
         ...s,
         panes: {
@@ -333,42 +410,73 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           [paneId]: { ...s.panes[paneId], status: 'running', error: null },
         },
       }))
+
+      const params: Record<string, unknown> = { ...pane.params }
+      if (pane.params.dryRun === 'true') params.dryRun = true
+      if (uiOp?.id === 'find-media-files' && snapshot.mediaExtensions) {
+        params.extensions = snapshot.mediaExtensions
+      }
+
       try {
-        let nextUsers = stateRef.current.users
-        let nextFw = stateRef.current.firewall
-        const output = await runMockOp(pane.opId, {
-          demoMode: stateRef.current.demoMode,
-          users: stateRef.current.users,
-          groups: stateRef.current.groups,
-          firewall: stateRef.current.firewall,
-          notes: stateRef.current.notes,
-          favorites: stateRef.current.favorites,
-          journalCount: stateRef.current.journal.length,
-          preflightDone: Object.values(stateRef.current.preflight).filter(Boolean).length,
-          preflightTotal: 12,
-          applyUsers: (updater) => {
-            nextUsers = updater(nextUsers)
-          },
-          applyFirewall: (fw) => {
-            nextFw = fw
-          },
+        const { result, source } = await executeOp({
+          opId: pane.opId,
+          mode,
+          params,
+          confirm: opts?.confirm === true,
         })
-        setState((s) => ({
-          ...s,
-          users: nextUsers,
-          firewall: nextFw,
-          panes: {
-            ...s.panes,
-            [paneId]: { ...s.panes[paneId], status: 'done', output, error: null },
-          },
-          journal: [
-            journalEntry('run', `Ran ${op?.title ?? pane.opId}: ${output.summary}`),
-            ...s.journal,
-          ].slice(0, 400),
-        }))
-        toast({ tone: 'ok', title: op?.title ?? 'Run complete', detail: output.summary })
+        setEngineSource(source)
+        const output = adaptRunResult(result)
+        const replaceUsers = pane.opId === 'list-users'
+        const incoming = result.data.users
+        setState((s) => {
+          let users = s.users
+          if (incoming?.length) users = upsertUsers(s.users, incoming, replaceUsers)
+          let firewall = s.firewall
+          if (result.ok && (pane.opId === 'enable-firewall' || pane.opId === 'apply-default-deny-inbound')) {
+            firewall = {
+              enabled: true,
+              profile: pane.opId === 'apply-default-deny-inbound' ? 'default-deny' : 'on',
+            }
+          }
+          if (result.ok && pane.opId === 'audit-firewall' && result.data.policy) {
+            const on = result.data.policy.firewallEnabled === true
+            firewall = { enabled: on, profile: on ? 'on' : 'off' }
+          }
+          return {
+            ...s,
+            users,
+            firewall,
+            panes: {
+              ...s.panes,
+              [paneId]: {
+                ...s.panes[paneId],
+                status: result.ok ? 'done' : 'error',
+                output,
+                error: result.ok ? null : result.summary,
+              },
+            },
+            journal: [
+              journalEntry(
+                'run',
+                `Ran ${uiOp?.title ?? pane.opId} (${result.mode}/${result.engine}): ${result.summary}`,
+              ),
+              ...s.journal,
+            ].slice(0, 400),
+          }
+        })
+        if (result.blocked) {
+          toast({ tone: 'warn', title: 'Confirm required', detail: result.blocked.reason })
+        } else if (result.ok) {
+          toast({
+            tone: 'ok',
+            title: uiOp?.title ?? 'Run complete',
+            detail: result.summary,
+          })
+        } else {
+          toast({ tone: 'crit', title: 'Run failed', detail: result.summary })
+        }
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Mock run failed'
+        const message = err instanceof Error ? err.message : 'Run failed'
         setState((s) => ({
           ...s,
           panes: {
@@ -385,13 +493,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const setDemoMode = useCallback(
     (on: boolean) => {
       setState((s) => ({ ...s, demoMode: on }))
-      log('system', `Demo mode ${on ? 'ON' : 'OFF'}`)
+      log('system', on ? 'Practice data on' : 'This computer (live) — changes need confirmation')
       toast({
         tone: on ? 'ok' : 'warn',
-        title: on ? 'Demo mode on' : 'Demo mode off',
+        title: on ? 'Practice data on' : 'This computer',
         detail: on
-          ? 'Every control is wired to the mock API.'
-          : 'UI still runs mocks until cp-02 engines land.',
+          ? 'Mac-safe fixtures. Nothing on this computer is changed.'
+          : 'Reads this machine. Changes ask for confirmation first.',
       })
     },
     [log, toast],
@@ -436,7 +544,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       ),
       focusedId: stateRef.current.focusedId,
     })
-    toast({ tone: 'info', title: 'Demo data reset', detail: 'Users, firewall, journal restored. Layout kept.' })
+    toast({ tone: 'info', title: 'Practice data reset', detail: 'Accounts and the change log were restored. Layout kept.' })
   }, [toast])
 
   const resetLayout = useCallback(() => {
@@ -451,7 +559,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [log])
 
   const mutateUser = useCallback(
-    (userId: string, patch: Partial<UserRecord>, label: string) => {
+    (userId: string, patch: Partial<UiUser>, label: string) => {
       setState((s) => ({
         ...s,
         users: s.users.map((u) => (u.id === userId ? { ...u, ...patch } : u)),
@@ -471,11 +579,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           userIds.includes(u.id) && u.name !== 'root' ? { ...u, status: 'disabled' } : u,
         ),
         journal: [
-          journalEntry('user', `Disabled ${userIds.length} account(s)`),
+          journalEntry('user', `Turned off ${userIds.length} account(s)`),
           ...s.journal,
         ].slice(0, 400),
       }))
-      toast({ tone: 'ok', title: `Disabled ${userIds.length} account(s)` })
+      toast({ tone: 'ok', title: `Turned off ${userIds.length} account(s)` })
     },
     [toast],
   )
@@ -513,7 +621,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const applyFirewall = useCallback(
     (fw: FirewallState) => {
       setState((s) => ({ ...s, firewall: fw }))
-      log('system', `Firewall profile → ${fw.profile}`)
+      log('system', `Firewall → ${fw.profile}`)
     },
     [log],
   )
@@ -557,6 +665,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       toggleUserSelected,
       setUserSelected,
       applyFirewall,
+      setPaneParam,
+      engineSource,
+      apiOk,
     }),
     [
       state,
@@ -590,6 +701,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       toggleUserSelected,
       setUserSelected,
       applyFirewall,
+      setPaneParam,
+      engineSource,
+      apiOk,
     ],
   )
 
@@ -605,3 +719,5 @@ export function useWorkspace() {
 export function collectFindings(panes: Record<string, PaneState>) {
   return Object.values(panes).flatMap((p) => p.output?.findings ?? [])
 }
+
+export { liveUsers }

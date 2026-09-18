@@ -9,13 +9,13 @@ export default defineConfig({
   timeout: 30_000,
   reporter: [['list']],
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL: 'http://127.0.0.1:5183',
     trace: 'on-first-retry',
-    colorScheme: 'dark',
+    colorScheme: 'light',
   },
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port 5173',
-    url: 'http://127.0.0.1:5173',
+    command: 'npm run dev -- --host 127.0.0.1 --port 5183 --strictPort',
+    url: 'http://127.0.0.1:5183',
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
   },

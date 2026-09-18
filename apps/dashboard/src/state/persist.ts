@@ -1,10 +1,20 @@
 import type { OpResult, RunStatus } from '../catalog/types'
+import { migrateOpId } from '../catalog/ops'
 import { isMosaicNode, type MosaicNode } from '../layout/tree'
-import { DEFAULT_FIREWALL, type FirewallState } from '../mock/engine'
-import { SEED_GROUPS, seedUsers, type GroupRecord, type UserRecord } from '../mock/users'
+import { SEED_GROUPS, seedUsers, type GroupRecord, type UiUser } from '../lib/users'
 import { uid } from '../lib/id'
 
-export const STORAGE_KEY = 'cp-ops.workspace.v1'
+export const STORAGE_KEY = 'cp-ops.workspace.v2'
+
+export type FirewallState = {
+  enabled: boolean
+  profile: 'unknown' | 'off' | 'on' | 'default-deny'
+}
+
+export const DEFAULT_FIREWALL: FirewallState = {
+  enabled: false,
+  profile: 'off',
+}
 
 export type PaneState = {
   id: string
@@ -13,6 +23,7 @@ export type PaneState = {
   output: OpResult | null
   error: string | null
   selectedUserIds: string[]
+  params: Record<string, string>
 }
 
 export type JournalKind = 'run' | 'user' | 'layout' | 'system' | 'note'
@@ -35,7 +46,7 @@ export type PersistedWorkspace = {
   demoMode: boolean
   favorites: string[]
   notes: string
-  users: UserRecord[]
+  users: UiUser[]
   groups: GroupRecord[]
   firewall: FirewallState
   journal: JournalEntry[]
@@ -49,22 +60,22 @@ export const DEFAULT_NOTES = `# Forensics questions
 - What is the last login source for root?
 - Which process is listening on 4444?
 
-Use this pane as the team scratchpad. Notes persist in localStorage.
+Use this pane as the team scratchpad. Notes stay in this browser.
 `
 
 export const PREFLIGHT_ITEMS: { id: string; label: string; hint: string }[] = [
-  { id: 'readme', label: 'Read README / scoring image notes', hint: 'Authorized users, scored services' },
-  { id: 'forensics', label: 'Copy forensic questions into notepad', hint: 'Before you change evidence' },
-  { id: 'snapshot', label: 'Integrity snapshot of critical files', hint: 'passwd, shadow, sshd, sudoers' },
-  { id: 'firewall', label: 'Firewall on with scored ports only', hint: 'Apply competition-safe profile' },
-  { id: 'users', label: 'Unauthorized users disabled/deleted', hint: 'After README check' },
-  { id: 'guest', label: 'Guest/default accounts gone', hint: 'guest, games, ftp leftovers' },
-  { id: 'ssh', label: 'SSH/root policy tightened', hint: 'PermitRootLogin, passwords' },
-  { id: 'insecure', label: 'Telnet/rsh/ftp masked', hint: 'Insecure services op' },
-  { id: 'media', label: 'Prohibited media/software removed', hint: 'mp3, games, nmap' },
-  { id: 'updates', label: 'Updates checked (read-only first)', hint: 'Then patch if allowed' },
-  { id: 'shares', label: 'Shares/NFS audited', hint: 'Guest shares' },
-  { id: 'logging', label: 'Logging services running', hint: 'rsyslog / Event Log' },
+  { id: 'readme', label: 'Read the image README', hint: 'Authorized users and scored services' },
+  { id: 'forensics', label: 'Copy forensic questions into notes', hint: 'Before you change evidence' },
+  { id: 'snapshot', label: 'Export an evidence report', hint: 'Users, ports, checksums' },
+  { id: 'firewall', label: 'Turn the firewall on', hint: 'Then allow only scored ports' },
+  { id: 'users', label: 'Turn off extra accounts', hint: 'After the README check' },
+  { id: 'guest', label: 'Turn off Guest', hint: 'Almost never authorized' },
+  { id: 'ssh', label: 'Tighten SSH / root login', hint: 'Check SSH, then apply' },
+  { id: 'insecure', label: 'Turn off Telnet and FTP', hint: 'Unless the README requires them' },
+  { id: 'media', label: 'Find banned media and software', hint: 'mp3, games, nmap' },
+  { id: 'updates', label: 'Check updates first', hint: 'Then install if allowed' },
+  { id: 'shares', label: 'Check shared folders', hint: 'Guest shares' },
+  { id: 'logging', label: 'Make sure logging is on', hint: 'rsyslog / Event Log' },
 ]
 
 export function emptyPane(id = uid('pane')): PaneState {
@@ -75,6 +86,7 @@ export function emptyPane(id = uid('pane')): PaneState {
     output: null,
     error: null,
     selectedUserIds: [],
+    params: {},
   }
 }
 
@@ -85,34 +97,48 @@ export function initialWorkspace(): PersistedWorkspace {
     panes: { [pane.id]: pane },
     focusedId: pane.id,
     demoMode: true,
-    favorites: ['users.flag-suspicious', 'users.uid0', 'net.firewall-apply', 'team.preflight'],
+    favorites: [
+      'flag-suspicious-users',
+      'audit-uid-zero',
+      'apply-default-deny-inbound',
+      'one-click-hardening-checklist',
+    ],
     notes: DEFAULT_NOTES,
     users: seedUsers(),
-    groups: SEED_GROUPS.map((g) => ({ ...g })),
-    firewall: { ...DEFAULT_FIREWALL, rules: [...DEFAULT_FIREWALL.rules] },
-    journal: [
-      journalEntry('system', 'Workspace initialized (demo mode on). Engines are mocked until cp-02.'),
-    ],
+    groups: SEED_GROUPS.map((g) => ({ ...g, members: [...g.members] })),
+    firewall: { ...DEFAULT_FIREWALL },
+    journal: [journalEntry('system', 'Workspace ready. Practice data is on — nothing on this computer is changed.')],
     preflight: {},
-    mediaExtensions: 'mp3,mp4,avi,wav,mkv,ogg,exe,jar',
+    mediaExtensions: 'mp3,mp4,avi,wav,mkv,ogg',
+  }
+}
+
+function migratePane(id: string, pane: Partial<PaneState>): PaneState {
+  return {
+    ...emptyPane(id),
+    ...pane,
+    id,
+    opId: migrateOpId(pane.opId ?? null),
+    status: pane.status === 'running' ? 'idle' : (pane.status ?? 'idle'),
+    params: pane.params ?? {},
+    selectedUserIds: pane.selectedUserIds ?? [],
   }
 }
 
 export function loadWorkspace(): PersistedWorkspace {
   const fallback = initialWorkspace()
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem('cp-ops.workspace.v1')
     if (!raw) return fallback
     const parsed = JSON.parse(raw) as Partial<PersistedWorkspace>
     if (!parsed.tree || !isMosaicNode(parsed.tree) || !parsed.panes) return fallback
     const panes: Record<string, PaneState> = {}
     for (const [id, pane] of Object.entries(parsed.panes)) {
-      panes[id] = {
-        ...emptyPane(id),
-        ...pane,
-        status: pane.status === 'running' ? 'idle' : pane.status,
-      }
+      panes[id] = migratePane(id, pane)
     }
+    const favorites = (parsed.favorites ?? fallback.favorites)
+      .map((id) => migrateOpId(id))
+      .filter((id): id is string => Boolean(id))
     return {
       ...fallback,
       ...parsed,
@@ -124,7 +150,7 @@ export function loadWorkspace(): PersistedWorkspace {
       groups: parsed.groups?.length ? parsed.groups : fallback.groups,
       firewall: parsed.firewall ?? fallback.firewall,
       journal: parsed.journal ?? [],
-      favorites: parsed.favorites ?? fallback.favorites,
+      favorites: favorites.length ? favorites : fallback.favorites,
       notes: parsed.notes ?? fallback.notes,
       preflight: parsed.preflight ?? {},
       mediaExtensions: parsed.mediaExtensions ?? fallback.mediaExtensions,

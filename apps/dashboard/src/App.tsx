@@ -19,15 +19,15 @@ export default function App() {
 function Shell() {
   useGlobalKeys()
   return (
-    <div className="flex h-full min-h-0 flex-col bg-app text-ink" data-testid="app-shell">
+    <div className="flex h-full min-h-0 flex-col bg-app text-ink" data-testid="app-shell" data-theme="paper">
       <Header />
       <div className="min-h-0 flex-1">
         <PanelGroup direction="horizontal" autoSaveId="cp-ops-sidebar">
-          <Panel defaultSize={22} minSize={16} maxSize={38} className="min-h-0">
+          <Panel defaultSize={24} minSize={18} maxSize={40} className="min-h-0 min-w-[16rem]">
             <Catalog />
           </Panel>
           <PanelResizeHandle className="resize-handle" />
-          <Panel className="min-h-0">
+          <Panel className="min-h-0 min-w-[20rem]">
             <Mosaic />
           </Panel>
         </PanelGroup>

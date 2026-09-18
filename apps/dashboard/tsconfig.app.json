@@ -20,7 +20,9 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@cyberpatriot/ops-catalog": ["../../packages/ops-catalog/src/index.ts"],
+      "@cyberpatriot/ops-engine/demo": ["../../packages/ops-engine/src/demo/browser.ts"]
     }
   },
   "include": ["src"]

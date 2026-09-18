@@ -2,28 +2,29 @@
 
 @theme {
   --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Newsreader", "Iowan Old Style", Georgia, "Times New Roman", serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
-  --color-app: #080a0e;
-  --color-panel: #0e1218;
-  --color-sidebar: #0b0e13;
-  --color-elev: #141a22;
-  --color-hover: #1b2330;
-  --color-line: #1e2633;
-  --color-line-strong: #2c3648;
-  --color-ink: #e7edf6;
-  --color-mute: #8b96a8;
-  --color-faint: #5c6678;
-  --color-accent: #2ee6c5;
-  --color-accent-dim: #163a34;
-  --color-warn: #e8b84a;
-  --color-warn-dim: #3a3014;
-  --color-crit: #ff6b78;
-  --color-crit-dim: #3a1418;
-  --color-ok: #5dcaa5;
-  --color-ok-dim: #123028;
-  --color-info: #7eb0ff;
-  --color-info-dim: #152033;
+  --color-app: #f3eee4;
+  --color-panel: #fbf7f0;
+  --color-sidebar: #efe8dc;
+  --color-elev: #fffdf8;
+  --color-hover: #e8dfd0;
+  --color-line: #e2d6c4;
+  --color-line-strong: #d3c4ae;
+  --color-ink: #2b261f;
+  --color-mute: #6a6157;
+  --color-faint: #94897c;
+  --color-accent: #3f5c4b;
+  --color-accent-dim: #e4eee7;
+  --color-warn: #a67c2d;
+  --color-warn-dim: #f4ead3;
+  --color-crit: #b04038;
+  --color-crit-dim: #f6e4e1;
+  --color-ok: #3d6b4a;
+  --color-ok-dim: #e3efe6;
+  --color-info: #3d5a73;
+  --color-info-dim: #e4ebf2;
 }
 
 html,
@@ -34,10 +35,15 @@ body,
   background: var(--color-app);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-size: 13px;
-  line-height: 1.4;
-  letter-spacing: 0.01em;
+  font-size: 15px;
+  line-height: 1.45;
+  letter-spacing: 0.005em;
   overflow: hidden;
+}
+
+body {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 252, 247, 0.9), transparent 55%);
 }
 
 * {
@@ -56,13 +62,13 @@ button {
 }
 
 :focus-visible {
-  outline: 1px solid var(--color-accent);
-  outline-offset: 1px;
+  outline: 2px solid color-mix(in oklab, var(--color-accent) 70%, transparent);
+  outline-offset: 2px;
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -70,12 +76,16 @@ button {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2a3344;
+  background: #d3c4ae;
   border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a465c;
+  background: #c4b399;
+  background-clip: padding-box;
+  border: 2px solid transparent;
 }
 
 .resize-handle {
@@ -84,14 +94,14 @@ button {
 }
 
 .resize-handle[data-panel-group-direction="horizontal"] {
-  width: 6px;
-  margin: 0 -2px;
+  width: 8px;
+  margin: 0 -3px;
   cursor: col-resize;
 }
 
 .resize-handle[data-panel-group-direction="vertical"] {
-  height: 6px;
-  margin: -2px 0;
+  height: 8px;
+  margin: -3px 0;
   cursor: row-resize;
 }
 
@@ -104,13 +114,13 @@ button {
 
 .resize-handle[data-panel-group-direction="horizontal"]::after {
   width: 1px;
-  left: 2px;
+  left: 3px;
   right: auto;
 }
 
 .resize-handle[data-panel-group-direction="vertical"]::after {
   height: 1px;
-  top: 2px;
+  top: 3px;
   bottom: auto;
 }
 
@@ -130,8 +140,8 @@ button {
 }
 
 .drop-zone {
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-accent) 50%, transparent);
-  background: color-mix(in oklab, var(--color-accent) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-accent) 55%, transparent);
+  background: color-mix(in oklab, var(--color-accent) 10%, transparent);
 }
 
 @keyframes pulse-run {
@@ -150,7 +160,16 @@ button {
 
 .grid-bg {
   background-image:
-    linear-gradient(to right, rgba(46, 230, 197, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(46, 230, 197, 0.035) 1px, transparent 1px);
-  background-size: 24px 24px;
+    linear-gradient(to right, rgba(43, 38, 31, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(43, 38, 31, 0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.pane-min {
+  min-width: 20rem;
+  min-height: 14rem;
+}
+
+.font-display {
+  font-family: var(--font-display);
 }

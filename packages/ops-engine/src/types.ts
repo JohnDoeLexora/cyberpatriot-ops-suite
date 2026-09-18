@@ -15,7 +15,7 @@ export interface Finding {
   id: string;
   severity: FindingSeverity;
   title: string;
-  detail: string;
+  detail?: string;
   resource?: string;
   score?: number;
   signals?: string[];

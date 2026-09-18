@@ -10,9 +10,18 @@ export function StatusBar() {
     .flatMap((p) => p.output?.findings ?? [])
     .filter((f) => f.severity === 'crit').length
 
+  const engineLabel =
+    ws.engineSource === 'api'
+      ? 'engine connected'
+      : ws.engineSource === 'demo-fallback'
+        ? 'practice fallback'
+        : ws.apiOk
+          ? 'engine ready'
+          : 'practice fallback'
+
   return (
-    <footer className="flex h-6 shrink-0 items-center gap-3 border-t border-line bg-sidebar px-3 font-mono text-[10.5px] text-mute">
-      <span className="text-accent">mock engines</span>
+    <footer className="flex h-8 shrink-0 items-center gap-3 border-t border-line bg-sidebar px-4 text-[12.5px] text-mute">
+      <span className="text-accent">{engineLabel}</span>
       <span className="text-faint">·</span>
       <span>{leafCount(ws.tree)} panes</span>
       <span className="text-faint">·</span>
@@ -20,12 +29,11 @@ export function StatusBar() {
         {op ? op.title : 'empty pane'} {focused?.status && op ? `· ${focused.status}` : ''}
       </span>
       <span className="ml-auto flex items-center gap-3">
-        {crit > 0 && <span className="text-crit">{crit} crit findings</span>}
-        <span>{ws.journal.length} journal</span>
-        <span className={ws.demoMode ? 'text-accent' : 'text-warn'}>
-          {ws.demoMode ? 'demo' : 'live-pending'}
+        {crit > 0 && <span className="text-crit">{crit} urgent</span>}
+        <span>{ws.journal.length} log</span>
+        <span className={ws.demoMode ? 'text-accent' : 'text-warn'} data-testid="mode-label">
+          {ws.demoMode ? 'practice' : 'this computer'}
         </span>
-        <span className="text-faint">cp-01 shell</span>
       </span>
     </footer>
   )

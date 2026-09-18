@@ -13,6 +13,8 @@
     "lint": "oxlint"
   },
   "dependencies": {
+    "@cyberpatriot/ops-catalog": "*",
+    "@cyberpatriot/ops-engine": "*",
     "lucide-react": "^0.544.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

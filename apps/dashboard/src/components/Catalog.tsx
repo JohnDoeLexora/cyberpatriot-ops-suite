@@ -1,7 +1,7 @@
 import { ChevronDown, Search, Star } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CATEGORIES, filterOps, OPS, OPS_BY_ID } from '../catalog/ops'
-import type { OpDefinition } from '../catalog/types'
+import type { UiOp } from '../catalog/types'
 import { cn } from '../lib/cn'
 import { useWorkspace } from '../state/workspace'
 
@@ -9,7 +9,7 @@ export function Catalog() {
   const ws = useWorkspace()
   const filtered = useMemo(() => filterOps(ws.query), [ws.query])
   const byCat = useMemo(() => {
-    const map = new Map<string, OpDefinition[]>()
+    const map = new Map<string, UiOp[]>()
     for (const op of filtered) {
       const list = map.get(op.category) ?? []
       list.push(op)
@@ -22,24 +22,22 @@ export function Catalog() {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-sidebar" data-testid="ops-catalog">
-      <div className="border-b border-line px-2 py-2">
-        <div className="mb-1.5 flex items-baseline justify-between px-1">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-faint">
-            Operations
-          </span>
-          <span className="font-mono text-[10px] text-faint">
+      <div className="border-b border-line px-3 py-2.5">
+        <div className="mb-2 flex items-baseline justify-between px-0.5">
+          <span className="text-[13px] font-medium text-ink">Checks</span>
+          <span className="text-[12px] text-faint" data-testid="catalog-count">
             {filtered.length}/{OPS.length}
           </span>
         </div>
-        <label className="flex items-center gap-1.5 rounded-md border border-line-strong bg-app px-2 py-1.5 focus-within:border-accent">
-          <Search size={13} className="text-faint" />
+        <label className="flex items-center gap-2 rounded-md border border-line-strong bg-elev px-2.5 py-2 focus-within:border-accent">
+          <Search size={15} className="text-faint" />
           <input
             ref={ws.searchRef}
             data-testid="catalog-search"
             value={ws.query}
             onChange={(e) => ws.setQuery(e.target.value)}
-            placeholder="Search ops…"
-            className="w-full bg-transparent text-[12.5px] text-ink outline-none placeholder:text-faint"
+            placeholder="Search checks…"
+            className="w-full bg-transparent text-[14px] text-ink outline-none placeholder:text-faint"
           />
         </label>
       </div>
@@ -47,8 +45,8 @@ export function Catalog() {
       <div className="min-h-0 flex-1 overflow-y-auto py-1">
         {favOps.length > 0 && !ws.query && (
           <section className="mb-1">
-            <div className="flex items-center gap-1 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">
-              <Star size={10} /> Pinned
+            <div className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-accent">
+              <Star size={12} /> Pinned
             </div>
             {favOps.map((op) => (
               <CatalogRow key={`fav-${op.id}`} op={op} testIdPrefix="catalog-fav" />
@@ -65,8 +63,8 @@ export function Catalog() {
         })}
 
         {filtered.length === 0 && (
-          <div className="px-3 py-6 text-center text-[12px] text-mute">
-            No ops match “{ws.query}”
+          <div className="px-4 py-8 text-center text-[14px] text-mute">
+            Nothing matches “{ws.query}”. Try “users”, “firewall”, or “ssh”.
           </div>
         )}
       </div>
@@ -81,7 +79,7 @@ function CategoryBlock({
 }: {
   label: string
   hint: string
-  ops: OpDefinition[]
+  ops: UiOp[]
 }) {
   const [open, setOpen] = useState(true)
   return (
@@ -89,20 +87,18 @@ function CategoryBlock({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-1 px-3 py-1 text-left hover:bg-hover"
+        className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left hover:bg-hover"
       >
         <ChevronDown
-          size={12}
+          size={14}
           className={cn('shrink-0 text-faint transition-transform', !open && '-rotate-90')}
         />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-mute">
-          {label}
-        </span>
-        <span className="ml-auto font-mono text-[10px] text-faint">{ops.length}</span>
+        <span className="text-[13px] font-medium text-ink">{label}</span>
+        <span className="ml-auto text-[12px] text-faint">{ops.length}</span>
       </button>
       {open && (
         <>
-          <div className="px-3 pb-1 text-[10px] text-faint">{hint}</div>
+          <div className="px-3 pb-1 text-[12px] text-faint">{hint}</div>
           {ops.map((op) => (
             <CatalogRow key={op.id} op={op} testIdPrefix="catalog-item" />
           ))}
@@ -116,7 +112,7 @@ function CatalogRow({
   op,
   testIdPrefix = 'catalog-item',
 }: {
-  op: OpDefinition
+  op: UiOp
   testIdPrefix?: string
 }) {
   const ws = useWorkspace()
@@ -134,8 +130,8 @@ function CatalogRow({
       }}
       onClick={() => ws.openOp(op.id)}
       className={cn(
-        'group flex cursor-grab items-start gap-1.5 px-2 py-1 hover:bg-hover active:cursor-grabbing',
-        openSomewhere && 'bg-accent-dim/40',
+        'group flex cursor-grab items-start gap-1.5 px-2.5 py-1.5 hover:bg-hover active:cursor-grabbing',
+        openSomewhere && 'bg-accent-dim/70',
       )}
     >
       <button
@@ -147,29 +143,34 @@ function CatalogRow({
           ws.toggleFavorite(op.id)
         }}
       >
-        <Star size={11} fill={starred ? 'currentColor' : 'none'} className={starred ? 'text-warn' : ''} />
+        <Star size={13} fill={starred ? 'currentColor' : 'none'} className={starred ? 'text-warn' : ''} />
       </button>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className="truncate text-[12.5px] font-medium text-ink">{op.title}</span>
+          <span className="truncate text-[14px] font-medium text-ink">{op.title}</span>
           <PlatformBadge platform={op.platform} />
+          {op.risk === 'mutate' && (
+            <span className="rounded bg-warn-dim px-1 py-px text-[10px] font-medium uppercase tracking-wide text-warn">
+              changes
+            </span>
+          )}
         </div>
-        <div className="truncate text-[10.5px] text-faint">{op.description}</div>
+        <div className="truncate text-[12.5px] text-faint">{op.description}</div>
       </div>
     </div>
   )
 }
 
-function PlatformBadge({ platform }: { platform: OpDefinition['platform'] }) {
+function PlatformBadge({ platform }: { platform: UiOp['platform'] }) {
   if (platform === 'both') return null
   return (
     <span
       className={cn(
-        'rounded px-1 py-px font-mono text-[9px] uppercase',
+        'rounded px-1 py-px text-[10px] font-medium uppercase',
         platform === 'linux' ? 'bg-info-dim text-info' : 'bg-ok-dim text-ok',
       )}
     >
-      {platform === 'linux' ? 'lin' : 'win'}
+      {platform === 'linux' ? 'Linux' : 'Windows'}
     </span>
   )
 }

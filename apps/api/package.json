@@ -4,6 +4,10 @@
   "description": "Local HTTP API for the CyberPatriot ops catalog and engines",
   "type": "module",
   "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
