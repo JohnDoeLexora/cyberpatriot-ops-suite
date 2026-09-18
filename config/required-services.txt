@@ -1,0 +1,5 @@
+# Services the example README says to keep running.
+# Override per-image; this is a demo default.
+sshd
+ssh
+apache2

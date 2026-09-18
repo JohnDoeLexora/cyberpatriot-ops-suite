@@ -1,0 +1,9 @@
+# Authorized human accounts for the example CyberPatriot image.
+# One username per line. Comments and blanks are ignored.
+# Heuristics only require interactive/human accounts to appear here;
+# well-known service accounts (www-data, sshd, daemon, …) are exempt.
+root
+alice
+bob
+coach
+Administrator
