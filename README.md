@@ -1,45 +1,72 @@
 # CyberPatriot Ops Suite
 
-Split-pane competition hardening dashboard for CyberPatriot teams. Paper-white UI, wired to the typed catalog and demo/live engines.
+A split-pane dashboard of **defensive** checks for CyberPatriot. Click a check, run it, read the result. How-to guides are built in.
 
-**Public repo:** https://github.com/JohnDoeLexora/cyberpatriot-ops-suite
+**Competition-legal only.** Use this on an **authorized competition image** — never against other teams, scoring servers, or a computer you are not allowed to harden.
 
-Kosher / competition-legal only — defensive auditing and hardening on **authorized competition images**. Demo/mock mode ships so the UI is fully clickable on macOS without a scoring VM.
+**Read [SAFETY.md](docs/SAFETY.md) before you turn practice data off.**
 
-## Apps
+Public repo: https://github.com/JohnDoeLexora/cyberpatriot-ops-suite
 
-| Path | Lane | Status |
-| --- | --- | --- |
-| `apps/dashboard` | cp-01 / cp-03 | Vite + React dashboard: paper-white mosaic, runs `POST /ops/:id/run` |
-| `apps/api` | cp-02 | Local HTTP API the dashboard can call (`@cyberpatriot/api`) |
-| `packages/ops-catalog` | cp-02 | Typed catalog of 70+ CyberPatriot-legal ops |
-| `packages/ops-engine` | cp-02 | `demo` / `linux` / `windows` / Bend-2 runners + suspicious-user heuristics |
-| `packages/ops-docs` | cp-04 | Searchable how-to explainers for every catalog op |
+## Share with the team
 
-Docs: [docs/OPS.md](docs/OPS.md) (every op) · [docs/howto/](docs/howto/) (how-to explainers) · [docs/SAFETY.md](docs/SAFETY.md) (confirm, demo default, competition-only).
+Send this repo link. Teammates need [Node 20+](https://nodejs.org/). Clone, `npm install`, `npm run dev`, and leave **Practice data** on. Switch to **This computer** only on the competition image, and confirm before anything that changes the box.
 
 ## Quick start
 
-Requires Node 20+.
-
 ```bash
+git clone https://github.com/JohnDoeLexora/cyberpatriot-ops-suite.git
+cd cyberpatriot-ops-suite
 npm install
-npm test
 npm run dev
 ```
 
-Then open the URL Vite prints (default http://localhost:5173).
+Open the URL Vite prints (http://localhost:5173).
 
-Same dashboard commands work from `apps/dashboard`.
+| Where you are | Header toggle | What happens |
+| --- | --- | --- |
+| Mac or your laptop | **Practice data** (default **ON**) | Fake accounts and services. Nothing on this computer changes. |
+| Linux or Windows competition image | **This computer** | Live checks on this box. Anything that **changes** the image asks you to **confirm**. |
+
+**Bend** is optional. On Linux, if `bend` is installed, some file / user / port scoring can run in parallel. If it is missing, the same checks still run. You do not need Bend on a Mac.
+
+## Using the dashboard
+
+- Left list: 70+ checks. Press `/` to search.
+- Open a check in a pane, then **Run**. Split or drag panes if you want several open.
+- **How-to** (or `?`) explains what the check is and why it scores.
+- On account panes, hover a row for Flag / Turn off / Turn on / Expire password.
+
+More: [docs/SAFETY.md](docs/SAFETY.md) · [docs/OPS.md](docs/OPS.md) (every check) · [docs/howto/](docs/howto/) · [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## What’s in this repo
+
+| Path | What it is |
+| --- | --- |
+| `apps/dashboard` | The UI you just started |
+| `apps/api` | Local HTTP API the dashboard can call |
+| `packages/ops-catalog` | Typed list of every check |
+| `packages/ops-engine` | Practice data + live Linux / Windows runners |
+| `packages/ops-docs` | How-to text |
+| `engines/linux` | Shell scripts for live Linux |
+| `engines/windows` | PowerShell for a Windows CyberPatriot image |
+| `engines/bend` | Optional parallel scoring on Linux |
+| `config/` | Allowlists (users, ports, banned software) |
+
+Edit `config/allowed-users.txt` to match **this image’s README** before you trust “flag suspicious users.”
+
+## Other commands
+
+From the repo root (Node 20+):
 
 | Script | What it does |
 | --- | --- |
-| `npm run dev` | Vite dashboard dev server |
-| `npm run dev:api` | Local ops API (`http://127.0.0.1:8787`) |
-| `npm run build` | Typecheck + production build (all workspaces) |
-| `npm test` | Workspace tests (dashboard + catalog + engine) |
-| `npm run test:e2e` | Playwright (Chromium) against the dashboard |
+| `npm run dev` | Dashboard + in-process API |
+| `npm run dev:api` | Standalone API on http://127.0.0.1:8787 |
+| `npm test` | Unit tests |
+| `npm run test:e2e` | Playwright against the dashboard |
 | `npm run docs` | Regenerate [docs/OPS.md](docs/OPS.md) and [docs/howto/](docs/howto/) |
+| `npm run build` | Typecheck + production build |
 
 First-time e2e:
 
@@ -48,46 +75,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-API from the repo root:
-
-```bash
-npm run dev:api
-```
-
-| Method | Path | Notes |
-| --- | --- | --- |
-| `GET` | `/health` | Liveness + catalog size |
-| `GET` | `/ops` | Full catalog (`?q=&category=&platform=&risk=`) |
-| `POST` | `/ops/:id/run` | Body `{ "mode": "demo" \| "live", "params": {}, "confirm": true }` |
-
-Default API mode is **demo** (Mac-safe fixtures). Live **mutations** require `"confirm": true`.
-
-```bash
-curl -s http://127.0.0.1:8787/ops | head
-curl -s -X POST http://127.0.0.1:8787/ops/flag-suspicious-users/run \
-  -H 'content-type: application/json' \
-  -d '{"mode":"demo"}'
-```
-
-CORS is open for a local dashboard. The API never returns password hashes or private keys.
-
-## What this shell does
-
-- Left **checks list**: the typed 70+ op catalog plus team notes. Press `/` to search, `Esc` to close menus.
-- Center **mosaic**: open a check into a pane, split, drag, or use the tab strip when several panes are open. Tight widths scroll instead of crushing tables.
-- Each pane runs against the **demo** or **live** engine (`POST /ops/:id/run`). Practice data is the default (Mac-safe fixtures). Live mutations ask for confirmation. Linux live reads can use Bend 2 for parallel file/user/port scoring.
-- **How to** on a pane (or `?` / header How-to) opens a searchable explainer drawer for every catalog op. Search matches titles and body text.
-- Account panes show the engine user inventory. Hover a row for Flag / Turn off / Turn on / Expire password / Details.
-- Header **Practice data** toggle defaults **ON**. Switch to **This computer** for live engines.
-
-## Engines
-
-- **demo** — rich deterministic users/services/ports/files (and findings) for UI work
-- **linux** — TypeScript collectors + `engines/linux/*.sh` (read-heavy; mutations gated)
-- **bend** — Bend 2 parallel scoring for file/user/port/checklist inventories when `bend` is installed (`engines/bend/`); Python fallback otherwise
-- **windows** — `engines/windows/*.ps1` (correct PowerShell; not executed on Linux builders)
-
-Allowlist used by “Flag suspicious users”: `config/allowed-users.txt`.
+Default API mode is **demo** (practice data). Live **mutations** require `"confirm": true`. The API never returns password hashes or private keys.
 
 ## License
 
