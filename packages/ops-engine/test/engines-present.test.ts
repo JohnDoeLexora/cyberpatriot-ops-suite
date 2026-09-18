@@ -27,8 +27,32 @@ describe("engine scripts on disk", () => {
       "find-suid-sgid",
       "harden-sshd",
       "harden-sysctl",
+      "diff-expected-ports",
+      "audit-share-acls",
+      "audit-persistence-deep",
+      "hunt-remote-access-tools",
+      "report-password-never-expires",
+      "audit-critical-perm-drift",
     ]) {
       assert.ok(existsSync(path.join(root, "engines/linux", `${id}.sh`)), id);
+    }
+  });
+
+  it("has Bend 2 programs and a runner with fallback", () => {
+    const root = findRepoRoot();
+    for (const rel of [
+      "engines/bend/cp_lib.bend",
+      "engines/bend/score-files.bend",
+      "engines/bend/score-users.bend",
+      "engines/bend/score-ports.bend",
+      "engines/bend/agg-checks.bend",
+      "engines/bend/collect.py",
+      "engines/bend/run.sh",
+      "engines/bend/README.md",
+      "config/expected-ports.txt",
+      "config/remote-access-tools.txt",
+    ]) {
+      assert.ok(existsSync(path.join(root, rel)), rel);
     }
   });
 });

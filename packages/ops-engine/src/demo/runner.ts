@@ -10,15 +10,21 @@ import type {
 } from "../types.js";
 import {
   DEMO_NOW,
+  demoBrowserExtensions,
   demoChecksums,
   demoCron,
+  demoExpectedPorts,
   demoFiles,
   demoGroups,
   demoHostsEntries,
   demoPackages,
+  demoPermDrift,
+  demoPersistence,
   demoPolicy,
   demoPorts,
+  demoRemoteTools,
   demoServices,
+  demoShareAcls,
   demoShares,
   demoSysctl,
   demoUsers,
@@ -176,6 +182,41 @@ function checklist(ctx: EngineContext): ChecklistItem[] {
       status: demoServices.find((s) => s.name === "WinDefend")?.state === "running" ? "pass" : "fail",
       detail: "WinDefend is stopped in the demo fixture",
       relatedOpId: "enable-windows-defender",
+    },
+    {
+      id: "never-expires",
+      title: "No blank + never-expires combo",
+      status: users.some((u) => u.passwordEmpty && u.passwordNeverExpires) ? "fail" : "pass",
+      detail: "Guest (and games) have empty passwords that never expire",
+      relatedOpId: "report-password-never-expires",
+    },
+    {
+      id: "expected-ports",
+      title: "Listeners match expected-ports baseline",
+      status: demoPorts.some((p) => p.suspicious) ? "fail" : "pass",
+      detail: "Unexpected 23/31337/445 vs config/expected-ports.txt",
+      relatedOpId: "diff-expected-ports",
+    },
+    {
+      id: "remote-access",
+      title: "No remote-access tools",
+      status: demoRemoteTools.length ? "fail" : "pass",
+      detail: demoRemoteTools.map((t) => t.name).join(", "),
+      relatedOpId: "hunt-remote-access-tools",
+    },
+    {
+      id: "share-acls",
+      title: "No guest/Everyone Full shares",
+      status: demoShareAcls.some((s) => s.guest && s.writable) ? "fail" : "pass",
+      detail: "public allows guest Full",
+      relatedOpId: "audit-share-acls",
+    },
+    {
+      id: "perm-drift",
+      title: "Critical file modes match baseline",
+      status: demoPermDrift.some((p) => p.drift) ? "fail" : "pass",
+      detail: "/etc/shadow 0644 (expected 0640)",
+      relatedOpId: "audit-critical-perm-drift",
     },
   ];
 }
@@ -594,6 +635,7 @@ export function runDemo(ctx: EngineContext): RunResult {
         extra: { volumes: [{ mount: "C:", protection: "Off" }] },
       });
     case "export-evidence-bundle":
+    case "package-forensics-evidence":
       return pack(ctx, "Redacted evidence bundle from demo fixtures (no hashes, no private keys).", {
         users: users.map(({ ...u }) => u),
         services: demoServices,
@@ -630,6 +672,159 @@ export function runDemo(ctx: EngineContext): RunResult {
       }, [
         { id: "public", severity: "high", title: "Share public allows guest write", detail: "/srv/public", resource: "public" },
       ]);
+    case "diff-expected-ports": {
+      const expected = new Set(demoExpectedPorts.map((e) => e.port));
+      const unexpected = demoPorts.filter((p) => p.suspicious && !expected.has(p.port));
+      const present = new Set(demoPorts.map((p) => p.port));
+      const missing = demoExpectedPorts.filter((e) => !present.has(e.port));
+      return pack(
+        ctx,
+        `${unexpected.length} unexpected listeners, ${missing.length} expected ports missing. Local diff only.`,
+        {
+          ports: demoPorts,
+          extra: { expected: demoExpectedPorts, missing, accelerator: "demo" },
+        },
+        [
+          ...unexpected.map((p) => ({
+            id: `unexp:${p.port}`,
+            severity: p.port === 31337 || p.port === 4444 ? "critical" as const : "high" as const,
+            title: `Unexpected listener ${p.port}/${p.protocol}`,
+            detail: p.reason ?? p.process ?? "",
+            resource: `${p.port}/${p.protocol}`,
+          })),
+          ...missing.map((e) => ({
+            id: `missing:${e.port}`,
+            severity: "medium" as const,
+            title: `Expected port ${e.port} not listening`,
+            detail: "Required service may be down (not a remote scan).",
+            resource: `${e.port}/${e.protocol}`,
+          })),
+        ],
+      );
+    }
+    case "audit-share-acls":
+      return pack(ctx, "Share ACLs include Everyone Full and guest write.", {
+        shares: demoShares,
+        extra: { acls: demoShareAcls },
+      }, demoShareAcls.filter((s) => s.guest || s.rights === "Full").map((s) => ({
+        id: `acl:${s.name}`,
+        severity: "high" as const,
+        title: `Share ${s.name} ${s.principal} ${s.rights}`,
+        detail: s.path,
+        resource: s.name,
+      })));
+    case "audit-persistence-deep":
+      return pack(ctx, "Deep persistence audit found rc.local, cron plant, profile.d, and a Run key.", {
+        extra: { persistence: demoPersistence },
+        files: demoFiles.filter((f) => f.path.includes("kworker") || f.path.includes("Startup") || f.path.includes("cron")),
+      }, demoPersistence.filter((p) => p.suspicious).map((p) => ({
+        id: `pers:${p.source}`,
+        severity: "high" as const,
+        title: `Persistence: ${p.source}`,
+        detail: p.payload,
+        resource: p.source,
+      })));
+    case "hunt-remote-access-tools":
+      return pack(ctx, `${demoRemoteTools.length} remote-access tools and ${demoBrowserExtensions.length} browser extension dirs.`, {
+        extra: { tools: demoRemoteTools, extensions: demoBrowserExtensions },
+        packages: demoRemoteTools.map((t) => ({ name: t.name, prohibited: true })),
+      }, [
+        ...demoRemoteTools.map((t) => ({
+          id: `rat:${t.name}`,
+          severity: "high" as const,
+          title: `Remote-access tool ${t.name}`,
+          detail: t.path,
+          resource: t.name,
+          remediationOpId: "remove-package",
+        })),
+        ...demoBrowserExtensions.map((e) => ({
+          id: `ext:${e.id}`,
+          severity: "medium" as const,
+          title: `${e.browser} extension ${e.id}`,
+          detail: "Profile path only; extension source not dumped.",
+          resource: e.id,
+        })),
+      ]);
+    case "report-password-never-expires": {
+      const never = users.filter((u) => u.passwordNeverExpires && u.interactive);
+      const combo = never.filter((u) => u.passwordEmpty);
+      return pack(
+        ctx,
+        `${combo.length} empty+never-expires accounts; ${never.length} never-expires humans (hashes omitted).`,
+        { users: never },
+        [
+          ...combo.map((u) => ({
+            id: `combo:${u.name}`,
+            severity: "critical" as const,
+            title: `Blank password never expires: ${u.name}`,
+            detail: "Classification only; hash not returned.",
+            resource: u.name,
+            remediationOpId: u.name.toLowerCase() === "guest" ? "disable-guest-account" : "lock-user",
+          })),
+          ...never
+            .filter((u) => !u.passwordEmpty)
+            .map((u) => ({
+              id: `never:${u.name}`,
+              severity: "medium" as const,
+              title: `Password never expires: ${u.name}`,
+              detail: "MAX_DAYS 99999 / PasswordNeverExpires.",
+              resource: u.name,
+              remediationOpId: "enforce-password-policy",
+            })),
+        ],
+      );
+    }
+    case "audit-critical-perm-drift":
+      return pack(ctx, "Critical permission drift on shadow, sudoers, host key, and SAM ACL.", {
+        files: demoFiles.filter((f) => /shadow|sudoers|authorized_keys/.test(f.path)),
+        extra: { drift: demoPermDrift, note: "SAM contents not dumped; ACL classification only." },
+      }, demoPermDrift.filter((p) => p.drift).map((p) => ({
+        id: `drift:${p.path}`,
+        severity: p.path.includes("shadow") || p.path.includes("SAM") ? "critical" as const : "high" as const,
+        title: `${p.path} is ${p.mode}`,
+        detail: `expected ${p.expected}`,
+        resource: p.path,
+      })));
+    case "scoreboard-preflight": {
+      const items = checklist(ctx).filter((i) =>
+        ["firewall", "guest", "telnet", "allowlist-users", "expected-ports", "never-expires"].includes(i.id),
+      ).concat([
+        {
+          id: "ccs-untouched",
+          title: "Scoring server not contacted",
+          status: "pass" as const,
+          detail: "This op is local-only. CCS endpoints are never queried.",
+          relatedOpId: "scoreboard-preflight",
+        },
+        {
+          id: "ntp-pre",
+          title: "Time synchronization configured",
+          status: "fail" as const,
+          detail: "timesyncd inactive in the demo fixture",
+          relatedOpId: "check-ntp",
+        },
+      ]);
+      return pack(ctx, `Preflight ${items.length} items. CCS not contacted.`, { checklist: items }, items.filter((i) => i.status === "fail").map((i) => ({
+        id: i.id,
+        severity: "high" as const,
+        title: i.title,
+        detail: i.detail,
+        remediationOpId: i.relatedOpId,
+      })));
+    }
+    case "post-harden-checklist": {
+      const items = checklist(ctx);
+      const failed = items.filter((i) => i.status === "fail").length;
+      return pack(ctx, `Post-harden ${items.length} items, ${failed} still failing. Read-only verification.`, {
+        checklist: items,
+      }, items.filter((i) => i.status === "fail").map((i) => ({
+        id: i.id,
+        severity: "high" as const,
+        title: i.title,
+        detail: i.detail,
+        remediationOpId: i.relatedOpId,
+      })));
+    }
     default:
       return pack(
         ctx,

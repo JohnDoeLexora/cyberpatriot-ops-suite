@@ -12,8 +12,8 @@ Kosher / competition-legal only — defensive auditing and hardening on **author
 | --- | --- | --- |
 | `apps/dashboard` | cp-01 / cp-03 | Vite + React dashboard: paper-white mosaic, runs `POST /ops/:id/run` |
 | `apps/api` | cp-02 | Local HTTP API the dashboard can call (`@cyberpatriot/api`) |
-| `packages/ops-catalog` | cp-02 | Typed catalog of 70 CyberPatriot-legal ops |
-| `packages/ops-engine` | cp-02 | `demo` / `linux` / `windows` runners + suspicious-user heuristics |
+| `packages/ops-catalog` | cp-02 | Typed catalog of 70+ CyberPatriot-legal ops |
+| `packages/ops-engine` | cp-02 | `demo` / `linux` / `windows` / Bend-2 runners + suspicious-user heuristics |
 | `packages/ops-docs` | cp-04 | Searchable how-to explainers for every catalog op |
 
 Docs: [docs/OPS.md](docs/OPS.md) (every op) · [docs/howto/](docs/howto/) (how-to explainers) · [docs/SAFETY.md](docs/SAFETY.md) (confirm, demo default, competition-only).
@@ -73,9 +73,9 @@ CORS is open for a local dashboard. The API never returns password hashes or pri
 
 ## What this shell does
 
-- Left **checks list**: the typed 70-op catalog plus team notes. Press `/` to search, `Esc` to close menus.
+- Left **checks list**: the typed 70+ op catalog plus team notes. Press `/` to search, `Esc` to close menus.
 - Center **mosaic**: open a check into a pane, split, drag, or use the tab strip when several panes are open. Tight widths scroll instead of crushing tables.
-- Each pane runs against the **demo** or **live** engine (`POST /ops/:id/run`). Practice data is the default (Mac-safe fixtures). Live mutations ask for confirmation.
+- Each pane runs against the **demo** or **live** engine (`POST /ops/:id/run`). Practice data is the default (Mac-safe fixtures). Live mutations ask for confirmation. Linux live reads can use Bend 2 for parallel file/user/port scoring.
 - **How to** on a pane (or `?` / header How-to) opens a searchable explainer drawer for every catalog op. Search matches titles and body text.
 - Account panes show the engine user inventory. Hover a row for Flag / Turn off / Turn on / Expire password / Details.
 - Header **Practice data** toggle defaults **ON**. Switch to **This computer** for live engines.
@@ -84,6 +84,7 @@ CORS is open for a local dashboard. The API never returns password hashes or pri
 
 - **demo** — rich deterministic users/services/ports/files (and findings) for UI work
 - **linux** — TypeScript collectors + `engines/linux/*.sh` (read-heavy; mutations gated)
+- **bend** — Bend 2 parallel scoring for file/user/port/checklist inventories when `bend` is installed (`engines/bend/`); Python fallback otherwise
 - **windows** — `engines/windows/*.ps1` (correct PowerShell; not executed on Linux builders)
 
 Allowlist used by “Flag suspicious users”: `config/allowed-users.txt`.

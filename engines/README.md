@@ -5,8 +5,9 @@ Runners live in `@cyberpatriot/ops-engine`. These directories are the
 
 | Dir | When it runs |
 | --- | --- |
-| `linux/*.sh` | Live mode on Linux/macOS (read-heavy; mutations need `--confirm`) |
-| `windows/*.ps1` | Live mode on a Windows CP image (documented here; not executed on Linux) |
+| `bend/*.bend` | Live Linux parallel scoring when `bend` 2.x is on PATH (file hunts, user/port heuristics, check aggregation). Python fallback if Bend is missing. |
+| `linux/*.sh` | Live mode on Linux/macOS (read-heavy; mutations need `--confirm`). File hunts prefer `bend/` then `find`. |
+| `windows/*.ps1` | Live mode on a Windows CP image (documented here; not executed on Linux). Bend is not used. |
 
 Demo mode never calls these scripts. It uses in-process fixtures so macOS UI
 work does not touch the host.

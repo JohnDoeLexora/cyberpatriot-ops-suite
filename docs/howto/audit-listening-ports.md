@@ -45,4 +45,5 @@ Early, and after every service disable. Pair with list-services.
 - [`find-backdoor-binaries`](./find-backdoor-binaries.md) — Find suspicious binaries
 - [`disable-telnet`](./disable-telnet.md) — Disable Telnet
 - [`list-firewall-rules`](./list-firewall-rules.md) — List firewall rules
+- [`diff-expected-ports`](./diff-expected-ports.md) — Diff listeners vs expected ports
 

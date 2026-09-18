@@ -14,12 +14,13 @@ export async function runCmd(
   cmd: string,
   args: string[] = [],
   timeout = 15000,
+  extraEnv?: Record<string, string | undefined>,
 ): Promise<CmdResult> {
   try {
     const { stdout, stderr } = await execFileAsync(cmd, args, {
       timeout,
       maxBuffer: 2_000_000,
-      env: process.env,
+      env: { ...process.env, ...extraEnv },
     });
     return { stdout: String(stdout), stderr: String(stderr), code: 0, missing: false };
   } catch (error) {

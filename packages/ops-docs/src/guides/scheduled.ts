@@ -129,7 +129,37 @@ export const SCHEDULED: Record<string, HowToBody> = {
       "list-scheduled-tasks",
       "find-hidden-executables",
       "list-services",
+      "audit-persistence-deep",
     ],
     keywords: ["rc.local", "HKCU Run", "LaunchAgents", "enabled units"],
+  },
+  "audit-persistence-deep": {
+    summary: "Deeper persistence: systemd, rc.local, cron, profile.d, Run keys, Startup, tasks.",
+    what: "Goes beyond audit-startup-items: systemd enabled units, rc.local, cron/cron.d, /etc/profile.d, user autostart, Windows Run/RunOnce, Startup folder, and non-Microsoft scheduled tasks. Flags temp-path payloads, wget|sh, and interpreter plants. Inventory only.",
+    whyItScores:
+      "Plants hide in profile.d and RunOnce after you cleaned rc.local. One pass over every autostart class is faster than four separate eyeballs.",
+    whenToRun: "Persistence pass on both platforms, after the first startup/cron sweep, and again near the end.",
+    steps: [
+      "Run the op. Keep required units (sshd) enabled.",
+      "Snapshot suspicious rc.local / cron / profile.d / Run / Startup payloads into team notes.",
+      "Remove the planted lines/tasks on the image, then delete the payload files if forensics does not need them.",
+      "Re-run plus audit-cron and find-hidden-executables so the plant does not return.",
+    ],
+    goodLooksLike: [
+      "No /tmp payloads in rc.local, cron, profile.d, or Run keys.",
+      "No wget|sh or interpreter plants.",
+      "Required services still enabled.",
+    ],
+    risks: [
+      "Read-only inventory. Do not execute the payload ‘to confirm.’",
+      "Disabling a required enabled unit later costs points — README.",
+    ],
+    related: [
+      "audit-startup-items",
+      "audit-cron",
+      "list-scheduled-tasks",
+      "find-hidden-executables",
+    ],
+    keywords: ["profile.d", "RunOnce", "wget|sh", "rc.local", "autostart"],
   },
 };

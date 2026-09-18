@@ -171,7 +171,59 @@ export const FILES: Record<string, HowToBody> = {
       "Read-only.",
       "Removing a required share costs points — README names matter.",
     ],
-    related: ["audit-smb", "disable-smbv1", "disable-service", "find-world-writable"],
+    related: ["audit-smb", "disable-smbv1", "disable-service", "find-world-writable", "audit-share-acls"],
     keywords: ["net share", "Everyone Full", "C$", "guest ok"],
+  },
+  "audit-share-acls": {
+    summary: "Dump Samba options and Windows share ACLs; flag guest/Everyone Full.",
+    what: "Inventories Samba share options and Windows SMB share ACLs. Flags guest/Everyone Full, world-writable paths, and administrative shares that should not be exposed on a workstation. Read-only; does not modify ACLs.",
+    whyItScores:
+      "Guest + Everyone Full on a public share is a high finding even when SMB is required. ACL dumps show who can write, not just that the share exists.",
+    whenToRun: "With audit-shared-folders and audit-smb, after you know whether sharing is required.",
+    steps: [
+      "Run the op. Note guest, Everyone Full, world-writable paths, and C$/admin shares.",
+      "If sharing is not required, disable the service (confirm:true on disable-service / disable-smbv1 as appropriate).",
+      "If it is required: drop guest, tighten ACLs on the image, remove unexpected public shares.",
+      "Re-run until only README shares remain with tight ACLs.",
+    ],
+    goodLooksLike: [
+      "No guest / Everyone Full.",
+      "Admin shares disabled if not required.",
+      "Remaining share paths not world-writable.",
+    ],
+    risks: [
+      "Read-only. Does not modify ACLs or enumerate other machines.",
+      "Removing a required share costs points — README names matter.",
+    ],
+    related: ["audit-shared-folders", "audit-smb", "disable-smbv1", "find-world-writable"],
+    keywords: ["Everyone Full", "guest ok", "C$", "icacls", "smb.conf"],
+  },
+  "audit-critical-perm-drift": {
+    summary: "Mode/ACL check for shadow, sudoers, SSH host keys, and Windows SAM — no dumps.",
+    what: "Read-only mode/ACL check for /etc/shadow, gshadow, sudoers, ssh host keys, and Windows SAM/SYSTEM ACLs via icacls. Flags world-readable shadow or Everyone-readable SAM. Does not dump SAM, hashes, or private keys.",
+    whyItScores:
+      "World-readable shadow or a 0666 sudoers file is a classic plant. Scoring checks modes; hashes must never leave the box.",
+    whenToRun: "Linux/Windows files pass with check-sensitive-file-perms.",
+    steps: [
+      "Run the op. Treat 0644 shadow, 0666 sudoers, or Everyone:(R) on SAM as fire.",
+      "Fix modes on the image (typically shadow 000/640 root:shadow, sudoers 440, host keys 600). This op does not mutate.",
+      "Re-run. Pair with find-world-writable so a writable sudoers.d file does not sneak back.",
+    ],
+    goodLooksLike: [
+      "shadow/gshadow not world-readable.",
+      "sudoers 440/400, ssh host keys 600.",
+      "SAM/SYSTEM not Everyone-readable. No hashes in the result.",
+    ],
+    risks: [
+      "Read-only. Never dump SAM, shadow hashes, or private keys into notes.",
+      "chmod of /usr host keys is fine; do not chmod -R /etc blindly.",
+    ],
+    related: [
+      "check-sensitive-file-perms",
+      "find-world-writable",
+      "audit-sudoers",
+      "audit-ssh-authorized-keys",
+    ],
+    keywords: ["shadow 0644", "sudoers 0666", "icacls SAM", "host key 0644", "no hashes"],
   },
 };

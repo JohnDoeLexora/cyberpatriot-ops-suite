@@ -283,6 +283,127 @@ function Invoke-CpOp {
                 Select-Object -First 40 FullName
             return [pscustomobject]@{ ok = $true; files = @($hits | ForEach-Object { [pscustomobject]@{ path = $_.FullName; hidden = $true } }) }
         }
+        "diff-expected-ports" {
+            $expected = @(22, 80, 443)
+            $listen = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue
+            $ports = @($listen | ForEach-Object { [pscustomobject]@{ protocol = "tcp"; port = $_.LocalPort; address = $_.LocalAddress } })
+            $unexpected = @($ports | Where-Object { $expected -notcontains $_.port -and $_.port -in 21, 23, 139, 445, 3389, 4444, 31337, 5900 })
+            $present = @($ports | ForEach-Object { $_.port })
+            $missing = @($expected | Where-Object { $present -notcontains $_ })
+            return [pscustomobject]@{ ok = $true; ports = $ports; extra = @{ unexpected = $unexpected; missingExpected = $missing } }
+        }
+        "audit-share-acls" {
+            $shares = Get-SmbShare -ErrorAction SilentlyContinue
+            $acls = @()
+            foreach ($s in $shares) {
+                $access = Get-SmbShareAccess -Name $s.Name -ErrorAction SilentlyContinue
+                foreach ($a in $access) {
+                    $acls += [pscustomobject]@{
+                        name      = $s.Name
+                        path      = $s.Path
+                        principal = $a.AccountName
+                        rights    = "$($a.AccessRight)"
+                        guest     = $a.AccountName -match "Everyone|Guest"
+                    }
+                }
+            }
+            return [pscustomobject]@{ ok = $true; extra = @{ acls = $acls } }
+        }
+        "audit-persistence-deep" {
+            $run = @()
+            foreach ($k in @(
+                    "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run",
+                    "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run",
+                    "HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce",
+                    "HKCU:\Software\Microsoft\Windows\CurrentVersion\RunOnce"
+                )) {
+                $p = Get-ItemProperty $k -ErrorAction SilentlyContinue
+                if ($p) { $run += $p }
+            }
+            $startup = Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup" -ErrorAction SilentlyContinue
+            $tasks = Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object { $_.TaskPath -notlike "\Microsoft\*" } |
+                Select-Object -First 40 TaskName, TaskPath, State
+            return [pscustomobject]@{ ok = $true; extra = @{ run = $run; startup = $startup; tasks = $tasks } }
+        }
+        "hunt-remote-access-tools" {
+            $needles = @("teamviewer", "anydesk", "rustdesk", "vnc", "logmein", "splashtop", "ultrasurf", "chromoting")
+            $pkg = Get-Package -ErrorAction SilentlyContinue | Where-Object {
+                $n = $_.Name.ToLower()
+                $needles | Where-Object { $n -like "*$_*" }
+            }
+            $ext = @()
+            foreach ($root in @(
+                    "$env:LOCALAPPDATA\Google\Chrome\User Data\Default\Extensions",
+                    "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Extensions"
+                )) {
+                if (Test-Path $root) {
+                    $ext += Get-ChildItem $root -Directory -ErrorAction SilentlyContinue | Select-Object -First 20 FullName
+                }
+            }
+            return [pscustomobject]@{
+                ok      = $true
+                packages = @($pkg | ForEach-Object { [pscustomobject]@{ name = $_.Name; prohibited = $true } })
+                extra    = @{ extensions = @($ext | ForEach-Object { $_.FullName }) }
+            }
+        }
+        "report-password-never-expires" {
+            $users = Get-LocalUser
+            $never = @($users | Where-Object { $_.PasswordNeverExpires })
+            $combo = @($never | Where-Object { -not $_.PasswordRequired })
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{
+                    neverExpires  = @($never | ForEach-Object { $_.Name })
+                    blankAndNever = @($combo | ForEach-Object { $_.Name })
+                    note          = "Hashes omitted; PasswordRequired/PasswordNeverExpires flags only."
+                }
+            }
+        }
+        "audit-critical-perm-drift" {
+            $sam = "C:\Windows\System32\config\SAM"
+            $sec = "C:\Windows\System32\config\SECURITY"
+            $sys = "C:\Windows\System32\config\SYSTEM"
+            $acl = @()
+            foreach ($p in @($sam, $sec, $sys)) {
+                if (Test-Path $p) {
+                    $acl += icacls $p 2>$null | Select-Object -First 8
+                }
+            }
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{ icacls = $acl; note = "ACL text only. SAM/SECURITY contents and hashes are not dumped." }
+            }
+        }
+        "package-forensics-evidence" {
+            return [pscustomobject]@{
+                ok       = $true
+                users    = (Get-CpLocalUsers).users
+                services = (Get-CpServices).services | Select-Object -First 40
+                extra    = @{ note = "Redacted forensics pack. No hashes, no private keys, no SAM dump." }
+            }
+        }
+        "scoreboard-preflight" {
+            $fw = Get-NetFirewallProfile -ErrorAction SilentlyContinue
+            $guest = Get-LocalUser -Name "Guest" -ErrorAction SilentlyContinue
+            $uac = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -ErrorAction SilentlyContinue).EnableLUA
+            $items = @(
+                [pscustomobject]@{ id = "firewall"; title = "Firewall enabled"; status = if ($fw -and ($fw | Where-Object { -not $_.Enabled })) { "fail" } else { "pass" }; relatedOpId = "enable-firewall" }
+                [pscustomobject]@{ id = "guest"; title = "Guest disabled"; status = if ($guest -and $guest.Enabled) { "fail" } else { "pass" }; relatedOpId = "disable-guest-account" }
+                [pscustomobject]@{ id = "uac"; title = "UAC enabled"; status = if ($uac -eq 1) { "pass" } else { "fail" }; relatedOpId = "audit-uac" }
+                [pscustomobject]@{ id = "ccs-untouched"; title = "Scoring server not contacted"; status = "pass"; relatedOpId = "scoreboard-preflight" }
+            )
+            return [pscustomobject]@{ ok = $true; checklist = $items }
+        }
+        "post-harden-checklist" {
+            $guest = Get-LocalUser -Name "Guest" -ErrorAction SilentlyContinue
+            $uac = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -ErrorAction SilentlyContinue).EnableLUA
+            $items = @(
+                [pscustomobject]@{ id = "guest"; title = "Guest disabled"; status = if ($guest -and $guest.Enabled) { "fail" } else { "pass" }; relatedOpId = "disable-guest-account" }
+                [pscustomobject]@{ id = "uac"; title = "UAC enabled"; status = if ($uac -eq 1) { "pass" } else { "fail" }; relatedOpId = "audit-uac" }
+                [pscustomobject]@{ id = "never-expires"; title = "Review PasswordNeverExpires"; status = "info"; relatedOpId = "report-password-never-expires" }
+            )
+            return [pscustomobject]@{ ok = $true; checklist = $items }
+        }
         default {
             if ($OpId -in @(
                     "disable-user", "lock-user", "remove-user-from-admins", "disable-guest-account",

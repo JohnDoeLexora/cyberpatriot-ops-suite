@@ -45,4 +45,6 @@ Start of the round (baseline), whenever you need a huddle, and near the end.
 - [`flag-suspicious-users`](./flag-suspicious-users.md) — Flag suspicious users
 - [`audit-firewall`](./audit-firewall.md) — Audit host firewall
 - [`disable-guest-account`](./disable-guest-account.md) — Disable Guest account
+- [`scoreboard-preflight`](./scoreboard-preflight.md) — Scoreboard preflight checklist
+- [`post-harden-checklist`](./post-harden-checklist.md) — Post-harden verification checklist
 

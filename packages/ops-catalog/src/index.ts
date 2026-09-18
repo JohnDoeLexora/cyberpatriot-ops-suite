@@ -19,6 +19,7 @@ export {
 export {
   allowlistParams,
   emptyParams,
+  expectedPortsParams,
   mutateFlagParams,
   packageParams,
   serviceParams,

@@ -1,0 +1,7 @@
+/tmp/suid_bash|4755|f
+/home/bob/secret.mp3|0644|f
+/etc/cron.d/hack|0777|f
+/usr/bin/passwd|4755|f
+/home/flag/.hidden_shell|0755|f
+/opt/TeamViewer/tv|0755|rat
+/etc/shadow|0644|f

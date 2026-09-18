@@ -19,8 +19,10 @@ describe('dashboard shell', () => {
     expect(screen.getByTestId('catalog-item-ssh-hardening-audit')).toBeInTheDocument()
     expect(screen.queryByTestId('catalog-item-list-users')).not.toBeInTheDocument()
     const count = screen.getByTestId('catalog-count').textContent ?? ''
-    expect(count).toMatch(/^\d+\/73$/)
-    expect(count).not.toBe('73/73')
+    expect(count).toMatch(/^\d+\/\d+$/)
+    const [shown, total] = count.split('/')
+    expect(Number(total)).toBeGreaterThanOrEqual(73)
+    expect(shown).not.toBe(total)
   })
 
   it('opens three panes from the catalog', async () => {

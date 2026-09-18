@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Local listeners only — never scans other hosts.
 set -euo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+if [[ -x "$HERE/../bend/run.sh" ]]; then
+  "$HERE/../bend/run.sh" ports
+  exit 0
+fi
 python3 - <<'PY'
 import json, re, shutil, subprocess
 cmd = ["ss", "-lntup"] if shutil.which("ss") else ["netstat", "-lntup"]

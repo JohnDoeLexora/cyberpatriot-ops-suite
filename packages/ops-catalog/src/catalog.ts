@@ -1,6 +1,7 @@
 import type { OpDefinition } from "./types.js";
 import {
   allowlistParams,
+  expectedPortsParams,
   mutateFlagParams,
   op,
   packageParams,
@@ -642,6 +643,15 @@ export const catalog: readonly OpDefinition[] = Object.freeze([
     "Bundle with checksums, counts, top findings, and a generated notes.md snippet",
   ),
   op(
+    "package-forensics-evidence",
+    "Package redacted forensics evidence",
+    "evidence",
+    "both",
+    "read",
+    "Deeper redacted forensics packager: user/service/port inventories, persistence hints, share ACLs, critical permission drift, and config checksums. Never copies shadow hashes, SAM contents, private keys, or off-image data. For authorized-image write-ups only.",
+    "Expanded bundle with persistence, share ACLs, perm drift, and notes.md snippet",
+  ),
+  op(
     "one-click-hardening-checklist",
     "One-click hardening checklist",
     "evidence",
@@ -677,9 +687,83 @@ export const catalog: readonly OpDefinition[] = Object.freeze([
     "List Samba shares and Windows SMB shares with guest access, Everyone/Full, and administrative shares. Local config only.",
     "public (guest ok, world writable), C$ enabled, IPC$",
   ),
+  op(
+    "diff-expected-ports",
+    "Diff listeners vs expected ports",
+    "ports",
+    "both",
+    "read",
+    "Compare this image's TCP/UDP listeners to config/expected-ports.txt (README-allowed services). Reports unexpected listeners and missing expected ports. Local ss/Get-NetTCPConnection only — never scans other hosts or the scoring server." +
+      KOSHER,
+    "Unexpected 23/31337/445; expected 22/80 present; 443 missing",
+    expectedPortsParams,
+  ),
+  op(
+    "audit-share-acls",
+    "Dump unauthorized share ACLs",
+    "files",
+    "both",
+    "read",
+    "Inventory Samba share options and Windows SMB share ACLs. Flags guest/Everyone Full, world-writable paths, and administrative shares that should not be exposed on a workstation image. Read-only; does not modify ACLs or enumerate other machines.",
+    "public: Everyone Full + guest; C$ Everyone; homes browseable",
+  ),
+  op(
+    "audit-persistence-deep",
+    "Deep startup persistence audit",
+    "scheduled",
+    "both",
+    "read",
+    "Deeper than audit-startup-items: systemd enabled units, rc.local, cron/cron.d, /etc/profile.d, user autostart, Windows Run/RunOnce, Startup folder, and non-Microsoft scheduled tasks. Flags temp-path payloads, wget|sh, and interpreter plants. Inventory only.",
+    "rc.local /tmp/.kworker; cron wget|sh; HKCU Run update.exe; profile.d backdoor.sh",
+  ),
+  op(
+    "hunt-remote-access-tools",
+    "Hunt remote-access tools and browser extensions",
+    "packages",
+    "both",
+    "read",
+    "Find TeamViewer, AnyDesk, VNC, Chrome Remote Desktop, RustDesk and similar on the authorized image, plus browser extension directories (Chrome/Edge/Firefox profile ids only — no extension source dump). Cross-checks config/remote-access-tools.txt. Discovery, not an exploit.",
+    "teamviewer + anydesk packages; x11vnc binary; one unpacked Chrome extension id",
+  ),
+  op(
+    "report-password-never-expires",
+    "Report never-expires + blank password combo",
+    "auth",
+    "both",
+    "read",
+    "Combine password-aging (shadow MAX_DAYS -1/99999 or Windows PasswordNeverExpires) with empty-password classification. Human accounts that never expire, especially with a blank password, are high. Never prints hashes — only empty/locked/set + never-expires booleans.",
+    "Guest empty+never-expires (critical); bob never-expires with a set password; alice OK",
+  ),
+  op(
+    "audit-critical-perm-drift",
+    "Audit critical permission drift",
+    "files",
+    "both",
+    "read",
+    "Read-only mode/ACL check for /etc/shadow, gshadow, sudoers, ssh host keys, and Windows SAM/SYSTEM file ACLs via icacls. Flags world-readable shadow or Everyone-readable SAM. Does not dump SAM, hashes, or private keys.",
+    "/etc/shadow 0644, /etc/sudoers 0666, SAM Everyone:(R) simulated",
+  ),
+  op(
+    "scoreboard-preflight",
+    "Scoreboard preflight checklist",
+    "evidence",
+    "both",
+    "read",
+    "Pre-competition local checklist: firewall, guest, time sync, logging, no telnet, allowlist users, expected ports. Explicitly does not contact the CCS scoring server, other teams, or the internet beyond the image's configured update/time sources. Pair failing rows with confirm:true mutate ops.",
+    "8 preflight rows; firewall/guest/telnet fail; note that CCS is not queried",
+  ),
+  op(
+    "post-harden-checklist",
+    "Post-harden verification checklist",
+    "evidence",
+    "both",
+    "read",
+    "After-action verification on the authorized image: password policy, SSH/UAC, extra UID 0, empty/never-expire passwords, media, prohibited software, default-deny firewall, remote-access tools. Read-only — does not re-apply hardening. Each fail points at the mutate op.",
+    "10 post-harden rows still failing on the unhardened demo image",
+  ),
 ]);
 
-export const CATALOG_VERSION = "0.1.0";
+export const CATALOG_VERSION = "0.2.0";
 
 const byId = new Map(catalog.map((item) => [item.id, item]));
 

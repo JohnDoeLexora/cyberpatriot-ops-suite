@@ -25,8 +25,36 @@ export const EVIDENCE: Record<string, HowToBody> = {
       "score-image-heuristics",
       "list-users",
       "audit-listening-ports",
+      "package-forensics-evidence",
     ],
     keywords: ["evidence", "checksums", "notes.md", "redacted"],
+  },
+  "package-forensics-evidence": {
+    summary: "Deeper redacted forensics pack: persistence, share ACLs, perm drift, checksums.",
+    what: "Builds a redacted forensics pack with user/service/port inventories, persistence hints, share ACLs, critical permission drift, and config checksums. Never copies shadow hashes, SAM contents, private keys, or off-image data. For authorized-image write-ups only.",
+    whyItScores:
+      "Forensics questions often want persistence and ACL evidence, not just a user list. One redacted pack beats ad-hoc screenshots.",
+    whenToRun: "After the first persistence and files pass, and again before you submit forensics answers.",
+    steps: [
+      "Run the op in demo or live read mode — it does not mutate.",
+      "Skim persistence, share ACLs, and perm-drift sections. Copy only what a forensics question needs.",
+      "Do not add shadow, SAM, or id_rsa files by hand. Keep the pack on the image.",
+    ],
+    goodLooksLike: [
+      "Pack has inventories, ACLs, perm drift, and checksums — not secrets.",
+      "notes.md snippet is something you could show a coach.",
+    ],
+    risks: [
+      "Read-only. Still: do not zip private keys or hashes into the pack.",
+      "Not off-image exfiltration and not a scoring-server upload.",
+    ],
+    related: [
+      "export-evidence-bundle",
+      "audit-persistence-deep",
+      "audit-share-acls",
+      "audit-critical-perm-drift",
+    ],
+    keywords: ["forensics pack", "checksums", "share ACLs", "perm drift", "redacted"],
   },
   "one-click-hardening-checklist": {
     summary: "Read-only dashboard of pass/fail/warn rows pointing at the fix ops.",
@@ -52,8 +80,66 @@ export const EVIDENCE: Record<string, HowToBody> = {
       "flag-suspicious-users",
       "audit-firewall",
       "disable-guest-account",
+      "scoreboard-preflight",
+      "post-harden-checklist",
     ],
     keywords: ["checklist", "pass/fail", "preflight", "remaining work"],
+  },
+  "scoreboard-preflight": {
+    summary: "Local pre-round checklist: firewall, guest, time, logging, telnet, allowlist, ports.",
+    what: "Pre-competition local checklist covering firewall, guest, time sync, logging, no telnet, allowlist users, and expected ports. Explicitly does not contact the CCS scoring server, other teams, or the internet beyond the image’s configured update/time sources. Pair failing rows with confirm:true mutate ops.",
+    whyItScores:
+      "These are the first-hour misses that cost easy points. The checklist is a huddle tool, not a way to query or game the official scoreboard.",
+    whenToRun: "Start of the round, and after any big mutate batch before you walk away.",
+    steps: [
+      "Run the op. Sort fail rows first.",
+      "Open the linked mutate/read op from each failing row and follow that how-to (confirm:true on live mutates).",
+      "Re-run. Do not point this tool at scoring URLs — it will not, and you must not.",
+    ],
+    goodLooksLike: [
+      "Firewall on, Guest off, telnet gone, time in sync, logging up.",
+      "Allowlist users match the README; expected ports present.",
+      "No attempt to reach CCS or other teams.",
+    ],
+    risks: [
+      "Read-only. Fixes still need confirm:true on the mutate ops.",
+      "Not the official scoreboard. Do not query scoring endpoints or other images.",
+    ],
+    related: [
+      "one-click-hardening-checklist",
+      "audit-firewall",
+      "disable-guest-account",
+      "diff-expected-ports",
+    ],
+    keywords: ["preflight", "CCS is not queried", "guest", "firewall", "expected ports"],
+  },
+  "post-harden-checklist": {
+    summary: "After-action verification: policy, SSH/UAC, UID 0, media, RATs, default-deny.",
+    what: "After-action verification on the authorized image: password policy, SSH/UAC, extra UID 0, empty/never-expire passwords, media, prohibited software, default-deny firewall, remote-access tools. Read-only — does not re-apply hardening. Each fail points at the mutate op.",
+    whyItScores:
+      "End-of-round leaks (media, extra root, RATs still installed) are avoidable. A second checklist after you think you are done catches them.",
+    whenToRun: "After the main harden pass, and once more in the last 15 minutes.",
+    steps: [
+      "Run the op. Treat remaining fails as the last work list.",
+      "Follow each linked op; live mutates still need confirm:true.",
+      "Re-run until remaining fails are README exceptions you can explain in notes.",
+    ],
+    goodLooksLike: [
+      "No extra UID 0, no empty+never-expire humans, Guest off.",
+      "Firewall default-deny, no RATs, no prohibited media/software.",
+      "SSH/UAC hardened if those platforms apply.",
+    ],
+    risks: [
+      "Read-only. Does not re-apply hardening for you.",
+      "Not CCS. Do not hide logs or delete evidence to make rows green.",
+    ],
+    related: [
+      "one-click-hardening-checklist",
+      "score-image-heuristics",
+      "hunt-remote-access-tools",
+      "report-password-never-expires",
+    ],
+    keywords: ["post-harden", "verification", "default-deny", "UID 0", "remaining fails"],
   },
   "score-image-heuristics": {
     summary: "A 0–100 remaining-work index with drill-down — not the official CCS score.",

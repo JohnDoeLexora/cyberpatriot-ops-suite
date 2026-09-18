@@ -189,4 +189,32 @@ export const AUTH: Record<string, HowToBody> = {
     related: ["disable-guest-account", "audit-password-policy", "enable-windows-defender", "audit-rdp"],
     keywords: ["UAC", "EnableLUA", "ConsentPromptBehaviorAdmin"],
   },
+  "report-password-never-expires": {
+    summary: "Combine never-expires aging with blank-password classification — no hashes.",
+    what: "Joins password-aging (shadow MAX_DAYS -1/99999 or Windows PasswordNeverExpires) with empty-password classification. Human accounts that never expire, especially with a blank password, are high. Never prints hashes — only empty/locked/set plus never-expires booleans.",
+    whyItScores:
+      "Guest with a blank never-expiring password is a two-finding plant. Aging-off humans stay scored even when the password is set.",
+    whenToRun: "Auth pass with check-empty-passwords and check-password-aging.",
+    steps: [
+      "Run the op. Sort empty+never-expires first (Guest, games, planted humans).",
+      "Disable Guest; lock or expire authorized humans; enforce-password-policy for the global max-age.",
+      "Do not print or copy hashes. Re-run until empty+never-expires is gone for humans.",
+    ],
+    goodLooksLike: [
+      "No human with empty password + never-expires.",
+      "Authorized humans have a max age (e.g. 90), not 99999.",
+      "Result shows empty/locked/set only — never a hash.",
+    ],
+    risks: [
+      "Read-only. Hashes are never returned.",
+      "Do not expire a required service account that cannot change a password interactively.",
+    ],
+    related: [
+      "check-empty-passwords",
+      "check-password-aging",
+      "disable-guest-account",
+      "enforce-password-policy",
+    ],
+    keywords: ["PasswordNeverExpires", "MAX_DAYS 99999", "blank password", "Guest", "no hashes"],
+  },
 };

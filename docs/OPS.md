@@ -5,7 +5,7 @@ Every op is **defensive, authorized-image hardening** for CyberPatriot.
 See [SAFETY.md](./SAFETY.md) before running anything with `mode: "live"`.
 How-to explainers for every op: [howto/](./howto/).
 
-- **Count:** 70
+- **Count:** 79
 - **Default run mode:** demo (Mac-safe fixtures, no host mutation)
 - **Mutations:** live mode requires `confirm: true` in `POST /ops/:id/run`
 
@@ -86,10 +86,19 @@ exportable redacted evidence — like Sabbath coffee: creative, not cheating.
 | `disable-autoplay` | Disable Autoplay | windows | windows | mutate |
 | `check-bitlocker-status` | Check BitLocker status | windows | windows | read |
 | `export-evidence-bundle` | Export evidence bundle | evidence | both | read |
+| `package-forensics-evidence` | Package redacted forensics evidence | evidence | both | read |
 | `one-click-hardening-checklist` | One-click hardening checklist | evidence | both | read |
 | `score-image-heuristics` | Score image heuristics | evidence | both | read |
 | `find-backdoor-binaries` | Find suspicious binaries | evidence | both | read |
 | `audit-shared-folders` | Audit shared folders | files | both | read |
+| `diff-expected-ports` | Diff listeners vs expected ports | ports | both | read |
+| `audit-share-acls` | Dump unauthorized share ACLs | files | both | read |
+| `audit-persistence-deep` | Deep startup persistence audit | scheduled | both | read |
+| `hunt-remote-access-tools` | Hunt remote-access tools and browser extensions | packages | both | read |
+| `report-password-never-expires` | Report never-expires + blank password combo | auth | both | read |
+| `audit-critical-perm-drift` | Audit critical permission drift | files | both | read |
+| `scoreboard-preflight` | Scoreboard preflight checklist | evidence | both | read |
+| `post-harden-checklist` | Post-harden verification checklist | evidence | both | read |
 
 ## Details
 
@@ -317,6 +326,16 @@ Read /etc/sudoers and sudoers.d for NOPASSWD, ALL=(ALL) ALL granted to unexpecte
 
 Read EnableLUA, ConsentPromptBehaviorAdmin, and PromptOnSecureDesktop. UAC disabled is a high finding on a Windows CP image.
 
+#### `report-password-never-expires`
+
+- **Title:** Report never-expires + blank password combo
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** Guest empty+never-expires (critical); bob never-expires with a set password; alice OK
+
+Combine password-aging (shadow MAX_DAYS -1/99999 or Windows PasswordNeverExpires) with empty-password classification. Human accounts that never expire, especially with a blank password, are high. Never prints hashes — only empty/locked/set + never-expires booleans.
+
 ### services
 
 #### `list-services`
@@ -400,6 +419,16 @@ Report smbd/nmbd/LanmanServer state, guest/anonymous access, SMBv1, and share li
 - **Demo fixture:** 22/80 expected; 23, 445, 31337/nc, 4444 flagged
 
 List TCP/UDP listeners (ss/Get-NetTCPConnection) bound on this image. Flag 23, 111, 139, 445, 512-514, 5900, 31337, 4444, and anything bound to 0.0.0.0 that is not a required service. Local audit only — does not scan other hosts.
+
+#### `diff-expected-ports`
+
+- **Title:** Diff listeners vs expected ports
+- **Platforms:** both
+- **Risk:** read
+- **Params:** `expectedPortsPath` (string)
+- **Demo fixture:** Unexpected 23/31337/445; expected 22/80 present; 443 missing
+
+Compare this image's TCP/UDP listeners to config/expected-ports.txt (README-allowed services). Reports unexpected listeners and missing expected ports. Local ss/Get-NetTCPConnection only — never scans other hosts or the scoring server. Authorized-image hardening only: never used against other teams, scoring endpoints, or off-image hosts.
 
 ### network
 
@@ -587,6 +616,26 @@ Find executable files whose names start with '.' under homes, /tmp, /var/tmp, an
 
 List Samba shares and Windows SMB shares with guest access, Everyone/Full, and administrative shares. Local config only.
 
+#### `audit-share-acls`
+
+- **Title:** Dump unauthorized share ACLs
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** public: Everyone Full + guest; C$ Everyone; homes browseable
+
+Inventory Samba share options and Windows SMB share ACLs. Flags guest/Everyone Full, world-writable paths, and administrative shares that should not be exposed on a workstation image. Read-only; does not modify ACLs or enumerate other machines.
+
+#### `audit-critical-perm-drift`
+
+- **Title:** Audit critical permission drift
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** /etc/shadow 0644, /etc/sudoers 0666, SAM Everyone:(R) simulated
+
+Read-only mode/ACL check for /etc/shadow, gshadow, sudoers, ssh host keys, and Windows SAM/SYSTEM file ACLs via icacls. Flags world-readable shadow or Everyone-readable SAM. Does not dump SAM, hashes, or private keys.
+
 ### packages
 
 #### `list-installed-packages`
@@ -618,6 +667,16 @@ Match installed packages and well-known binary paths against config/prohibited-s
 - **Demo fixture:** Simulates purging nmap and hydra
 
 Remove a local package (apt-get remove --purge / dnf remove / Uninstall-Package). Live requires confirm:true. Refuses to remove packages that look like required services (openssh-server, apache2) unless forced.
+
+#### `hunt-remote-access-tools`
+
+- **Title:** Hunt remote-access tools and browser extensions
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** teamviewer + anydesk packages; x11vnc binary; one unpacked Chrome extension id
+
+Find TeamViewer, AnyDesk, VNC, Chrome Remote Desktop, RustDesk and similar on the authorized image, plus browser extension directories (Chrome/Edge/Firefox profile ids only — no extension source dump). Cross-checks config/remote-access-tools.txt. Discovery, not an exploit.
 
 ### logging
 
@@ -694,6 +753,16 @@ List at/batch jobs. Unexpected at jobs are a common CP plant.
 - **Demo fixture:** Updater task running %TEMP%\svc.exe; persistence in Startup folder
 
 List non-Microsoft scheduled tasks and highlight user-writable actions, missing authors, and payloads under TEMP or Startup.
+
+#### `audit-persistence-deep`
+
+- **Title:** Deep startup persistence audit
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** rc.local /tmp/.kworker; cron wget|sh; HKCU Run update.exe; profile.d backdoor.sh
+
+Deeper than audit-startup-items: systemd enabled units, rc.local, cron/cron.d, /etc/profile.d, user autostart, Windows Run/RunOnce, Startup folder, and non-Microsoft scheduled tasks. Flags temp-path payloads, wget|sh, and interpreter plants. Inventory only.
 
 ### kernel
 
@@ -791,6 +860,16 @@ Report BitLocker protection status per volume. Informational; CP scoring may or 
 
 Assemble a redacted evidence pack: user inventory (no hashes), listeners, services, firewall state, checksums of sshd_config/sudoers/hosts. For forensics write-ups and team notes. Never copies shadow hashes, private keys, .ssh identities, or off-image data. Sabbath-coffee maximalism: one-click evidence, still inside the rules.
 
+#### `package-forensics-evidence`
+
+- **Title:** Package redacted forensics evidence
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** Expanded bundle with persistence, share ACLs, perm drift, and notes.md snippet
+
+Deeper redacted forensics packager: user/service/port inventories, persistence hints, share ACLs, critical permission drift, and config checksums. Never copies shadow hashes, SAM contents, private keys, or off-image data. For authorized-image write-ups only.
+
 #### `one-click-hardening-checklist`
 
 - **Title:** One-click hardening checklist
@@ -820,4 +899,24 @@ Aggregate suspicion scores across users, services, ports, and files into a 0–1
 - **Demo fixture:** /tmp/nc, /home/flag/.hidden_shell, /usr/local/bin/ncat, process on :31337
 
 Heuristic filenames and locations: nc, netcat, ncat, socat in /tmp /home /opt; suid copies of bash; meterpreter-like names; 31337 listeners' process binaries. Does not include exploit payloads or attack other hosts.
+
+#### `scoreboard-preflight`
+
+- **Title:** Scoreboard preflight checklist
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** 8 preflight rows; firewall/guest/telnet fail; note that CCS is not queried
+
+Pre-competition local checklist: firewall, guest, time sync, logging, no telnet, allowlist users, expected ports. Explicitly does not contact the CCS scoring server, other teams, or the internet beyond the image's configured update/time sources. Pair failing rows with confirm:true mutate ops.
+
+#### `post-harden-checklist`
+
+- **Title:** Post-harden verification checklist
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** 10 post-harden rows still failing on the unhardened demo image
+
+After-action verification on the authorized image: password policy, SSH/UAC, extra UID 0, empty/never-expire passwords, media, prohibited software, default-deny firewall, remote-access tools. Read-only — does not re-apply hardening. Each fail points at the mutate op.
 

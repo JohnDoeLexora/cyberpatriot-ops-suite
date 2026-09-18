@@ -1,6 +1,8 @@
 export { runOp } from "./run.js";
 export { runDemo, demoNow, demoContext, DEFAULT_DEMO_ALLOWLIST } from "./demo/runner.js";
 export { demoUsers, demoServices, demoPorts, demoFiles, DEMO_NOW } from "./demo/fixtures.js";
+export { tryRunBend, resolveBendBinary, bendDisabled, BEND_KINDS } from "./bend/runner.js";
+export type { BendKind, BendScanResult, BendHit } from "./bend/runner.js";
 export {
   scoreUser,
   scoreUsers,

@@ -1,7 +1,7 @@
 {
   "name": "@cyberpatriot/ops-engine",
   "version": "0.1.0",
-  "description": "Demo, Linux, and Windows runners for the CyberPatriot ops catalog",
+  "description": "Demo, Linux, Windows, and Bend-2 runners for the CyberPatriot ops catalog",
   "type": "module",
   "license": "MIT",
   "exports": {
