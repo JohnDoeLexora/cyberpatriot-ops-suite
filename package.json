@@ -2,17 +2,21 @@
   "name": "cyberpatriot-ops-suite",
   "private": true,
   "version": "0.1.0",
-  "description": "Split-pane CyberPatriot competition hardening dashboard",
+  "description": "CyberPatriot competition-legal ops catalog, engines, local API, and dashboard",
+  "type": "module",
+  "license": "MIT",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
     "dev": "npm run dev -w dashboard",
-    "build": "npm run build -w dashboard",
+    "dev:api": "npm run dev -w @cyberpatriot/api",
+    "build": "npm run build --workspaces --if-present",
     "preview": "npm run preview -w dashboard",
-    "test": "npm run test -w dashboard",
-    "test:e2e": "npm run test:e2e -w dashboard"
+    "test": "npm run test --workspaces --if-present",
+    "test:e2e": "npm run test:e2e -w dashboard",
+    "docs": "npm run docs -w @cyberpatriot/ops-catalog"
   },
   "engines": {
     "node": ">=20"
