@@ -1,4 +1,4 @@
-import { RotateCcw, Shield } from 'lucide-react'
+import { CircleHelp, RotateCcw, Shield } from 'lucide-react'
 import { leafCount } from '../layout/tree'
 import { cn } from '../lib/cn'
 import { useWorkspace } from '../state/workspace'
@@ -26,9 +26,24 @@ export function Header() {
         <span>search</span>
         <span className="text-faint">·</span>
         <span>drag a check into a pane, then split</span>
+        <span className="text-faint">·</span>
+        <kbd className="rounded border border-line-strong bg-elev px-1.5 py-0.5 font-mono text-[11px] text-ink">
+          ?
+        </kbd>
+        <span>how-to</span>
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        <button
+          type="button"
+          data-testid="howto-open"
+          title="Search how-to guides"
+          onClick={() => ws.openHowto()}
+          className="inline-flex items-center gap-1 rounded-md border border-line-strong bg-elev px-2.5 py-1 text-[13px] text-mute hover:bg-hover hover:text-ink"
+        >
+          <CircleHelp size={12} />
+          How-to
+        </button>
         <span className="hidden text-[13px] text-mute sm:inline" data-testid="pane-count">
           {panes} pane{panes === 1 ? '' : 's'}
         </span>

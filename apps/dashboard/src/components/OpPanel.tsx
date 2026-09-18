@@ -1,4 +1,4 @@
-import { Play, SquareSplitHorizontal, SquareSplitVertical, X } from 'lucide-react'
+import { CircleHelp, Play, SquareSplitHorizontal, SquareSplitVertical, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { getEngineOp, OPS_BY_ID } from '../catalog/ops'
 import type { RunStatus } from '../catalog/types'
@@ -78,6 +78,16 @@ export function OpPanel({ paneId }: { paneId: string }) {
             >
               <Play size={13} fill="currentColor" />
               {pane.status === 'running' ? 'Running…' : op.runLabel}
+            </button>
+            <button
+              type="button"
+              data-testid="howto-button"
+              title="How to use this check"
+              onClick={() => ws.openHowto(op.id)}
+              className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-line-strong bg-elev px-2.5 py-1.5 text-[13px] text-ink hover:border-accent hover:text-accent"
+            >
+              <CircleHelp size={12} />
+              How to
             </button>
             <span className="min-w-0 flex-1 truncate text-[13px] text-mute">{op.description}</span>
             {op.risk === 'mutate' && !ws.demoMode && (

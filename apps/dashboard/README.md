@@ -6,6 +6,8 @@ The Vite dev server mounts the local API (`GET /health`, `GET /ops`, `POST /ops/
 
 If the API is unreachable, demo mode falls back to the browser-safe `@cyberpatriot/ops-engine/demo` fixtures. Live mode will not.
 
+How-to explainers (every `@cyberpatriot/ops-catalog` id) open from the pane **How to** button, the header control, or `?`. Search matches titles and body text. Markdown copies live in [`docs/howto/`](../../docs/howto/).
+
 ```bash
 npm run dev          # from repo root — dashboard + in-process API
 npm run dev:api      # standalone API on :8787 if you prefer

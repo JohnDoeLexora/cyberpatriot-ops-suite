@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@cyberpatriot/ops-catalog": "*",
+    "@cyberpatriot/ops-docs": "*",
     "@cyberpatriot/ops-engine": "*",
     "lucide-react": "^0.544.0",
     "react": "^19.2.8",

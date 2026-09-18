@@ -14,8 +14,9 @@ Kosher / competition-legal only — defensive auditing and hardening on **author
 | `apps/api` | cp-02 | Local HTTP API the dashboard can call (`@cyberpatriot/api`) |
 | `packages/ops-catalog` | cp-02 | Typed catalog of 70 CyberPatriot-legal ops |
 | `packages/ops-engine` | cp-02 | `demo` / `linux` / `windows` runners + suspicious-user heuristics |
+| `packages/ops-docs` | cp-04 | Searchable how-to explainers for every catalog op |
 
-Docs: [docs/OPS.md](docs/OPS.md) (every op) · [docs/SAFETY.md](docs/SAFETY.md) (confirm, demo default, competition-only).
+Docs: [docs/OPS.md](docs/OPS.md) (every op) · [docs/howto/](docs/howto/) (how-to explainers) · [docs/SAFETY.md](docs/SAFETY.md) (confirm, demo default, competition-only).
 
 ## Quick start
 
@@ -38,7 +39,7 @@ Same dashboard commands work from `apps/dashboard`.
 | `npm run build` | Typecheck + production build (all workspaces) |
 | `npm test` | Workspace tests (dashboard + catalog + engine) |
 | `npm run test:e2e` | Playwright (Chromium) against the dashboard |
-| `npm run docs` | Regenerate [docs/OPS.md](docs/OPS.md) from the catalog |
+| `npm run docs` | Regenerate [docs/OPS.md](docs/OPS.md) and [docs/howto/](docs/howto/) |
 
 First-time e2e:
 
@@ -75,6 +76,7 @@ CORS is open for a local dashboard. The API never returns password hashes or pri
 - Left **checks list**: the typed 70-op catalog plus team notes. Press `/` to search, `Esc` to close menus.
 - Center **mosaic**: open a check into a pane, split, drag, or use the tab strip when several panes are open. Tight widths scroll instead of crushing tables.
 - Each pane runs against the **demo** or **live** engine (`POST /ops/:id/run`). Practice data is the default (Mac-safe fixtures). Live mutations ask for confirmation.
+- **How to** on a pane (or `?` / header How-to) opens a searchable explainer drawer for every catalog op. Search matches titles and body text.
 - Account panes show the engine user inventory. Hover a row for Flag / Turn off / Turn on / Expire password / Details.
 - Header **Practice data** toggle defaults **ON**. Switch to **This computer** for live engines.
 

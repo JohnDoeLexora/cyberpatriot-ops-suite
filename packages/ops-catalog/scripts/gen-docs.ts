@@ -30,6 +30,7 @@ const lines: string[] = [
   "Typed operations exported from `@cyberpatriot/ops-catalog`.",
   "Every op is **defensive, authorized-image hardening** for CyberPatriot.",
   "See [SAFETY.md](./SAFETY.md) before running anything with `mode: \"live\"`.",
+  "How-to explainers for every op: [howto/](./howto/).",
   "",
   `- **Count:** ${catalog.length}`,
   `- **Default run mode:** demo (Mac-safe fixtures, no host mutation)`,

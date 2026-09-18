@@ -22,6 +22,7 @@
     "paths": {
       "@/*": ["src/*"],
       "@cyberpatriot/ops-catalog": ["../../packages/ops-catalog/src/index.ts"],
+      "@cyberpatriot/ops-docs": ["../../packages/ops-docs/src/index.ts"],
       "@cyberpatriot/ops-engine/demo": ["../../packages/ops-engine/src/demo/browser.ts"]
     }
   },

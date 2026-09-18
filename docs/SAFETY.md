@@ -2,6 +2,8 @@
 
 This suite is **CyberPatriot competition-legal, authorized-image hardening only**.
 
+How-to explainers for every catalog op: [howto/](./howto/).
+
 It is not a red-team toolkit. It must never be used against other teams, scoring
 servers, coaches' machines, or any host you do not have written authorization to
 harden. There is no exploit development, no password-hash dumping, no remote

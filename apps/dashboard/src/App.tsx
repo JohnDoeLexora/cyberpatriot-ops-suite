@@ -2,6 +2,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { useEffect } from 'react'
 import { Catalog } from './components/Catalog'
 import { Header } from './components/Header'
+import { HowToDrawer } from './components/HowToDrawer'
 import { Mosaic } from './components/Mosaic'
 import { OverlayLayer } from './components/Modals'
 import { StatusBar } from './components/StatusBar'
@@ -35,6 +36,7 @@ function Shell() {
       <StatusBar />
       <Toasts />
       <OverlayLayer />
+      <HowToDrawer />
     </div>
   )
 }
@@ -48,7 +50,17 @@ function useGlobalKeys() {
         ws.focusSearch()
         return
       }
+      if (e.key === '?' && !isTyping(e)) {
+        e.preventDefault()
+        const pane = ws.panes[ws.focusedId]
+        ws.openHowto(pane?.opId ?? undefined)
+        return
+      }
       if (e.key === 'Escape') {
+        if (ws.howtoOpen) {
+          ws.closeHowto()
+          return
+        }
         ws.setContextMenu(null)
         ws.setConfirm(null)
         ws.setPasswordModal(null)
