@@ -1,0 +1,20 @@
+{
+  "name": "cyberpatriot-ops-suite",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Split-pane CyberPatriot competition hardening dashboard",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w dashboard",
+    "build": "npm run build -w dashboard",
+    "preview": "npm run preview -w dashboard",
+    "test": "npm run test -w dashboard",
+    "test:e2e": "npm run test:e2e -w dashboard"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
