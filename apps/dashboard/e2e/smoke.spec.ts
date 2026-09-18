@@ -31,6 +31,14 @@ test('catalog search, three panes, and wired run', async ({ page }) => {
   await expect(first.getByTestId('op-output')).toBeVisible()
   await expect(first.getByTestId('op-output')).toContainText(/accounts/i)
 
+  await first.getByTestId('howto-button').click()
+  await expect(page.getByTestId('howto-drawer')).toBeVisible()
+  await expect(page.getByTestId('howto-article')).toHaveAttribute('data-op-id', 'list-users')
+  await page.getByTestId('howto-search').fill('PermitRootLogin')
+  await expect(page.getByTestId('howto-result-ssh-hardening-audit')).toBeVisible()
+  await page.getByTestId('howto-close').click()
+  await expect(page.getByTestId('howto-drawer')).toHaveCount(0)
+
   await first.getByTestId('user-row-guest').hover()
   await first.getByTestId('action-disable-guest').click()
   await expect(page.getByTestId('toasts')).toContainText(/Turned off Guest/i)

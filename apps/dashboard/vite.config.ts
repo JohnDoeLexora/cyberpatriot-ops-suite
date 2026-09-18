@@ -14,6 +14,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(root, 'src'),
       '@cyberpatriot/ops-catalog': path.resolve(repo, 'packages/ops-catalog/src/index.ts'),
+      '@cyberpatriot/ops-docs': path.resolve(repo, 'packages/ops-docs/src/index.ts'),
       '@cyberpatriot/ops-engine/demo': path.resolve(repo, 'packages/ops-engine/src/demo/browser.ts'),
     },
   },

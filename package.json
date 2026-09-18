@@ -16,7 +16,7 @@
     "preview": "npm run preview -w dashboard",
     "test": "npm run test --workspaces --if-present",
     "test:e2e": "npm run test:e2e -w dashboard",
-    "docs": "npm run docs -w @cyberpatriot/ops-catalog"
+    "docs": "npm run docs -w @cyberpatriot/ops-catalog && npm run docs -w @cyberpatriot/ops-docs"
   },
   "engines": {
     "node": ">=20"

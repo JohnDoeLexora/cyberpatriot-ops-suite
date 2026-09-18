@@ -49,6 +49,40 @@ describe('dashboard shell', () => {
     expect(within(pane).getByTestId('op-output')).toHaveTextContent(/accounts/i)
   })
 
+  it('opens how-to from an op panel and searches titles plus body', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByTestId('catalog-item-list-users'))
+    const pane = screen.getAllByTestId('pane')[0]
+    await user.click(within(pane).getByTestId('howto-button'))
+    const drawer = screen.getByTestId('howto-drawer')
+    expect(drawer).toHaveTextContent(/List local users/i)
+    expect(drawer).toHaveTextContent(/password hashes are never listed/i)
+    const search = screen.getByTestId('howto-search')
+    await user.clear(search)
+    await user.type(search, 'PermitRootLogin')
+    expect(screen.getByTestId('howto-result-ssh-hardening-audit')).toBeInTheDocument()
+    expect(screen.getByTestId('howto-result-disable-root-ssh')).toBeInTheDocument()
+    expect(screen.queryByTestId('howto-result-list-users')).not.toBeInTheDocument()
+  })
+
+  it('how-to follows the pane that opened it in a multi-pane layout', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByTestId('catalog-item-list-users'))
+    await user.click(screen.getByTestId('catalog-item-ssh-hardening-audit'))
+    const panes = screen.getAllByTestId('pane')
+    expect(panes).toHaveLength(2)
+    await user.click(within(panes[1]!).getByTestId('howto-button'))
+    expect(screen.getByTestId('howto-article')).toHaveAttribute('data-op-id', 'ssh-hardening-audit')
+    expect(screen.getByTestId('howto-drawer')).toHaveTextContent(/PermitRootLogin/)
+    await user.click(screen.getByTestId('howto-close'))
+    expect(screen.queryByTestId('howto-drawer')).not.toBeInTheDocument()
+    await user.click(within(panes[0]!).getByTestId('howto-button'))
+    expect(screen.getByTestId('howto-article')).toHaveAttribute('data-op-id', 'list-users')
+    expect(screen.getByTestId('howto-drawer')).toHaveTextContent(/password hashes are never listed/i)
+  })
+
   it('flags a user from the hover action and shows a toast', async () => {
     const user = userEvent.setup()
     render(<App />)

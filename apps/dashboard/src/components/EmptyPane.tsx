@@ -24,6 +24,14 @@ export function EmptyPane({ paneId }: { paneId: string }) {
         <kbd className="rounded border border-line-strong bg-elev px-1 font-mono text-[12px]">/</kbd> to
         search.
       </p>
+      <button
+        type="button"
+        data-testid="howto-browse"
+        onClick={() => ws.openHowto()}
+        className="mt-4 rounded-md border border-line-strong bg-elev px-3 py-1.5 text-[13px] text-ink hover:border-accent hover:text-accent"
+      >
+        Browse how-tos
+      </button>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
         {SUGGEST.map((id) => {
           const op = OPS_BY_ID[id]

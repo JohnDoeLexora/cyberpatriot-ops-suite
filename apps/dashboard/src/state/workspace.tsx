@@ -9,6 +9,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react'
+import { resolveHowtoOpId } from '@cyberpatriot/ops-docs'
 import { getEngineOp, OPS_BY_ID } from '../catalog/ops'
 import { adaptRunResult } from '../lib/adapt-result'
 import { uid } from '../lib/id'
@@ -80,6 +81,13 @@ type WorkspaceApi = PersistedWorkspace & {
   setPasswordModal: (m: PasswordModalState | null) => void
   detailsUserId: string | null
   setDetailsUserId: (id: string | null) => void
+  howtoOpen: boolean
+  howtoOpId: string | null
+  howtoQuery: string
+  openHowto: (opId?: string) => void
+  closeHowto: () => void
+  setHowtoOpId: (id: string | null) => void
+  setHowtoQuery: (q: string) => void
   searchRef: RefObject<HTMLInputElement | null>
   focusSearch: () => void
   toast: (t: Omit<Toast, 'id'>) => void
@@ -128,6 +136,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [detailsUserId, setDetailsUserId] = useState<string | null>(null)
   const [engineSource, setEngineSource] = useState<EngineSource | 'unknown'>('unknown')
   const [apiOk, setApiOk] = useState<boolean | null>(null)
+  const [howtoOpen, setHowtoOpen] = useState(false)
+  const [howtoOpId, setHowtoOpId] = useState<string | null>(null)
+  const [howtoQuery, setHowtoQuery] = useState('')
   const searchRef = useRef<HTMLInputElement | null>(null)
   const stateRef = useRef(state)
   stateRef.current = state
@@ -175,6 +186,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const focusSearch = useCallback(() => {
     searchRef.current?.focus()
     searchRef.current?.select()
+  }, [])
+
+  const openHowto = useCallback((opId?: string) => {
+    const catalogId = opId ? resolveHowtoOpId(opId) : undefined
+    setHowtoOpen(true)
+    setHowtoOpId(catalogId ?? null)
+    if (opId && !catalogId) {
+      const dash = OPS_BY_ID[opId]
+      setHowtoQuery(dash?.title ?? opId)
+    } else {
+      setHowtoQuery('')
+    }
+  }, [])
+
+  const closeHowto = useCallback(() => {
+    setHowtoOpen(false)
   }, [])
 
   const focusPane = useCallback((id: string) => {
@@ -641,6 +668,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setPasswordModal,
       detailsUserId,
       setDetailsUserId,
+      howtoOpen,
+      howtoOpId,
+      howtoQuery,
+      openHowto,
+      closeHowto,
+      setHowtoOpId,
+      setHowtoQuery,
       searchRef,
       focusSearch,
       toast,
@@ -678,6 +712,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       confirm,
       passwordModal,
       detailsUserId,
+      howtoOpen,
+      howtoOpId,
+      howtoQuery,
+      openHowto,
+      closeHowto,
+      setHowtoOpId,
       focusSearch,
       toast,
       log,
