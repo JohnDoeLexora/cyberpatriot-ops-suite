@@ -6,6 +6,7 @@ export function StatusBar() {
   const ws = useWorkspace()
   const focused = ws.panes[ws.focusedId]
   const op = focused?.opId ? OPS_BY_ID[focused.opId] : null
+  const panes = leafCount(ws.tree)
   const crit = Object.values(ws.panes)
     .flatMap((p) => p.output?.findings ?? [])
     .filter((f) => f.severity === 'crit').length
@@ -20,10 +21,12 @@ export function StatusBar() {
           : 'practice fallback'
 
   return (
-    <footer className="flex h-8 shrink-0 items-center gap-3 border-t border-line bg-sidebar px-4 text-[12.5px] text-mute">
+    <footer className="flex h-9 shrink-0 items-center gap-3 border-t border-line bg-sidebar px-5 text-[13px] text-mute">
       <span className="text-accent">{engineLabel}</span>
       <span className="text-faint">·</span>
-      <span>{leafCount(ws.tree)} panes</span>
+      <span>
+        {panes} pane{panes === 1 ? '' : 's'}
+      </span>
       <span className="text-faint">·</span>
       <span className="truncate">
         {op ? op.title : 'empty pane'} {focused?.status && op ? `· ${focused.status}` : ''}

@@ -21,11 +21,9 @@ export function OpPanel({ paneId }: { paneId: string }) {
       data-testid="pane"
       data-pane-id={paneId}
       data-op-id={pane?.opId ?? ''}
+      data-active={focused ? 'true' : 'false'}
       onMouseDown={() => ws.focusPane(paneId)}
-      className={cn(
-        'flex h-full min-h-0 flex-col bg-panel',
-        focused ? 'ring-1 ring-inset ring-accent/50' : 'ring-1 ring-inset ring-transparent',
-      )}
+      className="pane-cq flex h-full min-h-0 flex-col bg-panel"
     >
       <header
         draggable={Boolean(op)}
@@ -34,14 +32,14 @@ export function OpPanel({ paneId }: { paneId: string }) {
           e.dataTransfer.setData('text/plain', `pane:${paneId}`)
           e.dataTransfer.effectAllowed = 'move'
         }}
-        className="flex h-10 shrink-0 items-center gap-1.5 border-b border-line bg-elev/90 px-2"
+        className="flex h-12 shrink-0 items-center gap-2 border-b border-line px-3"
       >
         <StatusDot status={pane?.status ?? 'idle'} />
-        <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
+        <span className="min-w-0 flex-1 truncate text-[15px] font-medium tracking-tight">
           {op ? op.title : 'Empty pane'}
         </span>
         {op && (
-          <span className="hidden text-[12px] text-faint sm:inline">
+          <span className="hidden text-[12px] capitalize text-faint sm:inline">
             {pane.status === 'idle' ? '' : pane.status}
           </span>
         )}
@@ -50,17 +48,17 @@ export function OpPanel({ paneId }: { paneId: string }) {
           testId={`split-h-${paneId}`}
           onClick={() => ws.splitPane(paneId, 'horizontal')}
         >
-          <SquareSplitVertical size={14} />
+          <SquareSplitVertical size={15} />
         </Icon>
         <Icon
           title="Split down"
           testId={`split-v-${paneId}`}
           onClick={() => ws.splitPane(paneId, 'vertical')}
         >
-          <SquareSplitHorizontal size={14} />
+          <SquareSplitHorizontal size={15} />
         </Icon>
         <Icon title="Close pane" testId={`close-${paneId}`} onClick={() => ws.closePane(paneId)}>
-          <X size={14} />
+          <X size={15} />
         </Icon>
       </header>
 
@@ -68,13 +66,13 @@ export function OpPanel({ paneId }: { paneId: string }) {
         <EmptyPane paneId={paneId} />
       ) : (
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-line px-3 py-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-2.5 border-b border-line px-4 py-2.5">
             <button
               type="button"
               data-testid="run-op"
               disabled={pane.status === 'running'}
               onClick={() => void ws.runPane(paneId)}
-              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md bg-ink px-3 py-1.5 text-[13px] font-semibold text-elev hover:brightness-110 disabled:opacity-50"
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-ink px-3.5 py-2 text-[13.5px] font-semibold text-elev shadow-sm hover:brightness-110 disabled:opacity-50"
             >
               <Play size={13} fill="currentColor" />
               {pane.status === 'running' ? 'Running…' : op.runLabel}
@@ -84,20 +82,22 @@ export function OpPanel({ paneId }: { paneId: string }) {
               data-testid="howto-button"
               title="How to use this check"
               onClick={() => ws.openHowto(op.id)}
-              className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-line-strong bg-elev px-2.5 py-1.5 text-[13px] text-ink hover:border-accent hover:text-accent"
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-line-strong bg-elev px-3 py-2 text-[13.5px] font-medium text-ink hover:border-accent hover:text-accent"
             >
-              <CircleHelp size={12} />
+              <CircleHelp size={14} />
               How to
             </button>
-            <span className="min-w-0 flex-1 truncate text-[13px] text-mute">{op.description}</span>
+            <span className="hide-narrow min-w-0 flex-1 line-clamp-2 text-[13.5px] leading-5 text-mute">
+              {op.description}
+            </span>
             {op.risk === 'mutate' && !ws.demoMode && (
-              <span className="rounded bg-warn-dim px-1.5 py-0.5 text-[11px] font-medium text-warn">
+              <span className="rounded-md bg-warn-dim px-2 py-0.5 text-[12px] font-medium text-warn">
                 asks first
               </span>
             )}
           </div>
           <ParamBar paneId={paneId} />
-          <div className="min-h-0 flex-1 overflow-auto" data-testid={`pane-body-${paneId}`}>
+          <div className="pane-cq min-h-0 flex-1 overflow-auto" data-testid={`pane-body-${paneId}`}>
             <PaneBody paneId={paneId} />
           </div>
         </div>
@@ -115,13 +115,13 @@ function ParamBar({ paneId }: { paneId: string }) {
   const keys = Object.keys(props).filter((k) => k !== 'allowlistPath' && k !== 'extensions')
   if (!keys.length) return null
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b border-line px-3 py-2 text-[13px]">
+    <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-2.5 text-[13.5px]">
       {keys.map((key) => {
         const field = props[key]
         if (field.type === 'boolean') {
           const on = pane.params[key] === 'true'
           return (
-            <label key={key} className="inline-flex items-center gap-1.5 text-mute">
+            <label key={key} className="inline-flex items-center gap-2 text-mute">
               <input
                 type="checkbox"
                 checked={on}
@@ -138,7 +138,7 @@ function ParamBar({ paneId }: { paneId: string }) {
               value={pane.params[key] ?? ''}
               onChange={(e) => ws.setPaneParam(paneId, key, e.target.value)}
               placeholder={field.description}
-              className="min-w-0 flex-1 rounded-md border border-line-strong bg-elev px-2 py-1 font-mono text-[12.5px] text-ink"
+              className="min-w-0 flex-1 rounded-lg border border-line-strong bg-elev px-2.5 py-1.5 font-mono text-[13px] text-ink"
             />
           </label>
         )
@@ -171,7 +171,7 @@ function PaneBody({ paneId }: { paneId: string }) {
           }
         />
         {pane.output && <OutputView output={pane.output} />}
-        {pane.error && <p className="p-3 text-[14px] text-crit">{pane.error}</p>}
+        {pane.error && <p className="p-4 text-[15px] text-crit">{pane.error}</p>}
       </>
     )
   }
@@ -179,21 +179,21 @@ function PaneBody({ paneId }: { paneId: string }) {
   if (op.view === 'groups') {
     return (
       <>
-        <div className="overflow-auto p-3">
-          <table className="w-full min-w-[28rem] text-left text-[13.5px]">
-            <thead className="text-[12px] text-faint">
+        <div className="overflow-auto p-4">
+          <table className="w-full text-left text-[14px]">
+            <thead className="text-[12.5px] font-medium text-faint">
               <tr>
-                <th className="px-2 py-1.5 font-medium">Group</th>
-                <th className="px-2 py-1.5 font-medium">Members</th>
-                <th className="px-2 py-1.5 font-medium">Note</th>
+                <th className="px-3 py-2">Group</th>
+                <th className="px-3 py-2">Members</th>
+                <th className="px-3 py-2">Note</th>
               </tr>
             </thead>
             <tbody>
               {ws.groups.map((g) => (
                 <tr key={g.name} className="border-t border-line">
-                  <td className="px-2 py-1.5 font-mono text-[13px]">{g.name}</td>
-                  <td className="px-2 py-1.5 text-mute">{g.members.join(', ')}</td>
-                  <td className="px-2 py-1.5 text-warn">{g.anomaly ?? (g.privileged ? 'privileged' : '')}</td>
+                  <td className="px-3 py-2 font-mono text-[13.5px]">{g.name}</td>
+                  <td className="px-3 py-2 text-mute">{g.members.join(', ')}</td>
+                  <td className="px-3 py-2 text-warn">{g.anomaly ?? (g.privileged ? 'privileged' : '')}</td>
                 </tr>
               ))}
             </tbody>
@@ -206,12 +206,12 @@ function PaneBody({ paneId }: { paneId: string }) {
 
   if (op.view === 'notes') {
     return (
-      <div className="flex h-full flex-col p-3">
+      <div className="flex h-full flex-col p-4">
         <textarea
           data-testid="forensics-notes"
           value={ws.notes}
           onChange={(e) => ws.setNotes(e.target.value)}
-          className="min-h-[200px] flex-1 resize-none rounded-md border border-line bg-elev p-3 font-mono text-[13px] leading-6 text-ink outline-none focus:border-accent"
+          className="min-h-[200px] flex-1 resize-none rounded-xl border border-line bg-elev p-4 font-mono text-[14px] leading-7 text-ink outline-none focus:border-accent"
         />
         {pane.output && <OutputView output={pane.output} />}
       </div>
@@ -220,17 +220,17 @@ function PaneBody({ paneId }: { paneId: string }) {
 
   if (op.view === 'journal') {
     return (
-      <div className="p-3">
+      <div className="p-4">
         {ws.journal.length === 0 && (
-          <p className="text-[14px] text-mute">Nothing logged yet. Run a check to start the log.</p>
+          <p className="text-[15px] leading-7 text-mute">Nothing logged yet. Run a check to start the log.</p>
         )}
-        <ol className="space-y-1.5">
+        <ol className="space-y-2">
           {ws.journal.map((j) => (
-            <li key={j.id} className="flex gap-2 rounded-md border border-line bg-elev px-2.5 py-1.5 text-[13.5px]">
-              <span className="shrink-0 font-mono text-[12px] text-faint">
+            <li key={j.id} className="flex gap-3 rounded-xl border border-line bg-elev px-3.5 py-2.5 text-[14px]">
+              <span className="shrink-0 font-mono text-[12.5px] text-faint">
                 {new Date(j.ts).toLocaleTimeString()}
               </span>
-              <span className="w-16 shrink-0 text-[12px] uppercase text-accent">{j.kind}</span>
+              <span className="w-16 shrink-0 text-[12px] uppercase tracking-wide text-accent">{j.kind}</span>
               <span>{j.text}</span>
             </li>
           ))}
@@ -241,26 +241,26 @@ function PaneBody({ paneId }: { paneId: string }) {
 
   if (op.view === 'favorites') {
     return (
-      <div className="p-3">
+      <div className="p-4">
         {ws.favorites.length === 0 && (
-          <p className="text-[14px] text-mute">Star checks in the list to pin them here.</p>
+          <p className="text-[15px] leading-7 text-mute">Star checks in the list to pin them here.</p>
         )}
-        <ul className="space-y-1.5">
+        <ul className="space-y-2">
           {ws.favorites.map((id) => {
             const fav = OPS_BY_ID[id]
             if (!fav) return null
             return (
-              <li key={id} className="flex items-center gap-2 rounded-md border border-line bg-elev px-2.5 py-2">
+              <li key={id} className="flex items-center gap-2 rounded-xl border border-line bg-elev px-3.5 py-2.5">
                 <button
                   type="button"
-                  className="text-left text-[14px] text-ink hover:text-accent"
+                  className="text-left text-[15px] text-ink hover:text-accent"
                   onClick={() => ws.openOp(id)}
                 >
                   {fav.title}
                 </button>
                 <button
                   type="button"
-                  className="ml-auto text-[13px] text-mute hover:text-crit"
+                  className="ml-auto text-[13.5px] text-mute hover:text-crit"
                   onClick={() => ws.toggleFavorite(id)}
                 >
                   unpin
@@ -276,22 +276,22 @@ function PaneBody({ paneId }: { paneId: string }) {
   if (op.view === 'preflight') {
     const done = PREFLIGHT_ITEMS.filter((i) => ws.preflight[i.id]).length
     return (
-      <div className="p-3">
-        <div className="mb-2 text-[14px] text-mute">
+      <div className="p-4">
+        <div className="mb-3 text-[15px] text-mute">
           {done}/{PREFLIGHT_ITEMS.length} complete — start-of-round list.
         </div>
-        <ul className="space-y-1.5">
+        <ul className="space-y-2">
           {PREFLIGHT_ITEMS.map((item) => (
             <li key={item.id}>
-              <label className="flex cursor-pointer items-start gap-2 rounded-md border border-line bg-elev px-2.5 py-2 hover:bg-hover">
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-elev px-3.5 py-2.5 hover:bg-hover">
                 <input
                   type="checkbox"
                   checked={Boolean(ws.preflight[item.id])}
                   onChange={() => ws.togglePreflight(item.id)}
                 />
                 <span>
-                  <span className="block text-[14px]">{item.label}</span>
-                  <span className="text-[12.5px] text-faint">{item.hint}</span>
+                  <span className="block text-[15px]">{item.label}</span>
+                  <span className="text-[13px] text-faint">{item.hint}</span>
                 </span>
               </label>
             </li>
@@ -305,21 +305,21 @@ function PaneBody({ paneId }: { paneId: string }) {
   if (op.view === 'export') {
     const findings = collectFindings(ws.panes)
     return (
-      <div className="p-4">
-        <p className="text-[14px] text-mute">
+      <div className="p-5">
+        <p className="text-[15px] leading-7 text-mute">
           {findings.length} findings across open panes · {ws.journal.length} log entries.
         </p>
-        <div className="mt-3 flex gap-2">
+        <div className="mt-4 flex gap-2">
           <button
             type="button"
-            className="rounded-md bg-ink px-3 py-1.5 text-[13px] font-semibold text-elev"
+            className="rounded-lg bg-ink px-3.5 py-2 text-[13.5px] font-semibold text-elev"
             onClick={() => download('cp-ops-findings.json', JSON.stringify(exportPayload(ws), null, 2), 'application/json')}
           >
             Download JSON
           </button>
           <button
             type="button"
-            className="rounded-md border border-line-strong px-3 py-1.5 text-[13px] hover:bg-hover"
+            className="rounded-lg border border-line-strong px-3.5 py-2 text-[13.5px] hover:bg-hover"
             onClick={() => download('cp-ops-findings.csv', toCsv(findings), 'text/csv')}
           >
             Download CSV
@@ -334,12 +334,12 @@ function PaneBody({ paneId }: { paneId: string }) {
   if (op.id === 'find-media-files') {
     return (
       <div>
-        <label className="flex items-center gap-2 border-b border-line px-3 py-2 text-[13px]">
+        <label className="flex items-center gap-2 border-b border-line px-4 py-2.5 text-[13.5px]">
           File types
           <input
             value={ws.mediaExtensions}
             onChange={(e) => ws.setMediaExtensions(e.target.value)}
-            className="flex-1 rounded-md border border-line-strong bg-elev px-2 py-1 font-mono text-[12.5px]"
+            className="flex-1 rounded-lg border border-line-strong bg-elev px-2.5 py-1.5 font-mono text-[13px]"
           />
         </label>
         {pane.output ? <OutputView output={pane.output} /> : <IdleHint status={pane.status} demo={ws.demoMode} />}
@@ -348,18 +348,20 @@ function PaneBody({ paneId }: { paneId: string }) {
   }
 
   if (pane.output) return <OutputView output={pane.output} />
-  if (pane.error) return <p className="p-4 text-[14px] text-crit">{pane.error}</p>
+  if (pane.error) return <p className="p-5 text-[15px] text-crit">{pane.error}</p>
   return <IdleHint status={pane.status} demo={ws.demoMode} />
 }
 
 function IdleHint({ status, demo }: { status: RunStatus; demo: boolean }) {
   if (status === 'running') {
-    return <p className="p-5 text-[14px] text-mute">Running…</p>
+    return <p className="p-6 text-[15px] text-mute">Running…</p>
   }
   return (
-    <p className="p-5 text-[14px] leading-6 text-mute">
-      Press the button above to {demo ? 'run this check on practice data.' : 'run this check on this computer.'}
-    </p>
+    <div className="flex h-full min-h-[10rem] items-center justify-center p-8 text-center">
+      <p className="max-w-sm text-[15px] leading-7 text-mute">
+        Press the button above to {demo ? 'run this check on practice data.' : 'run this check on this computer.'}
+      </p>
+    </div>
   )
 }
 
@@ -395,7 +397,7 @@ function Icon({
         e.stopPropagation()
         onClick()
       }}
-      className="rounded-md p-1 text-mute hover:bg-hover hover:text-ink"
+      className="rounded-lg p-1.5 text-mute hover:bg-hover hover:text-ink"
     >
       {children}
     </button>

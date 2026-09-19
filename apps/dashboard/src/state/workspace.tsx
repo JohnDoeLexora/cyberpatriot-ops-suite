@@ -16,7 +16,7 @@ import { uid } from '../lib/id'
 import { executeOp, fetchHealth, type EngineSource } from '../lib/run-client'
 import { liveUsers, upsertUsers, type UiUser } from '../lib/users'
 import {
-  dockAtRoot,
+  addLeafPreferGrid,
   insertLeafAtEdge,
   leafCount,
   moveLeaf,
@@ -253,21 +253,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
       const newId = uid('pane')
       setState((cur) => {
-        const count = leafCount(cur.tree)
         const splitFrom = cur.panes[target] ? target : walkLeaves(cur.tree)[0]
-        const tree =
-          count === 2
-            ? dockAtRoot(cur.tree, newId, 'right')
-            : splitLeaf(
-                cur.tree,
-                splitFrom,
-                count % 2 === 0 ? 'vertical' : 'horizontal',
-                newId,
-                'after',
-              )
         return {
           ...cur,
-          tree,
+          tree: addLeafPreferGrid(cur.tree, splitFrom, newId),
           focusedId: newId,
           panes: {
             ...cur.panes,
