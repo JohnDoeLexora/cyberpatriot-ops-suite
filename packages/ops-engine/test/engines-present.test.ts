@@ -33,6 +33,13 @@ describe("engine scripts on disk", () => {
       "hunt-remote-access-tools",
       "report-password-never-expires",
       "audit-critical-perm-drift",
+      "audit-sticky-tmp",
+      "audit-anonymous-ftp",
+      "harden-vsftpd",
+      "audit-web-server",
+      "select-unauthorized-users",
+      "skim-forensics-readme",
+      "remove-games-samples",
     ]) {
       assert.ok(existsSync(path.join(root, "engines/linux", `${id}.sh`)), id);
     }
@@ -51,6 +58,8 @@ describe("engine scripts on disk", () => {
       "engines/bend/README.md",
       "config/expected-ports.txt",
       "config/remote-access-tools.txt",
+      "config/games-samples.txt",
+      "config/forensics-keywords.txt",
     ]) {
       assert.ok(existsSync(path.join(root, rel)), rel);
     }

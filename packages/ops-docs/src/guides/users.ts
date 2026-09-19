@@ -57,7 +57,7 @@ export const USERS: Record<string, HowToBody> = {
       "audit-uid-zero",
       "disable-user",
       "remove-user-from-admins",
-      "score-image-heuristics",
+      "select-unauthorized-users",
     ],
     keywords: ["heuristic", "allowlist", "toor", "never logged in", "suspicion score"],
   },

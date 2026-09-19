@@ -49,5 +49,5 @@ Right after list-users, before you mutate anything. Re-run after lock/disable to
 - [`audit-uid-zero`](./audit-uid-zero.md) — Audit UID 0 accounts
 - [`disable-user`](./disable-user.md) — Disable a local user
 - [`remove-user-from-admins`](./remove-user-from-admins.md) — Remove user from administrators
-- [`score-image-heuristics`](./score-image-heuristics.md) — Score image heuristics
+- [`select-unauthorized-users`](./select-unauthorized-users.md) — Select unauthorized users (allowlist miss)
 

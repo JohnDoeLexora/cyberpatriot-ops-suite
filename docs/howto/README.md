@@ -6,7 +6,7 @@ Source of truth: `packages/ops-docs`. The dashboard How-to drawer searches title
 Competition-legal only: authorized-image hardening. No offense, no exploit recipes, no CCS cheats.
 Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFETY.md).
 
-- **Guides:** 79
+- **Guides:** 95
 - **Open in the dashboard:** How-to button on each OpPanel, or the header How-to control. Press `?` to open the focused pane’s guide.
 
 ## Index
@@ -92,6 +92,22 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 | [`audit-critical-perm-drift`](./audit-critical-perm-drift.md) | Audit critical permission drift | files | read |
 | [`scoreboard-preflight`](./scoreboard-preflight.md) | Scoreboard preflight checklist | evidence | read |
 | [`post-harden-checklist`](./post-harden-checklist.md) | Post-harden verification checklist | evidence | read |
+| [`select-unauthorized-users`](./select-unauthorized-users.md) | Select unauthorized users (allowlist miss) | users | read |
+| [`audit-sticky-tmp`](./audit-sticky-tmp.md) | Audit sticky bit on temp dirs | files | read |
+| [`audit-anonymous-ftp`](./audit-anonymous-ftp.md) | Audit anonymous FTP / vsftpd | services | read |
+| [`harden-vsftpd`](./harden-vsftpd.md) | Harden vsftpd (disable anonymous) | services | mutate |
+| [`audit-web-server`](./audit-web-server.md) | Apache/nginx hardening checklist | services | read |
+| [`disable-llmnr-netbios-wpad`](./disable-llmnr-netbios-wpad.md) | Disable LLMNR / NetBIOS / WPAD | network | mutate |
+| [`audit-null-session`](./audit-null-session.md) | Audit null session / anonymous SAM | auth | read |
+| [`audit-idle-lock`](./audit-idle-lock.md) | Audit screensaver / idle lock | auth | read |
+| [`hunt-sysprep-leftovers`](./hunt-sysprep-leftovers.md) | Hunt unattended / sysprep leftovers | files | read |
+| [`audit-snmp`](./audit-snmp.md) | Audit SNMP community / insecure mgmt | services | read |
+| [`audit-mac-enforcement`](./audit-mac-enforcement.md) | Audit AppArmor/SELinux enforcement | kernel | read |
+| [`audit-browser-baseline`](./audit-browser-baseline.md) | Audit Firefox/IE/Edge security baseline | files | read |
+| [`audit-auto-updates`](./audit-auto-updates.md) | Audit unattended-upgrades / Windows Update | updates | read |
+| [`remove-games-samples`](./remove-games-samples.md) | Remove games and sample content | packages | mutate |
+| [`audit-iis`](./audit-iis.md) | IIS feature inventory + anonymous auth | windows | read |
+| [`skim-forensics-readme`](./skim-forensics-readme.md) | Skim local README for forensics keywords | evidence | read |
 
 ## Browse by category
 
@@ -111,6 +127,7 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`disable-guest-account`](./disable-guest-account.md) — Disable Guest account
 - [`audit-duplicate-uids`](./audit-duplicate-uids.md) — Audit duplicate UIDs
 - [`expire-user-password`](./expire-user-password.md) — Expire a user password
+- [`select-unauthorized-users`](./select-unauthorized-users.md) — Select unauthorized users (allowlist miss)
 
 ### auth
 
@@ -123,6 +140,8 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`audit-sudoers`](./audit-sudoers.md) — Audit sudoers
 - [`audit-uac`](./audit-uac.md) — Audit User Account Control
 - [`report-password-never-expires`](./report-password-never-expires.md) — Report never-expires + blank password combo
+- [`audit-null-session`](./audit-null-session.md) — Audit null session / anonymous SAM
+- [`audit-idle-lock`](./audit-idle-lock.md) — Audit screensaver / idle lock
 
 ### services
 
@@ -133,6 +152,10 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`disable-telnet`](./disable-telnet.md) — Disable Telnet
 - [`disable-legacy-r-services`](./disable-legacy-r-services.md) — Disable rsh/rlogin/rexec
 - [`audit-smb`](./audit-smb.md) — Audit SMB / Samba
+- [`audit-anonymous-ftp`](./audit-anonymous-ftp.md) — Audit anonymous FTP / vsftpd
+- [`harden-vsftpd`](./harden-vsftpd.md) — Harden vsftpd (disable anonymous)
+- [`audit-web-server`](./audit-web-server.md) — Apache/nginx hardening checklist
+- [`audit-snmp`](./audit-snmp.md) — Audit SNMP community / insecure mgmt
 
 ### ports
 
@@ -147,6 +170,7 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`disable-rdp`](./disable-rdp.md) — Disable Remote Desktop
 - [`audit-hosts-file`](./audit-hosts-file.md) — Audit hosts file
 - [`check-ntp`](./check-ntp.md) — Check time synchronization
+- [`disable-llmnr-netbios-wpad`](./disable-llmnr-netbios-wpad.md) — Disable LLMNR / NetBIOS / WPAD
 
 ### firewall
 
@@ -167,6 +191,9 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`audit-shared-folders`](./audit-shared-folders.md) — Audit shared folders
 - [`audit-share-acls`](./audit-share-acls.md) — Dump unauthorized share ACLs
 - [`audit-critical-perm-drift`](./audit-critical-perm-drift.md) — Audit critical permission drift
+- [`audit-sticky-tmp`](./audit-sticky-tmp.md) — Audit sticky bit on temp dirs
+- [`hunt-sysprep-leftovers`](./hunt-sysprep-leftovers.md) — Hunt unattended / sysprep leftovers
+- [`audit-browser-baseline`](./audit-browser-baseline.md) — Audit Firefox/IE/Edge security baseline
 
 ### packages
 
@@ -174,6 +201,7 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`find-prohibited-software`](./find-prohibited-software.md) — Find prohibited software
 - [`remove-package`](./remove-package.md) — Remove a package
 - [`hunt-remote-access-tools`](./hunt-remote-access-tools.md) — Hunt remote-access tools and browser extensions
+- [`remove-games-samples`](./remove-games-samples.md) — Remove games and sample content
 
 ### logging
 
@@ -184,6 +212,7 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 
 - [`check-pending-updates`](./check-pending-updates.md) — Check pending updates
 - [`apply-security-updates`](./apply-security-updates.md) — Apply security updates
+- [`audit-auto-updates`](./audit-auto-updates.md) — Audit unattended-upgrades / Windows Update
 
 ### scheduled
 
@@ -197,6 +226,7 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`audit-sysctl`](./audit-sysctl.md) — Audit sysctl hardening
 - [`harden-sysctl`](./harden-sysctl.md) — Apply sysctl hardening
 - [`audit-startup-items`](./audit-startup-items.md) — Audit startup items
+- [`audit-mac-enforcement`](./audit-mac-enforcement.md) — Audit AppArmor/SELinux enforcement
 
 ### windows
 
@@ -205,6 +235,7 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`audit-powershell-logging`](./audit-powershell-logging.md) — Audit PowerShell logging
 - [`disable-autoplay`](./disable-autoplay.md) — Disable Autoplay
 - [`check-bitlocker-status`](./check-bitlocker-status.md) — Check BitLocker status
+- [`audit-iis`](./audit-iis.md) — IIS feature inventory + anonymous auth
 
 ### evidence
 
@@ -215,4 +246,5 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`find-backdoor-binaries`](./find-backdoor-binaries.md) — Find suspicious binaries
 - [`scoreboard-preflight`](./scoreboard-preflight.md) — Scoreboard preflight checklist
 - [`post-harden-checklist`](./post-harden-checklist.md) — Post-harden verification checklist
+- [`skim-forensics-readme`](./skim-forensics-readme.md) — Skim local README for forensics keywords
 

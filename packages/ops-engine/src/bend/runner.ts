@@ -11,6 +11,9 @@ export const BEND_KINDS = [
   "files-hidden",
   "files-rats",
   "files-perms",
+  "files-sticky",
+  "files-sysprep",
+  "files-readme",
   "users",
   "ports",
   "agg",
@@ -42,6 +45,9 @@ const TAG_FILTER: Partial<Record<BendKind, string[]>> = {
   "files-hidden": ["hidden", "netcat-like"],
   "files-rats": ["remote-access"],
   "files-perms": ["shadow", "sudoers", "world-writable"],
+  "files-sticky": ["missing-sticky", "world-writable", "plant-path"],
+  "files-sysprep": ["sysprep"],
+  "files-readme": ["readme"],
 };
 
 export function bendDir(repoRoot: string): string {

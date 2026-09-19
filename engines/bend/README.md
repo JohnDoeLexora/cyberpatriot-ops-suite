@@ -7,7 +7,7 @@ is unchanged — Bend does not talk to the Win32 APIs.
 
 | File | Role |
 | --- | --- |
-| `score-files.bend` | Parallel SUID / world-writable / media / RAT / plant-path scoring |
+| `score-files.bend` | Parallel SUID / world-writable / media / RAT / sticky-tmp / sysprep / README scoring |
 | `score-users.bend` | Parallel account heuristics (no hashes) |
 | `score-ports.bend` | Parallel expected-port baseline + suspicious listeners |
 | `agg-checks.bend` | Parallel remaining-work aggregation |

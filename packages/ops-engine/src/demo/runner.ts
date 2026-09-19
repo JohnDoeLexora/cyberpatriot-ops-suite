@@ -1,5 +1,10 @@
 import type { OpDefinition } from "@cyberpatriot/ops-catalog";
-import { findingsFromUsers, scoreUsers } from "../heuristics/suspicious-users.js";
+import {
+  findingsFromUnauthorized,
+  findingsFromUsers,
+  scoreUsers,
+  selectUnauthorizedUsers,
+} from "../heuristics/suspicious-users.js";
 import { asBoolean, asString } from "../safety.js";
 import type {
   ChecklistItem,
@@ -10,24 +15,38 @@ import type {
 } from "../types.js";
 import {
   DEMO_NOW,
+  demoAutoUpdates,
+  demoBrowserBaseline,
   demoBrowserExtensions,
   demoChecksums,
   demoCron,
   demoExpectedPorts,
   demoFiles,
+  demoFtpConfig,
+  demoGames,
   demoGroups,
   demoHostsEntries,
+  demoIdleLock,
+  demoIis,
+  demoMac,
+  demoNameResolution,
+  demoNullSession,
   demoPackages,
   demoPermDrift,
   demoPersistence,
   demoPolicy,
   demoPorts,
+  demoReadmeHits,
   demoRemoteTools,
   demoServices,
   demoShareAcls,
   demoShares,
+  demoSnmp,
   demoSysctl,
+  demoSysprepFiles,
+  demoTmpDirs,
   demoUsers,
+  demoWebChecklist,
 } from "./fixtures.js";
 
 /** Default README allowlist used when no names are injected (browser demo fallback). */
@@ -254,13 +273,18 @@ export function runDemo(ctx: EngineContext): RunResult {
   switch (id) {
     case "list-users":
       return pack(ctx, `Demo inventory of ${users.length} local accounts (hashes omitted).`, { users }, []);
-    case "flag-suspicious-users":
+    case "flag-suspicious-users": {
+      const sel = selectUnauthorizedUsers(users, allowlistFrom(ctx));
       return pack(
         ctx,
         `Heuristic pack flagged ${userFindings.length} accounts. Highest: ${userFindings[0]?.resource ?? "none"}.`,
-        { users: users.filter((u) => (u.suspicionScore ?? 0) >= 10) },
+        {
+          users: users.filter((u) => (u.suspicionScore ?? 0) >= 10),
+          extra: { unauthorizedNames: sel.names, missingAllowlist: sel.missingAllowlist },
+        },
         userFindings,
       );
+    }
     case "list-admin-users":
       return pack(
         ctx,
@@ -437,8 +461,18 @@ export function runDemo(ctx: EngineContext): RunResult {
     case "disable-smbv1":
     case "enable-windows-defender":
     case "disable-autoplay":
+    case "disable-llmnr-netbios-wpad":
+    case "harden-vsftpd":
+    case "remove-games-samples":
       return pack(ctx, mutateNote(ctx, id.replace(/-/g, " ")), {
         services: demoServices.filter((s) => !service || s.name === service),
+        packages: id === "remove-games-samples" ? demoGames : undefined,
+        extra:
+          id === "disable-llmnr-netbios-wpad"
+            ? { before: demoNameResolution, after: { llmnr: false, netbios: "disabled", wpadAutoDetect: false } }
+            : id === "harden-vsftpd"
+              ? { before: demoFtpConfig, after: { anonymous_enable: "NO", write_enable: "NO", anon_upload_enable: "NO" } }
+              : { simulated: true },
       });
     case "audit-ftp-telnet":
       return pack(ctx, "Telnet and anonymous FTP are live in the demo image.", {
@@ -825,6 +859,133 @@ export function runDemo(ctx: EngineContext): RunResult {
         remediationOpId: i.relatedOpId,
       })));
     }
+    case "select-unauthorized-users": {
+      const sel = selectUnauthorizedUsers(users, allowlistFrom(ctx));
+      return pack(
+        ctx,
+        `${sel.names.length} unauthorized/extra-admin accounts selected for disable/lock (allowlist miss).`,
+        {
+          users: sel.unauthorized,
+          extra: {
+            unauthorizedNames: sel.names,
+            extraAdmins: sel.extraAdmins.map((u) => u.name),
+            missingAllowlist: sel.missingAllowlist,
+          },
+        },
+        findingsFromUnauthorized(sel),
+      );
+    }
+    case "audit-sticky-tmp": {
+      const bad = demoTmpDirs.filter((f) => f.worldWritable && f.mode === "0777");
+      return pack(
+        ctx,
+        `${bad.length} temp paths missing sticky bit (1777 expected on /tmp).`,
+        { files: demoTmpDirs },
+        bad.map((f) => ({
+          id: `sticky:${f.path}`,
+          severity: f.path === "/tmp" ? "critical" as const : "high" as const,
+          title: `${f.path} is ${f.mode} (sticky missing)`,
+          detail: f.note ?? "World-writable temp without sticky.",
+          resource: f.path,
+          remediationOpId: "audit-sticky-tmp",
+        })),
+      );
+    }
+    case "audit-anonymous-ftp":
+      return pack(ctx, "vsftpd allows anonymous write in the demo image.", {
+        services: demoServices.filter((s) => /ftp|vsftp/i.test(s.name)),
+        ports: demoPorts.filter((p) => p.port === 21),
+        extra: { vsftpd: demoFtpConfig },
+      }, [
+        { id: "anon", severity: "high", title: "anonymous_enable=YES", detail: "/etc/vsftpd.conf", remediationOpId: "harden-vsftpd" },
+        { id: "anonup", severity: "critical", title: "anon_upload_enable=YES", detail: "Anonymous can write.", remediationOpId: "harden-vsftpd" },
+      ]);
+    case "audit-web-server":
+      return pack(ctx, "Apache/nginx demo config fails the quick harden checklist.", {
+        checklist: demoWebChecklist,
+        services: demoServices.filter((s) => /apache|nginx|httpd/i.test(s.name)),
+      }, demoWebChecklist.filter((i) => i.status === "fail").map((i) => ({
+        id: i.id,
+        severity: "medium" as const,
+        title: i.title,
+        detail: i.detail,
+        remediationOpId: "audit-web-server",
+      })));
+    case "audit-null-session":
+      return pack(ctx, "Anonymous SAM / null session restrictions are off.", {
+        extra: demoNullSession,
+      }, [
+        { id: "restrictanon", severity: "high", title: "RestrictAnonymous=0", detail: "Anonymous enumeration allowed.", remediationOpId: "audit-null-session" },
+        { id: "sam", severity: "critical", title: "RestrictAnonymousSAM=0", detail: "Anonymous SAM access allowed. SAM not dumped.", remediationOpId: "audit-null-session" },
+      ]);
+    case "audit-idle-lock":
+      return pack(ctx, "Idle/screensaver lock is not enforced.", {
+        extra: demoIdleLock,
+      }, [
+        { id: "tmout", severity: "medium", title: "No TMOUT in profile", detail: "Shell idle timeout unset." },
+        { id: "ss", severity: "high", title: "Screensaver is not secure", detail: "ScreenSaverIsSecure=0, timeout 9999." },
+      ]);
+    case "hunt-sysprep-leftovers":
+      return pack(ctx, "Unattend/sysprep leftovers present (password values omitted).", {
+        files: demoSysprepFiles,
+        extra: { note: "AutoLogon/Password keys flagged by name only." },
+      }, demoSysprepFiles.map((f) => ({
+        id: `sysprep:${f.path}`,
+        severity: "high" as const,
+        title: `Sysprep leftover ${f.path}`,
+        detail: f.note ?? "",
+        resource: f.path,
+      })));
+    case "audit-snmp":
+      return pack(ctx, "SNMP is running with default public/private communities.", {
+        services: demoServices.filter((s) => /snmp/i.test(s.name)),
+        extra: demoSnmp,
+      }, [
+        { id: "public", severity: "high", title: "SNMP community public", detail: "Default read community.", remediationOpId: "disable-service" },
+        { id: "private", severity: "critical", title: "SNMP community private", detail: "Default write community.", remediationOpId: "disable-service" },
+      ]);
+    case "audit-mac-enforcement":
+      return pack(ctx, "SELinux is Permissive; AppArmor has complain-mode profiles.", {
+        extra: demoMac,
+      }, [
+        { id: "selinux", severity: "high", title: "SELinux Permissive", detail: "Suggest enforcing after a README check." },
+        { id: "aa", severity: "medium", title: "AppArmor complain profiles", detail: `${demoMac.profilesComplain} profiles not enforcing.` },
+      ]);
+    case "audit-browser-baseline":
+      return pack(ctx, "Firefox/IE/Edge baseline settings are weak.", {
+        extra: { checks: demoBrowserBaseline },
+      }, demoBrowserBaseline.map((c) => ({
+        id: c.id,
+        severity: "medium" as const,
+        title: c.title,
+        detail: c.detail,
+      })));
+    case "audit-auto-updates":
+      return pack(ctx, "Unattended-upgrades and Windows Update are not enforcing.", {
+        extra: demoAutoUpdates,
+        policy: { unattendedUpgrades: false, pendingSecurityUpdates: 12 },
+      }, [
+        { id: "uu", severity: "medium", title: "unattended-upgrades off", detail: "APT::Periodic::Unattended-Upgrade 0", remediationOpId: "apply-security-updates" },
+        { id: "wu", severity: "high", title: "wuauserv disabled / AUOptions=1", detail: "Windows Update never checks.", remediationOpId: "apply-security-updates" },
+      ]);
+    case "audit-iis":
+      return pack(ctx, "IIS is installed with anonymous auth and directory browsing.", {
+        extra: demoIis,
+      }, [
+        { id: "anon", severity: "high", title: "IIS anonymousAuthentication enabled", detail: "Disable unless the README requires a public site." },
+        { id: "browse", severity: "medium", title: "IIS directoryBrowse enabled", detail: "Turn off directory listings." },
+        { id: "samples", severity: "medium", title: "IIS sample apps present", detail: "Remove sample content.", remediationOpId: "remove-games-samples" },
+      ]);
+    case "skim-forensics-readme":
+      return pack(ctx, `${demoReadmeHits.length} local README keyword hits. CCS not contacted.`, {
+        extra: { hits: demoReadmeHits, ccsContacted: false, note: "Local files only. Hash-looking lines omitted." },
+      }, demoReadmeHits.map((h) => ({
+        id: `readme:${h.path}:${h.keyword}`,
+        severity: "info" as const,
+        title: `${h.keyword} in ${h.path}`,
+        detail: h.line,
+        resource: h.path,
+      })));
     default:
       return pack(
         ctx,

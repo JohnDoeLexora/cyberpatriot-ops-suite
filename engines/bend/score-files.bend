@@ -22,6 +22,29 @@ def is_rat(+path: String) -> Bool:
   +p = String.to_lower(path)
   Bool.or(String.contains(p, "teamviewer"), Bool.or(String.contains(p, "anydesk"), Bool.or(String.contains(p, "rustdesk"), Bool.or(String.contains(p, "tightvnc"), Bool.or(String.contains(p, "realvnc"), Bool.or(String.contains(p, "ultravnc"), Bool.or(String.contains(p, "logmein"), Bool.or(String.contains(p, "splashtop"), Bool.or(String.contains(p, "chromoting"), Bool.or(String.contains(p, "anyconnect"), Bool.or(String.contains(p, "ultrasurf"), String.contains(p, "vncserver"))))))))))))
 
+def is_sysprep(+path: String) -> Bool:
+  +p = String.to_lower(path)
+  Bool.or(String.contains(p, "unattend"), Bool.or(String.contains(p, "sysprep"), String.contains(p, "autounattend")))
+
+def is_readme_kind(+kind: String) -> Bool:
+  String.eq(kind, "readme")
+
+def sticky_ok(+mode: String) -> Bool:
+  Bool.and(Nat.is_eq(String.length(mode), 4n), String.starts_with(mode, "1"))
+
+def is_temp_mount(+path: String) -> Bool:
+  Bool.or(String.starts_with(path, "/tmp"), Bool.or(String.starts_with(path, "/var/tmp"), String.starts_with(path, "/dev/shm")))
+
+def missing_sticky_go(ww: Bool, tmp: Bool, sticky: Bool) -> Bool:
+  match sticky:
+    case True{}:
+      False{}
+    case False{}:
+      Bool.and(ww, tmp)
+
+def missing_sticky(ww: Bool, tmp: Bool, +mode: String) -> Bool:
+  missing_sticky_go(ww, tmp, sticky_ok(mode))
+
 def score_path(+path: String, +mode: String, +kind: String) -> Lib.Hit:
   +tmp = String.starts_with(path, "/tmp")
   +home = String.starts_with(path, "/home")
@@ -53,6 +76,12 @@ def score_path(+path: String, +mode: String, +kind: String) -> Lib.Hit:
   +score9 = Lib.add_if(score8, shadow, 35n)
   +scoreA = Lib.add_if(score9, rat, 28n)
   +scoreB = Lib.add_if(scoreA, Bool.and(ssh, ww), 20n)
+  +sysprep = is_sysprep(path)
+  +readme = is_readme_kind(kind)
+  +nosticky = missing_sticky(ww, is_temp_mount(path), mode)
+  +scoreC = Lib.add_if(scoreB, sysprep, 30n)
+  +scoreD = Lib.add_if(scoreC, nosticky, 35n)
+  +scoreE = Lib.add_if(scoreD, readme, 8n)
   +tags0 = {"" : String}
   +tags1 = Lib.tag_if(tags0, suid, "suid")
   +tags2 = Lib.tag_if(tags1, sgid, "sgid")
@@ -64,7 +93,10 @@ def score_path(+path: String, +mode: String, +kind: String) -> Lib.Hit:
   +tags8 = Lib.tag_if(tags7, rat, "remote-access")
   +tags9 = Lib.tag_if(tags8, shadow, "shadow")
   +tagsA = Lib.tag_if(tags9, sudoers, "sudoers")
-  Lib.Hit{path, Lib.sev_of(scoreB), tagsA, scoreB}
+  +tagsB = Lib.tag_if(tagsA, sysprep, "sysprep")
+  +tagsC = Lib.tag_if(tagsB, nosticky, "missing-sticky")
+  +tagsD = Lib.tag_if(tagsC, readme, "readme")
+  Lib.Hit{path, Lib.sev_of(scoreE), tagsD, scoreE}
 
 def score_line(line: String) -> Lib.Hit:
   +cols = String.split(line, '|')

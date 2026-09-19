@@ -7,7 +7,10 @@ export {
   scoreUser,
   scoreUsers,
   findingsFromUsers,
+  findingsFromUnauthorized,
   isHumanAccount,
+  selectUnauthorizedUsers,
+  selectUnauthorizedUsersWithAllowlist,
   SIGNAL,
   NAME_PATTERN,
 } from "./heuristics/suspicious-users.js";

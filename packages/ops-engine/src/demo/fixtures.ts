@@ -408,3 +408,106 @@ export const demoPermDrift = [
   { path: "/etc/ssh/ssh_host_rsa_key", mode: "0644", expected: "0600", drift: true },
   { path: "C:\\Windows\\System32\\config\\SAM", mode: "Everyone:(R)", expected: "SYSTEM/Administrators only", drift: true },
 ];
+
+export const demoTmpDirs: FileRecord[] = [
+  { path: "/tmp", kind: "directory", mode: "0777", owner: "root", worldWritable: true, note: "missing sticky bit" },
+  { path: "/var/tmp", kind: "directory", mode: "1777", owner: "root", worldWritable: true, note: "sticky ok" },
+  { path: "/dev/shm", kind: "directory", mode: "1777", owner: "root", worldWritable: true, note: "sticky ok" },
+  { path: "/tmp/world", kind: "directory", mode: "0777", owner: "zygote", worldWritable: true, note: "world-writable temp dir, no sticky" },
+];
+
+export const demoFtpConfig = {
+  anonymous_enable: "YES",
+  write_enable: "YES",
+  anon_upload_enable: "YES",
+  chroot_local_user: "NO",
+  ssl_enable: "NO",
+  configPath: "/etc/vsftpd.conf",
+};
+
+export const demoWebChecklist = [
+  { id: "indexes", title: "Directory listings disabled", status: "fail" as const, detail: "Options Indexes in 000-default.conf", relatedOpId: "audit-web-server" },
+  { id: "servertokens", title: "ServerTokens Prod", status: "fail" as const, detail: "ServerTokens OS", relatedOpId: "audit-web-server" },
+  { id: "signature", title: "ServerSignature Off", status: "fail" as const, detail: "ServerSignature On", relatedOpId: "audit-web-server" },
+  { id: "autoindex", title: "nginx autoindex off", status: "fail" as const, detail: "autoindex on in default site", relatedOpId: "audit-web-server" },
+  { id: "tls", title: "No SSLv3/TLSv1", status: "fail" as const, detail: "SSLProtocol includes TLSv1", relatedOpId: "audit-web-server" },
+];
+
+export const demoNameResolution = {
+  llmnr: true,
+  netbios: "enabled",
+  wpadAutoDetect: true,
+  winHttpAutoProxy: "running",
+};
+
+export const demoNullSession = {
+  RestrictAnonymous: 0,
+  RestrictAnonymousSAM: 0,
+  EveryoneIncludesAnonymous: 1,
+  RestrictNullSessAccess: 0,
+  NullSessionPipes: ["browser", "samr"],
+  NullSessionShares: ["C$"],
+  note: "SAM contents not dumped; registry classification only.",
+};
+
+export const demoIdleLock = {
+  TMOUT: null,
+  IdleAction: "ignore",
+  ScreenSaveActive: 0,
+  ScreenSaverIsSecure: 0,
+  ScreenSaveTimeOut: 9999,
+};
+
+export const demoSysprepFiles: FileRecord[] = [
+  { path: "C:\\Windows\\Panther\\unattend.xml", kind: "file", note: "AutoLogon key present (value omitted)" },
+  { path: "/root/unattend.xml", kind: "file", note: "Password key present (value omitted)" },
+  { path: "C:\\Windows\\System32\\Sysprep\\unattend.xml", kind: "file", note: "sysprep leftover" },
+];
+
+export const demoSnmp = {
+  service: "snmpd",
+  state: "running",
+  communities: ["public", "private"],
+  rwcommunity: true,
+  port: 161,
+};
+
+export const demoMac = {
+  selinux: "Permissive",
+  apparmor: "complain",
+  profilesComplain: 3,
+  profilesEnforce: 1,
+};
+
+export const demoBrowserBaseline = [
+  { id: "safebrowsing", title: "Firefox safebrowsing", status: "fail" as const, detail: "browser.safebrowsing.malware.enabled = false" },
+  { id: "ie-pw", title: "IE disable password saving", status: "fail" as const, detail: "DisablePasswordSaving=0" },
+  { id: "smartscreen", title: "Edge SmartScreen", status: "fail" as const, detail: "SmartScreenEnabled=0" },
+];
+
+export const demoAutoUpdates = {
+  unattendedUpgrades: false,
+  periodicUnattended: "0",
+  wuauserv: "disabled",
+  AUOptions: 1,
+};
+
+export const demoGames = [
+  { name: "aisleriot", version: "1:3.22", prohibited: true },
+  { name: "gnome-mines", version: "1:40.1", prohibited: true },
+  { name: "example-content", version: "51", prohibited: true },
+  { name: "Microsoft.MicrosoftSolitaireCollection", version: "4.0", prohibited: true },
+];
+
+export const demoIis = {
+  features: ["IIS-WebServer", "IIS-WebServerRole", "IIS-FTPServer", "IIS-ASPNET45"],
+  anonymousAuthentication: true,
+  directoryBrowse: true,
+  samples: true,
+};
+
+export const demoReadmeHits = [
+  { path: "/home/alice/Desktop/README.txt", keyword: "forensics", line: "Forensics question 1: which media files were planted?" },
+  { path: "/home/alice/Desktop/README.txt", keyword: "unauthorized", line: "Unauthorized FTP should not be running." },
+  { path: "C:\\Users\\alice\\Desktop\\README.txt", keyword: "prohibited", line: "Remove prohibited games and sample content." },
+];
