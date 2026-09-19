@@ -1,0 +1,9 @@
+# Authorized administrators / sudoers for the example CyberPatriot image.
+# One username per line. Comments and blanks are ignored.
+# Must also appear in allowed-users.txt (or they will be flagged as extra humans).
+# sync-authorized-users creates missing names as standard users then adds these
+# to sudo/Administrators. It never invents passwords.
+# Copy the README authorized-admin list here.
+root
+alice
+Administrator

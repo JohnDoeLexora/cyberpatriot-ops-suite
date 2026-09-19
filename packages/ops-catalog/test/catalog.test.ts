@@ -94,6 +94,38 @@ describe("ops catalog integrity", () => {
     assert.ok(catalog.length >= 90, `expected ≥90 ops, got ${catalog.length}`);
   });
 
+  it("includes cp-09 parity-plus pack", () => {
+    for (const id of [
+      "apply-security-template",
+      "import-firewall-profile",
+      "enable-audit-policy",
+      "disable-remote-registry",
+      "disable-remote-assistance",
+      "force-password-change",
+      "sync-authorized-users",
+      "disable-optional-windows-features",
+      "run-sfc-scan",
+      "clear-suspicious-hosts",
+      "disable-display-manager-guest",
+      "lock-root-account",
+      "enable-fail2ban",
+      "harden-host-conf",
+      "set-ufw-logging",
+      "restrict-cron-at",
+      "hunt-shell-backdoors",
+      "scan-malware-tools",
+      "round-start-wizard",
+    ]) {
+      assert.ok(getOp(id), id);
+    }
+    assert.ok(catalog.length >= 110, `expected ≥110 ops, got ${catalog.length}`);
+    const wizard = getOp("round-start-wizard");
+    assert.equal(wizard?.risk, "read");
+    const sync = getOp("sync-authorized-users");
+    assert.equal(sync?.risk, "mutate");
+    assert.match(sync?.description ?? "", /password/i);
+  });
+
   it("mutate ops mention confirm in the description", () => {
     const missing = catalog.filter(
       (o) => o.risk === "mutate" && !/confirm/i.test(o.description),

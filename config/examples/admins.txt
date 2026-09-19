@@ -1,0 +1,5 @@
+# Example README-style admins.txt (other public CP kits use this name).
+# Copy into config/allowed-admins.txt and edit to match THIS image's README.
+root
+alice
+Administrator

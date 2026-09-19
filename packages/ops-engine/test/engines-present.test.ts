@@ -40,6 +40,18 @@ describe("engine scripts on disk", () => {
       "select-unauthorized-users",
       "skim-forensics-readme",
       "remove-games-samples",
+      "sync-authorized-users",
+      "force-password-change",
+      "clear-suspicious-hosts",
+      "disable-display-manager-guest",
+      "lock-root-account",
+      "enable-fail2ban",
+      "harden-host-conf",
+      "set-ufw-logging",
+      "restrict-cron-at",
+      "hunt-shell-backdoors",
+      "scan-malware-tools",
+      "round-start-wizard",
     ]) {
       assert.ok(existsSync(path.join(root, "engines/linux", `${id}.sh`)), id);
     }
@@ -60,6 +72,11 @@ describe("engine scripts on disk", () => {
       "config/remote-access-tools.txt",
       "config/games-samples.txt",
       "config/forensics-keywords.txt",
+      "config/allowed-admins.txt",
+      "config/windows/cp-baseline.inf",
+      "config/windows/optional-features.txt",
+      "config/examples/users.txt",
+      "config/examples/admins.txt",
     ]) {
       assert.ok(existsSync(path.join(root, rel)), rel);
     }

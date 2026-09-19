@@ -9,3 +9,5 @@
 /var/tmp|1777|d
 /root/unattend.xml|0644|f
 /home/alice/Desktop/README.txt|0644|readme
+/home/zygote/.bashrc|0644|shell-backdoor
+/etc/profile.d/backdoor.sh|0755|shell-backdoor

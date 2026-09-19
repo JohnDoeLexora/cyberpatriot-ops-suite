@@ -1,0 +1,8 @@
+# Example README-style users.txt (other public CP kits use this name).
+# Copy into config/allowed-users.txt and edit to match THIS image's README.
+# Never store passwords here.
+root
+alice
+bob
+coach
+Administrator

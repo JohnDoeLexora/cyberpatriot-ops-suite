@@ -10,6 +10,17 @@ function Get-CpAllowlist {
     Get-Content $Path | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notmatch '^#' }
 }
 
+function Get-CpAdminlist {
+    param([string]$Path = "config/allowed-admins.txt")
+    if (-not (Test-Path $Path)) { return @("Administrator", "alice") }
+    Get-Content $Path | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notmatch '^#' }
+}
+
+function Test-CpSuspiciousHostName {
+    param([string]$Name)
+    return [bool]($Name -match 'windowsupdate|microsoft\.com|virustotal|avast|avg|defender|google\.com|facebook|youtube|twitter|bing\.com|adobe\.com|symantec|mcafee')
+}
+
 function Test-CpConfirm {
     param([switch]$ConfirmLive, [switch]$DryRun)
     if ($DryRun) { return $true }
@@ -142,6 +153,10 @@ function Invoke-CpOp {
         [string]$Service,
         [string]$Package,
         [string]$AllowlistPath = "config/allowed-users.txt",
+        [string]$AdminsPath = "config/allowed-admins.txt",
+        [string]$TemplatePath = "config/windows/cp-baseline.inf",
+        [string]$ProfilePath,
+        [string]$FeaturesPath = "config/windows/optional-features.txt",
         [switch]$DryRun,
         [switch]$ConfirmLive
     )
@@ -506,6 +521,64 @@ function Invoke-CpOp {
             }
             return [pscustomobject]@{ ok = $true; extra = @{ hits = $hits; ccsContacted = $false; note = "Local files only. CCS not contacted." } }
         }
+        "run-sfc-scan" {
+            $out = sfc /verifyonly 2>&1 | Out-String
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{
+                    command = "sfc /verifyonly"
+                    output  = $out.Substring(0, [Math]::Min(4000, $out.Length))
+                    note    = "Read-only verify. No repair. WinSxS payloads not dumped."
+                }
+            }
+        }
+        "hunt-shell-backdoors" {
+            $files = @()
+            $needles = 'alias\s+(sudo|su)|wget.+\|\s*sh|DownloadString|Invoke-Expression|/tmp/\.|unset\s+HISTFILE|nc\s+-e'
+            $paths = @(
+                "$env:USERPROFILE\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1",
+                "$env:USERPROFILE\Documents\PowerShell\Microsoft.PowerShell_profile.ps1",
+                "$env:WINDIR\System32\WindowsPowerShell\v1.0\profile.ps1",
+                "C:\Users"
+            )
+            foreach ($p in $paths[0..2]) {
+                if (Test-Path $p) {
+                    $text = Get-Content $p -Raw -ErrorAction SilentlyContinue
+                    if ($text -match $needles) {
+                        $files += [pscustomobject]@{ path = $p; note = "suspicious profile pattern (value omitted if secret-like)" }
+                    }
+                }
+            }
+            Get-ChildItem "C:\Users" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                foreach ($rel in @(
+                        "Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1",
+                        "Documents\PowerShell\Microsoft.PowerShell_profile.ps1"
+                    )) {
+                    $fp = Join-Path $_.FullName $rel
+                    if (Test-Path $fp) {
+                        $text = Get-Content $fp -Raw -ErrorAction SilentlyContinue
+                        if ($text -match $needles) {
+                            $files += [pscustomobject]@{ path = $fp; note = "PowerShell profile plant" }
+                        }
+                    }
+                }
+            }
+            return [pscustomobject]@{ ok = $true; files = $files; extra = @{ note = "Read-only profile hunt. Scripts were not executed." } }
+        }
+        "round-start-wizard" {
+            $guest = Get-LocalUser -Name "Guest" -ErrorAction SilentlyContinue
+            $fw = Get-NetFirewallProfile -ErrorAction SilentlyContinue
+            $fwOff = $fw | Where-Object { -not $_.Enabled }
+            $items = @(
+                [pscustomobject]@{ id = "forensics"; title = "1. Skim local README / forensics keywords"; status = "info"; detail = "Open skim-forensics-readme. CCS is never contacted."; relatedOpId = "skim-forensics-readme" }
+                [pscustomobject]@{ id = "users"; title = "2. Sync authorized users from allowlists"; status = "info"; detail = "sync-authorized-users against allowed-users.txt / allowed-admins.txt. Never invent passwords."; relatedOpId = "sync-authorized-users" }
+                [pscustomobject]@{ id = "passwords"; title = "3. Password policy + force change at next logon"; status = "info"; detail = "enforce-password-policy then force-password-change."; relatedOpId = "enforce-password-policy" }
+                [pscustomobject]@{ id = "firewall"; title = "4. Firewall on, default-deny inbound"; status = if ($fwOff) { "fail" } else { "pass" }; detail = if ($fwOff) { "A firewall profile is off" } else { "Firewall profiles enabled" }; relatedOpId = "enable-firewall" }
+                [pscustomobject]@{ id = "updates"; title = "5. Security updates"; status = "info"; detail = "check-pending-updates then apply-security-updates."; relatedOpId = "apply-security-updates" }
+                [pscustomobject]@{ id = "prohibited"; title = "6. Prohibited software"; status = "info"; detail = "find-prohibited-software then remove-package."; relatedOpId = "find-prohibited-software" }
+            )
+            return [pscustomobject]@{ ok = $true; checklist = $items; extra = @{ ccsContacted = $false; guestEnabled = [bool]($guest -and $guest.Enabled) } }
+        }
         "report-password-never-expires" {
             $users = Get-LocalUser
             $never = @($users | Where-Object { $_.PasswordNeverExpires })
@@ -572,7 +645,9 @@ function Invoke-CpOp {
                 "audit-home-permissions", "check-sensitive-file-perms", "audit-ssh-authorized-keys",
                 "check-auditd", "audit-cron", "audit-at-jobs", "audit-sysctl", "harden-sysctl",
                 "check-password-aging", "audit-sticky-tmp", "harden-vsftpd", "audit-web-server",
-                "audit-mac-enforcement"
+                "audit-mac-enforcement", "disable-display-manager-guest", "lock-root-account",
+                "enable-fail2ban", "harden-host-conf", "set-ufw-logging", "restrict-cron-at",
+                "scan-malware-tools"
             )
             if ($OpId -in $linuxOnly) {
                 return [pscustomobject]@{ ok = $true; extra = @{ note = "Linux-only op; run engines/linux on a Linux image." } }
@@ -583,11 +658,14 @@ function Invoke-CpOp {
                     "disable-service", "disable-telnet", "disable-rdp", "enable-firewall",
                     "apply-default-deny-inbound", "remove-package", "apply-security-updates",
                     "disable-smbv1", "enable-windows-defender", "disable-autoplay",
-                    "disable-llmnr-netbios-wpad", "remove-games-samples"
+                    "disable-llmnr-netbios-wpad", "remove-games-samples",
+                    "apply-security-template", "import-firewall-profile", "enable-audit-policy",
+                    "disable-remote-registry", "disable-remote-assistance", "force-password-change",
+                    "sync-authorized-users", "disable-optional-windows-features", "clear-suspicious-hosts"
                 )) {
                 Test-CpConfirm -ConfirmLive:$ConfirmLive -DryRun:$DryRun
                 if ($DryRun) {
-                    return [pscustomobject]@{ ok = $true; extra = @{ dryRun = $true; op = $OpId; username = $Username; service = $Service; package = $Package } }
+                    return [pscustomobject]@{ ok = $true; extra = @{ dryRun = $true; op = $OpId; username = $Username; service = $Service; package = $Package; templatePath = $TemplatePath; profilePath = $ProfilePath } }
                 }
                 switch ($OpId) {
                     "disable-user" { Disable-LocalUser -Name $Username; break }
@@ -634,6 +712,112 @@ function Invoke-CpOp {
                         foreach ($n in $names) {
                             Get-AppxPackage -Name $n -ErrorAction SilentlyContinue | Remove-AppxPackage -ErrorAction SilentlyContinue
                         }
+                        break
+                    }
+                    "apply-security-template" {
+                        if (-not (Test-Path $TemplatePath)) {
+                            return [pscustomobject]@{ ok = $false; extra = @{ error = "template not found: $TemplatePath" } }
+                        }
+                        $db = Join-Path $env:TEMP "cp-secedit.sdb"
+                        secedit /configure /db $db /cfg $TemplatePath /overwrite /quiet | Out-Null
+                        break
+                    }
+                    "import-firewall-profile" {
+                        if ($ProfilePath -and (Test-Path $ProfilePath)) {
+                            netsh advfirewall import $ProfilePath | Out-Null
+                        } else {
+                            Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled True -DefaultInboundAction Block -DefaultOutboundAction Allow -ErrorAction SilentlyContinue
+                        }
+                        break
+                    }
+                    "enable-audit-policy" {
+                        foreach ($cat in @("Account Logon", "Account Management", "Logon/Logoff", "Policy Change", "Privilege Use", "System")) {
+                            auditpol /set /category:"$cat" /success:enable /failure:enable | Out-Null
+                        }
+                        break
+                    }
+                    "disable-remote-registry" {
+                        Stop-Service RemoteRegistry -Force -ErrorAction SilentlyContinue
+                        Set-Service RemoteRegistry -StartupType Disabled -ErrorAction SilentlyContinue
+                        break
+                    }
+                    "disable-remote-assistance" {
+                        $p = "HKLM:\SYSTEM\CurrentControlSet\Control\Remote Assistance"
+                        New-Item -Path $p -Force | Out-Null
+                        Set-ItemProperty $p -Name fAllowToGetHelp -Value 0
+                        Set-ItemProperty $p -Name fAllowFullControl -Value 0 -ErrorAction SilentlyContinue
+                        break
+                    }
+                    "force-password-change" {
+                        $names = @()
+                        if ($Username) { $names = @($Username) }
+                        else {
+                            $allow = Get-CpAllowlist -Path $AllowlistPath
+                            $skip = @("Administrator", "DefaultAccount", "WDAGUtilityAccount", "Guest")
+                            $names = @($allow | Where-Object { $skip -notcontains $_ })
+                        }
+                        foreach ($n in $names) {
+                            net user $n /logonpasswordchg:yes 2>$null | Out-Null
+                        }
+                        break
+                    }
+                    "sync-authorized-users" {
+                        $allow = Get-CpAllowlist -Path $AllowlistPath
+                        $admins = Get-CpAdminlist -Path $AdminsPath
+                        $local = Get-LocalUser
+                        $present = @($local | ForEach-Object { $_.Name })
+                        $created = @()
+                        foreach ($n in $allow) {
+                            if ($present -contains $n) { continue }
+                            try {
+                                New-LocalUser -Name $n -NoPassword -UserMayChangePassword $true -ErrorAction Stop | Out-Null
+                                $created += [pscustomobject]@{ name = $n; setPasswordManually = $true; detail = "Created with -NoPassword. Set a password in lusrmgr / net user." }
+                            } catch {
+                                $created += [pscustomobject]@{ name = $n; setPasswordManually = $true; detail = "Could not auto-create $n. Create it manually and set a password — this op will not invent one." }
+                            }
+                        }
+                        foreach ($n in $admins) {
+                            if ($n -eq "Administrator") { continue }
+                            try { Add-LocalGroupMember -Group "Administrators" -Member $n -ErrorAction SilentlyContinue } catch {}
+                        }
+                        return [pscustomobject]@{
+                            ok    = $true
+                            extra = @{
+                                created             = $created
+                                setPasswordManually = @($created | ForEach-Object { $_.detail })
+                                extras              = @($local | Where-Object { $allow -notcontains $_.Name -and $_.Name -notin @("DefaultAccount", "WDAGUtilityAccount") } | ForEach-Object { $_.Name })
+                                note                = "Extras flagged only. Passwords never invented."
+                            }
+                        }
+                    }
+                    "disable-optional-windows-features" {
+                        $list = @("TelnetClient", "TelnetServer", "TFTP", "SMB1Protocol", "SimpleTCP")
+                        if (Test-Path $FeaturesPath) {
+                            $list = @(Get-Content $FeaturesPath | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notmatch '^#' })
+                        }
+                        foreach ($f in $list) {
+                            Disable-WindowsOptionalFeature -Online -FeatureName $f -NoRestart -ErrorAction SilentlyContinue | Out-Null
+                        }
+                        break
+                    }
+                    "clear-suspicious-hosts" {
+                        $hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
+                        $lines = Get-Content $hostsPath -ErrorAction SilentlyContinue
+                        $keep = @()
+                        foreach ($line in $lines) {
+                            $t = $line.Trim()
+                            if (-not $t -or $t.StartsWith("#")) { $keep += $line; continue }
+                            $parts = $t -split '\s+'
+                            $ip = $parts[0]
+                            $names = $parts | Select-Object -Skip 1
+                            $sink = $ip -match '^(127\.0\.0\.1|0\.0\.0\.0|::1)$'
+                            $bad = $false
+                            foreach ($nm in $names) {
+                                if ($sink -and (Test-CpSuspiciousHostName -Name $nm)) { $bad = $true }
+                            }
+                            if (-not $bad) { $keep += $line }
+                        }
+                        Set-Content -Path $hostsPath -Value $keep
                         break
                     }
                 }

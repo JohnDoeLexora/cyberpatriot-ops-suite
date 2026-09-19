@@ -46,6 +46,8 @@ const USER_VIEWS = new Set([
   'expire-user-password',
   'remove-user-from-admins',
   'select-unauthorized-users',
+  'force-password-change',
+  'sync-authorized-users',
 ])
 
 const RUN_LABELS: Record<string, string> = {
@@ -144,13 +146,32 @@ const RUN_LABELS: Record<string, string> = {
   'remove-games-samples': 'Remove games',
   'audit-iis': 'Check IIS',
   'skim-forensics-readme': 'Skim README keywords',
+  'apply-security-template': 'Apply security template',
+  'import-firewall-profile': 'Import firewall profile',
+  'enable-audit-policy': 'Turn on audit policy',
+  'disable-remote-registry': 'Turn off Remote Registry',
+  'disable-remote-assistance': 'Turn off Remote Assistance',
+  'force-password-change': 'Force password change',
+  'sync-authorized-users': 'Sync allowlist users',
+  'disable-optional-windows-features': 'Turn off extra features',
+  'run-sfc-scan': 'Check system files',
+  'clear-suspicious-hosts': 'Clean hosts file',
+  'disable-display-manager-guest': 'Turn off greeter guest',
+  'lock-root-account': 'Lock root password',
+  'enable-fail2ban': 'Turn on fail2ban',
+  'harden-host-conf': 'Harden host.conf',
+  'set-ufw-logging': 'Set firewall logging',
+  'restrict-cron-at': 'Restrict cron/at',
+  'hunt-shell-backdoors': 'Hunt shell backdoors',
+  'scan-malware-tools': 'Scan with clamav',
+  'round-start-wizard': 'Round-start wizard',
 }
 
 function viewFor(op: CatalogOp): OpView {
   if (USER_VIEWS.has(op.id)) return 'users'
   if (op.id === 'list-groups') return 'groups'
   if (op.id === 'export-evidence-bundle') return 'export'
-  if (op.id === 'one-click-hardening-checklist') return 'preflight'
+  if (op.id === 'one-click-hardening-checklist' || op.id === 'round-start-wizard') return 'preflight'
   return 'standard'
 }
 

@@ -14,6 +14,7 @@ export const BEND_KINDS = [
   "files-sticky",
   "files-sysprep",
   "files-readme",
+  "files-shell",
   "users",
   "ports",
   "agg",
@@ -48,6 +49,7 @@ const TAG_FILTER: Partial<Record<BendKind, string[]>> = {
   "files-sticky": ["missing-sticky", "world-writable", "plant-path"],
   "files-sysprep": ["sysprep"],
   "files-readme": ["readme"],
+  "files-shell": ["shell-backdoor", "shell-rc"],
 };
 
 export function bendDir(repoRoot: string): string {

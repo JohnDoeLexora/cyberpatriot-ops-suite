@@ -7,7 +7,7 @@ is unchanged — Bend does not talk to the Win32 APIs.
 
 | File | Role |
 | --- | --- |
-| `score-files.bend` | Parallel SUID / world-writable / media / RAT / sticky-tmp / sysprep / README scoring |
+| `score-files.bend` | Parallel SUID / world-writable / media / RAT / sticky-tmp / sysprep / README / shell-backdoor scoring |
 | `score-users.bend` | Parallel account heuristics (no hashes) |
 | `score-ports.bend` | Parallel expected-port baseline + suspicious listeners |
 | `agg-checks.bend` | Parallel remaining-work aggregation |
@@ -23,5 +23,6 @@ Bend (Mac-safe fixtures). Mutations never go through Bend.
 ```bash
 export PATH="$HOME/.bend/bin:$PATH"
 ./engines/bend/run.sh files-ww
+./engines/bend/run.sh files-shell
 ./engines/bend/run.sh users
 ```

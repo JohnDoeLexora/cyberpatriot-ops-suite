@@ -29,6 +29,12 @@ def is_sysprep(+path: String) -> Bool:
 def is_readme_kind(+kind: String) -> Bool:
   String.eq(kind, "readme")
 
+def is_shell_backdoor(+kind: String) -> Bool:
+  String.eq(kind, "shell-backdoor")
+
+def is_shell_rc(+kind: String, +path: String) -> Bool:
+  Bool.or(String.eq(kind, "shell"), Bool.or(String.eq(kind, "shell-backdoor"), Bool.or(String.contains(path, ".bashrc"), Bool.or(String.contains(path, ".profile"), String.contains(path, "profile.d")))))
+
 def sticky_ok(+mode: String) -> Bool:
   Bool.and(Nat.is_eq(String.length(mode), 4n), String.starts_with(mode, "1"))
 
@@ -82,6 +88,10 @@ def score_path(+path: String, +mode: String, +kind: String) -> Lib.Hit:
   +scoreC = Lib.add_if(scoreB, sysprep, 30n)
   +scoreD = Lib.add_if(scoreC, nosticky, 35n)
   +scoreE = Lib.add_if(scoreD, readme, 8n)
+  +shellbd = is_shell_backdoor(kind)
+  +shellrc = is_shell_rc(kind, path)
+  +scoreF = Lib.add_if(scoreE, shellbd, 32n)
+  +scoreG = Lib.add_if(scoreF, Bool.and(shellrc, Bool.not(shellbd)), 4n)
   +tags0 = {"" : String}
   +tags1 = Lib.tag_if(tags0, suid, "suid")
   +tags2 = Lib.tag_if(tags1, sgid, "sgid")
@@ -96,7 +106,9 @@ def score_path(+path: String, +mode: String, +kind: String) -> Lib.Hit:
   +tagsB = Lib.tag_if(tagsA, sysprep, "sysprep")
   +tagsC = Lib.tag_if(tagsB, nosticky, "missing-sticky")
   +tagsD = Lib.tag_if(tagsC, readme, "readme")
-  Lib.Hit{path, Lib.sev_of(scoreE), tagsD, scoreE}
+  +tagsE = Lib.tag_if(tagsD, shellbd, "shell-backdoor")
+  +tagsF = Lib.tag_if(tagsE, shellrc, "shell-rc")
+  Lib.Hit{path, Lib.sev_of(scoreG), tagsF, scoreG}
 
 def score_line(line: String) -> Lib.Hit:
   +cols = String.split(line, '|')

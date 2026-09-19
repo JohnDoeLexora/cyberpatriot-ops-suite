@@ -1,0 +1,64 @@
+; CyberPatriot authorized-image local security template
+; Applied by apply-security-template via secedit /configure (confirm-gated).
+; Review against THIS image's README before import. Never used off-image.
+;
+; Unicode
+[Unicode]
+Unicode=yes
+
+[Version]
+signature="$CHICAGO$"
+Revision=1
+
+[System Access]
+MinimumPasswordAge = 1
+MaximumPasswordAge = 90
+MinimumPasswordLength = 14
+PasswordComplexity = 1
+PasswordHistorySize = 5
+LockoutBadCount = 5
+ResetLockoutCount = 30
+LockoutDuration = 30
+RequireLogonToChangePassword = 0
+ForceLogoffWhenHourExpire = 0
+ClearTextPassword = 0
+LSAAnonymousNameLookup = 0
+EnableGuestAccount = 0
+EnableAdminAccount = 1
+
+; 3 = Success and Failure
+[Event Audit]
+AuditSystemEvents = 3
+AuditLogonEvents = 3
+AuditObjectAccess = 3
+AuditPrivilegeUse = 3
+AuditPolicyChange = 3
+AuditAccountManage = 3
+AuditProcessTracking = 3
+AuditDSAccess = 3
+AuditAccountLogon = 3
+
+[Registry Values]
+MACHINE\System\CurrentControlSet\Control\Lsa\NoLMHash=4,1
+MACHINE\System\CurrentControlSet\Control\Lsa\LimitBlankPasswordUse=4,1
+MACHINE\System\CurrentControlSet\Control\Lsa\RestrictAnonymous=4,1
+MACHINE\System\CurrentControlSet\Control\Lsa\RestrictAnonymousSAM=4,1
+MACHINE\System\CurrentControlSet\Control\Lsa\EveryoneIncludesAnonymous=4,0
+MACHINE\System\CurrentControlSet\Control\Lsa\ForceGuest=4,0
+MACHINE\System\CurrentControlSet\Control\Lsa\LmCompatibilityLevel=4,5
+MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System\EnableLUA=4,1
+MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System\ConsentPromptBehaviorAdmin=4,2
+MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System\PromptOnSecureDesktop=4,1
+MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\AutoAdminLogon=1,"0"
+MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Setup\RecoveryConsole\SecurityLevel=4,0
+MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Setup\RecoveryConsole\SetCommand=4,0
+MACHINE\System\CurrentControlSet\Control\Remote Assistance\fAllowToGetHelp=4,0
+MACHINE\System\CurrentControlSet\Services\LanManServer\Parameters\RestrictNullSessAccess=4,1
+MACHINE\System\CurrentControlSet\Services\LanmanWorkstation\Parameters\EnablePlainTextPassword=4,0
+MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\NoDriveTypeAutoRun=4,255
+
+[Privilege Rights]
+SeDenyNetworkLogonRight = Guest
+SeDenyInteractiveLogonRight = Guest
+SeDenyRemoteInteractiveLogonRight = Guest
+SeInteractiveLogonRight = *S-1-5-32-544,*S-1-5-32-545
