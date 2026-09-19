@@ -6,7 +6,7 @@ Source of truth: `packages/ops-docs`. The dashboard How-to drawer searches title
 Competition-legal only: authorized-image hardening. No offense, no exploit recipes, no CCS cheats.
 Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFETY.md).
 
-- **Guides:** 95
+- **Guides:** 114
 - **Open in the dashboard:** How-to button on each OpPanel, or the header How-to control. Press `?` to open the focused pane’s guide.
 
 ## Index
@@ -108,6 +108,25 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 | [`remove-games-samples`](./remove-games-samples.md) | Remove games and sample content | packages | mutate |
 | [`audit-iis`](./audit-iis.md) | IIS feature inventory + anonymous auth | windows | read |
 | [`skim-forensics-readme`](./skim-forensics-readme.md) | Skim local README for forensics keywords | evidence | read |
+| [`apply-security-template`](./apply-security-template.md) | Apply local security template | windows | mutate |
+| [`import-firewall-profile`](./import-firewall-profile.md) | Import firewall profile | firewall | mutate |
+| [`enable-audit-policy`](./enable-audit-policy.md) | Enable Success+Failure audit policy | logging | mutate |
+| [`disable-remote-registry`](./disable-remote-registry.md) | Disable Remote Registry | windows | mutate |
+| [`disable-remote-assistance`](./disable-remote-assistance.md) | Disable Remote Assistance | windows | mutate |
+| [`force-password-change`](./force-password-change.md) | Force password change at next logon | users | mutate |
+| [`sync-authorized-users`](./sync-authorized-users.md) | Sync users from allowlists | users | mutate |
+| [`disable-optional-windows-features`](./disable-optional-windows-features.md) | Disable optional Windows features | windows | mutate |
+| [`run-sfc-scan`](./run-sfc-scan.md) | Run system file integrity check | windows | read |
+| [`clear-suspicious-hosts`](./clear-suspicious-hosts.md) | Clear suspicious hosts-file entries | network | mutate |
+| [`disable-display-manager-guest`](./disable-display-manager-guest.md) | Disable display-manager guest and autologin | auth | mutate |
+| [`lock-root-account`](./lock-root-account.md) | Lock the root password | users | mutate |
+| [`enable-fail2ban`](./enable-fail2ban.md) | Install and enable fail2ban | auth | mutate |
+| [`harden-host-conf`](./harden-host-conf.md) | Harden host.conf nospoof | network | mutate |
+| [`set-ufw-logging`](./set-ufw-logging.md) | Set UFW logging high and verify defaults | firewall | mutate |
+| [`restrict-cron-at`](./restrict-cron-at.md) | Restrict at/cron to root | scheduled | mutate |
+| [`hunt-shell-backdoors`](./hunt-shell-backdoors.md) | Hunt shell aliases and profile backdoors | files | read |
+| [`scan-malware-tools`](./scan-malware-tools.md) | ClamAV / chkrootkit scan report | packages | mutate |
+| [`round-start-wizard`](./round-start-wizard.md) | Round-start wizard | evidence | read |
 
 ## Browse by category
 
@@ -128,6 +147,9 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`audit-duplicate-uids`](./audit-duplicate-uids.md) — Audit duplicate UIDs
 - [`expire-user-password`](./expire-user-password.md) — Expire a user password
 - [`select-unauthorized-users`](./select-unauthorized-users.md) — Select unauthorized users (allowlist miss)
+- [`force-password-change`](./force-password-change.md) — Force password change at next logon
+- [`sync-authorized-users`](./sync-authorized-users.md) — Sync users from allowlists
+- [`lock-root-account`](./lock-root-account.md) — Lock the root password
 
 ### auth
 
@@ -142,6 +164,8 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`report-password-never-expires`](./report-password-never-expires.md) — Report never-expires + blank password combo
 - [`audit-null-session`](./audit-null-session.md) — Audit null session / anonymous SAM
 - [`audit-idle-lock`](./audit-idle-lock.md) — Audit screensaver / idle lock
+- [`disable-display-manager-guest`](./disable-display-manager-guest.md) — Disable display-manager guest and autologin
+- [`enable-fail2ban`](./enable-fail2ban.md) — Install and enable fail2ban
 
 ### services
 
@@ -171,6 +195,8 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`audit-hosts-file`](./audit-hosts-file.md) — Audit hosts file
 - [`check-ntp`](./check-ntp.md) — Check time synchronization
 - [`disable-llmnr-netbios-wpad`](./disable-llmnr-netbios-wpad.md) — Disable LLMNR / NetBIOS / WPAD
+- [`clear-suspicious-hosts`](./clear-suspicious-hosts.md) — Clear suspicious hosts-file entries
+- [`harden-host-conf`](./harden-host-conf.md) — Harden host.conf nospoof
 
 ### firewall
 
@@ -178,6 +204,8 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`enable-firewall`](./enable-firewall.md) — Enable host firewall
 - [`list-firewall-rules`](./list-firewall-rules.md) — List firewall rules
 - [`apply-default-deny-inbound`](./apply-default-deny-inbound.md) — Apply default-deny inbound
+- [`import-firewall-profile`](./import-firewall-profile.md) — Import firewall profile
+- [`set-ufw-logging`](./set-ufw-logging.md) — Set UFW logging high and verify defaults
 
 ### files
 
@@ -194,6 +222,7 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`audit-sticky-tmp`](./audit-sticky-tmp.md) — Audit sticky bit on temp dirs
 - [`hunt-sysprep-leftovers`](./hunt-sysprep-leftovers.md) — Hunt unattended / sysprep leftovers
 - [`audit-browser-baseline`](./audit-browser-baseline.md) — Audit Firefox/IE/Edge security baseline
+- [`hunt-shell-backdoors`](./hunt-shell-backdoors.md) — Hunt shell aliases and profile backdoors
 
 ### packages
 
@@ -202,11 +231,13 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`remove-package`](./remove-package.md) — Remove a package
 - [`hunt-remote-access-tools`](./hunt-remote-access-tools.md) — Hunt remote-access tools and browser extensions
 - [`remove-games-samples`](./remove-games-samples.md) — Remove games and sample content
+- [`scan-malware-tools`](./scan-malware-tools.md) — ClamAV / chkrootkit scan report
 
 ### logging
 
 - [`audit-logging`](./audit-logging.md) — Audit logging configuration
 - [`check-auditd`](./check-auditd.md) — Check auditd
+- [`enable-audit-policy`](./enable-audit-policy.md) — Enable Success+Failure audit policy
 
 ### updates
 
@@ -220,6 +251,7 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`audit-at-jobs`](./audit-at-jobs.md) — Audit at jobs
 - [`list-scheduled-tasks`](./list-scheduled-tasks.md) — List scheduled tasks
 - [`audit-persistence-deep`](./audit-persistence-deep.md) — Deep startup persistence audit
+- [`restrict-cron-at`](./restrict-cron-at.md) — Restrict at/cron to root
 
 ### kernel
 
@@ -236,6 +268,11 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`disable-autoplay`](./disable-autoplay.md) — Disable Autoplay
 - [`check-bitlocker-status`](./check-bitlocker-status.md) — Check BitLocker status
 - [`audit-iis`](./audit-iis.md) — IIS feature inventory + anonymous auth
+- [`apply-security-template`](./apply-security-template.md) — Apply local security template
+- [`disable-remote-registry`](./disable-remote-registry.md) — Disable Remote Registry
+- [`disable-remote-assistance`](./disable-remote-assistance.md) — Disable Remote Assistance
+- [`disable-optional-windows-features`](./disable-optional-windows-features.md) — Disable optional Windows features
+- [`run-sfc-scan`](./run-sfc-scan.md) — Run system file integrity check
 
 ### evidence
 
@@ -247,4 +284,5 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`scoreboard-preflight`](./scoreboard-preflight.md) — Scoreboard preflight checklist
 - [`post-harden-checklist`](./post-harden-checklist.md) — Post-harden verification checklist
 - [`skim-forensics-readme`](./skim-forensics-readme.md) — Skim local README for forensics keywords
+- [`round-start-wizard`](./round-start-wizard.md) — Round-start wizard
 

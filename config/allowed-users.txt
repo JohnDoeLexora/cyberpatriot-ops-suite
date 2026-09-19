@@ -1,7 +1,10 @@
 # Authorized human accounts for the example CyberPatriot image.
 # One username per line. Comments and blanks are ignored.
+# Copy the README user list here before sync-authorized-users / flag-suspicious-users.
+# Pair with config/allowed-admins.txt for who should keep sudo/Administrators.
 # Heuristics only require interactive/human accounts to appear here;
 # well-known service accounts (www-data, sshd, daemon, …) are exempt.
+# Do not put passwords in this file.
 root
 alice
 bob

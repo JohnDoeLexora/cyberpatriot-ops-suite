@@ -5,7 +5,7 @@ Every op is **defensive, authorized-image hardening** for CyberPatriot.
 See [SAFETY.md](./SAFETY.md) before running anything with `mode: "live"`.
 How-to explainers for every op: [howto/](./howto/).
 
-- **Count:** 95
+- **Count:** 114
 - **Default run mode:** demo (Mac-safe fixtures, no host mutation)
 - **Mutations:** live mode requires `confirm: true` in `POST /ops/:id/run`
 
@@ -115,6 +115,25 @@ exportable redacted evidence — like Sabbath coffee: creative, not cheating.
 | `remove-games-samples` | Remove games and sample content | packages | both | mutate |
 | `audit-iis` | IIS feature inventory + anonymous auth | windows | windows | read |
 | `skim-forensics-readme` | Skim local README for forensics keywords | evidence | both | read |
+| `apply-security-template` | Apply local security template | windows | windows | mutate |
+| `import-firewall-profile` | Import firewall profile | firewall | windows | mutate |
+| `enable-audit-policy` | Enable Success+Failure audit policy | logging | windows | mutate |
+| `disable-remote-registry` | Disable Remote Registry | windows | windows | mutate |
+| `disable-remote-assistance` | Disable Remote Assistance | windows | windows | mutate |
+| `force-password-change` | Force password change at next logon | users | both | mutate |
+| `sync-authorized-users` | Sync users from allowlists | users | both | mutate |
+| `disable-optional-windows-features` | Disable optional Windows features | windows | windows | mutate |
+| `run-sfc-scan` | Run system file integrity check | windows | windows | read |
+| `clear-suspicious-hosts` | Clear suspicious hosts-file entries | network | both | mutate |
+| `disable-display-manager-guest` | Disable display-manager guest and autologin | auth | linux | mutate |
+| `lock-root-account` | Lock the root password | users | linux | mutate |
+| `enable-fail2ban` | Install and enable fail2ban | auth | linux | mutate |
+| `harden-host-conf` | Harden host.conf nospoof | network | linux | mutate |
+| `set-ufw-logging` | Set UFW logging high and verify defaults | firewall | linux | mutate |
+| `restrict-cron-at` | Restrict at/cron to root | scheduled | linux | mutate |
+| `hunt-shell-backdoors` | Hunt shell aliases and profile backdoors | files | both | read |
+| `scan-malware-tools` | ClamAV / chkrootkit scan report | packages | linux | mutate |
+| `round-start-wizard` | Round-start wizard | evidence | both | read |
 
 ## Details
 
@@ -270,6 +289,36 @@ Force a password change at next login (chage -d 0 / net user /logonpasswordchg:y
 
 Bulk-select interactive accounts that miss config/allowed-users.txt (or the README list). Returns a disable/lock-ready name list plus extra admins and allowlist names missing from the image. Deepens flag-suspicious-users: this is the round-one 'who do we turn off' table, not a credential dump. Authorized-image hardening only: never used against other teams, scoring endpoints, or off-image hosts.
 
+#### `force-password-change`
+
+- **Title:** Force password change at next logon
+- **Platforms:** both
+- **Risk:** mutate
+- **Params:** `username` (string), `allowlistPath` (string), `dryRun` (boolean)
+- **Demo fixture:** Bulk demo: would expire alice, bob, coach (not root/hacker123); per-user demo expires bob
+
+Expire passwords so the user must change at next logon (chage -d 0 / net user /logonpasswordchg:yes). Pass username for one account, or omit it to bulk-expire humans on config/allowed-users.txt (root skipped in bulk). Deepens expire-user-password. Never invents or prints passwords. Live requires confirm:true.
+
+#### `sync-authorized-users`
+
+- **Title:** Sync users from allowlists
+- **Platforms:** both
+- **Risk:** mutate
+- **Params:** `allowlistPath` (string), `adminsPath` (string), `dryRun` (boolean)
+- **Demo fixture:** Missing dave (create, set password manually); extras hacker123/toor/Guest; extra-admin nologin_admin; alice already admin
+
+Create missing README humans from config/allowed-users.txt and promote missing admins from config/allowed-admins.txt. Extra interactive users and extra admins are flagged — not auto-disabled. Never invents passwords: new accounts are created without a password and listed under setPasswordManually. Live requires confirm:true. Bend-parallel user sweep when available. Authorized-image hardening only: never used against other teams, scoring endpoints, or off-image hosts.
+
+#### `lock-root-account`
+
+- **Title:** Lock the root password
+- **Platforms:** linux
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates passwd -l root; account remains UID 0 but password locked
+
+Lock the root account password with passwd -l so root cannot authenticate with a password (sudo can remain). Confirm-gated. Does not delete root or disable UID 0. Check the README before locking if a console root login is required.
+
 ### auth
 
 #### `audit-password-policy`
@@ -381,6 +430,26 @@ Read RestrictAnonymous, RestrictAnonymousSAM, EveryoneIncludesAnonymous, Restric
 - **Demo fixture:** No TMOUT; IdleAction ignore; Windows ScreenSaverIsSecure=0 timeout 9999
 
 Check idle/screensaver lock: Linux TMOUT/logind IdleAction and dconf idle-delay; Windows ScreenSaveActive, ScreenSaverIsSecure, and ScreenSaveTimeOut. Unlocked idle sessions are a frequent policy item. Read-only.
+
+#### `disable-display-manager-guest`
+
+- **Title:** Disable display-manager guest and autologin
+- **Platforms:** linux
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates LightDM allow-guest=false and GDM AutomaticLoginEnable=false; autologin-user cleared
+
+Turn off LightDM/GDM guest sessions and autologin (allow-guest=false, autologin-user empty, AutomaticLoginEnable=false). Distinct from disable-guest-account (the Guest user). Live requires confirm:true.
+
+#### `enable-fail2ban`
+
+- **Title:** Install and enable fail2ban
+- **Platforms:** linux
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates apt install fail2ban and systemctl enable --now; jail.d sshd on
+
+Install fail2ban if the distro package is available, then enable and start the service on the authorized image. If apt/dnf cannot provide it, report unavailable — do not fetch random GitHub installers. Live requires confirm:true. dryRun reports presence only. Local SSH brute-force defense, not a remote attack.
 
 ### services
 
@@ -588,6 +657,26 @@ Check chronyd/systemd-timesyncd/w32time status. Wrong clocks break logs and Kerb
 
 Turn off LLMNR (EnableMulticast=0), NetBIOS over TCP/IP (SetTcpipNetbios 2), and WPAD/autodetect proxy on the local Windows image. These name-resolution shortcuts are common CP plants and are not needed on a hardened workstation. Live requires confirm:true. dryRun reports current state without changing it.
 
+#### `clear-suspicious-hosts`
+
+- **Title:** Clear suspicious hosts-file entries
+- **Platforms:** both
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Would drop 127.0.0.1 windowsupdate.microsoft.com and 0.0.0.0 google.com; keep localhost
+
+Remove hosts-file lines that sinkhole Windows Update, AV, or well-known names to 127.0.0.1/0.0.0.0. Keeps localhost and the machine hostname. Complements audit-hosts-file. Live requires confirm:true. dryRun lists lines that would be dropped. Local file only.
+
+#### `harden-host-conf`
+
+- **Title:** Harden host.conf nospoof
+- **Platforms:** linux
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates writing order hosts,bind / multi on / nospoof on
+
+Write /etc/host.conf with `order hosts,bind`, `multi on`, and `nospoof on` to mitigate IP spoofing / name tricks on the local resolver. Live requires confirm:true. Complements harden-sysctl rp_filter.
+
 ### firewall
 
 #### `audit-firewall`
@@ -629,6 +718,26 @@ List host firewall rules and highlight allow-any inbound, allow 23/21/445, and d
 - **Demo fixture:** Simulates default deny inbound + allow 22/80 from required services
 
 Set default incoming deny (ufw default deny incoming / public profile block) while leaving established outbound. Pair with allow rules for required services. Live requires confirm:true.
+
+#### `import-firewall-profile`
+
+- **Title:** Import firewall profile
+- **Platforms:** windows
+- **Risk:** mutate
+- **Params:** `profilePath` (string), `dryRun` (boolean)
+- **Demo fixture:** Simulates enabling Domain/Public/Private firewall with Block inbound / Allow outbound (no .wfw in the demo)
+
+Import a netsh .wfw firewall export if profilePath is set, otherwise apply a known-good local profile: all profiles on, default-deny inbound, allow outbound. Confirm-gated. Does not scan other machines. Authorized-image hardening only: never used against other teams, scoring endpoints, or off-image hosts.
+
+#### `set-ufw-logging`
+
+- **Title:** Set UFW logging high and verify defaults
+- **Platforms:** linux
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates logging high, default deny incoming, allow outgoing; ufw was inactive in the fixture
+
+Set `ufw logging high` and verify default deny incoming / allow outgoing on the local host firewall. Does not open ports. Live requires confirm:true. Pair with enable-firewall if UFW is inactive.
 
 ### files
 
@@ -762,6 +871,16 @@ Find leftover unattend.xml, autounattend.xml, sysprep.xml, Panther, and kickstar
 
 Check enterprise Firefox policies/user.js and IE/Edge SmartScreen, form-fill, and popup settings on the local image. Flags safebrowsing off, password-saving on a shared image, and insecure protocol handlers. Does not dump cookies, history, or saved passwords.
 
+#### `hunt-shell-backdoors`
+
+- **Title:** Hunt shell aliases and profile backdoors
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** Hits: /home/zygote/.bashrc alias sudo=; /etc/profile.d/backdoor.sh wget|sh; /root/.bashrc HISTFILE unset
+
+Scan /etc/profile, bashrc, profile.d, user rc files, and Windows PowerShell profiles for alias hijacks (sudo/ls/passwd), wget|sh, nc -e, LD_PRELOAD, HISTFILE unset, and /tmp plants. Read-only. Bend-parallel file sweep on Linux when available. Does not execute the rc files.
+
 ### packages
 
 #### `list-installed-packages`
@@ -814,6 +933,16 @@ Find TeamViewer, AnyDesk, VNC, Chrome Remote Desktop, RustDesk and similar on th
 
 Remove games and vendor sample/content packages listed in config/games-samples.txt (aisleriot, solitaire, Xbox apps, example-content, IIS samples, …). Live requires confirm:true. Refuses names that look like required services. Snapshot first if a forensics question might name a game.
 
+#### `scan-malware-tools`
+
+- **Title:** ClamAV / chkrootkit scan report
+- **Platforms:** linux
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Demo dry inventory: clamav absent, chkrootkit absent; confirm would install then scan /home /tmp (no hits in fixture)
+
+Inventory clamav and chkrootkit. dryRun (or live without install) reports whether they are present. With confirm:true, may apt/dnf install the distro packages then run a local scan (home/tmp/opt only). Never downloads unofficial installers, never scans other hosts. If packages are unavailable, report that — do not fail the round on a missing universe repo.
+
 ### logging
 
 #### `audit-logging`
@@ -835,6 +964,16 @@ Check rsyslog/journald/syslog-ng or Windows Event Log services and common log fi
 - **Demo fixture:** auditd installed but inactive; no watches on /etc/passwd
 
 Check auditd/auditctl presence, enabled flag, and a few expected rules (identity changes, sudoers writes). Does not flood the disk with new rules in read mode.
+
+#### `enable-audit-policy`
+
+- **Title:** Enable Success+Failure audit policy
+- **Platforms:** windows
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates auditpol Success+Failure on six categories; Security log is not dumped
+
+Turn on Success and Failure auditing for Account Logon, Account Management, Logon/Logoff, Policy Change, Privilege Use, and System via auditpol. Local security log only — not a remote audit. Live requires confirm:true.
 
 ### updates
 
@@ -909,6 +1048,16 @@ List non-Microsoft scheduled tasks and highlight user-writable actions, missing 
 - **Demo fixture:** rc.local /tmp/.kworker; cron wget|sh; HKCU Run update.exe; profile.d backdoor.sh
 
 Deeper than audit-startup-items: systemd enabled units, rc.local, cron/cron.d, /etc/profile.d, user autostart, Windows Run/RunOnce, Startup folder, and non-Microsoft scheduled tasks. Flags temp-path payloads, wget|sh, and interpreter plants. Inventory only.
+
+#### `restrict-cron-at`
+
+- **Title:** Restrict at/cron to root
+- **Platforms:** linux
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates cron.allow/at.allow = root; would remove world-readable cron.deny
+
+Write /etc/cron.allow and /etc/at.allow containing root (and allowed-admins if listed), and remove world-usable cron.deny/at.deny so only those names may use crontab/at. Does not delete existing root cron jobs. Live requires confirm:true. Complements audit-cron / audit-at-jobs.
 
 ### kernel
 
@@ -1014,6 +1163,56 @@ Report BitLocker protection status per volume. Informational; CP scoring may or 
 
 Inventory IIS optional features and flag anonymous authentication, directory browsing, ASP classic, and sample applications. Local Windows image only. Does not dump site content or attack other hosts.
 
+#### `apply-security-template`
+
+- **Title:** Apply local security template
+- **Platforms:** windows
+- **Risk:** mutate
+- **Params:** `templatePath` (string), `dryRun` (boolean)
+- **Demo fixture:** Simulates secedit import of cp-baseline.inf: min length 14, lockout 5, audit Success+Failure, Guest off
+
+Import a secedit .inf (or LGPO-style) baseline for password, lockout, audit, and security options on the local Windows image. Defaults to config/windows/cp-baseline.inf. dryRun reports what secedit would configure. Live requires confirm:true. Does not talk to other hosts or the CCS. Authorized-image hardening only: never used against other teams, scoring endpoints, or off-image hosts.
+
+#### `disable-remote-registry`
+
+- **Title:** Disable Remote Registry
+- **Platforms:** windows
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates RemoteRegistry stopped and StartupType Disabled
+
+Stop and disable the RemoteRegistry service on the local Windows image. Remote Registry is a common CP plant and is not needed on a workstation. Live requires confirm:true. dryRun reports current start type.
+
+#### `disable-remote-assistance`
+
+- **Title:** Disable Remote Assistance
+- **Platforms:** windows
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates fAllowToGetHelp=0 and fAllowFullControl=0
+
+Set fAllowToGetHelp=0 and fAllowFullControl=0 under HKLM Remote Assistance so the local image will not offer Remote Assistance. Live requires confirm:true. Complements disable-rdp; does not attack other hosts.
+
+#### `disable-optional-windows-features`
+
+- **Title:** Disable optional Windows features
+- **Platforms:** windows
+- **Risk:** mutate
+- **Params:** `featuresPath` (string), `dryRun` (boolean)
+- **Demo fixture:** Simulates disabling TelnetClient, TFTP, SMB1Protocol, SimpleTCP; reboot pending noted
+
+Bulk-disable optional features listed in config/windows/optional-features.txt (Telnet, TFTP, SMB1Protocol extras, SimpleTCP, IIS-FTP*). Complements disable-telnet / disable-smbv1. Live requires confirm:true. NoRestart — reboot is a separate admin choice.
+
+#### `run-sfc-scan`
+
+- **Title:** Run system file integrity check
+- **Platforms:** windows
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** Demo: sfc /verifyonly found 2 integrity violations (hosts.dll plant, notepad.exe hash mismatch) — report only, no repair
+
+Run sfc /verifyonly on the local Windows image and report integrity results. Read-only (does not repair). Does not dump WinSxS payloads. Pair with apply-security-updates if component store repair is needed later.
+
 ### evidence
 
 #### `export-evidence-bundle`
@@ -1095,4 +1294,14 @@ After-action verification on the authorized image: password policy, SSH/UAC, ext
 - **Demo fixture:** Hits: README Desktop 'forensics question 1 media', /home/alice/README.txt 'unauthorized ftp'; CCS not contacted
 
 Keyword-skim local README/forensics/question text files (Desktop, homes, /root, optional searchRoot). Helps answer forensics questions from files *on the image*. Never contacts the CCS scoring server, other teams, or the internet. Hash-looking lines are skipped; passwords in files are not copied wholesale. Authorized-image hardening only: never used against other teams, scoring endpoints, or off-image hosts.
+
+#### `round-start-wizard`
+
+- **Title:** Round-start wizard
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** 6 sequenced steps; forensics/users/firewall/prohibited fail on the unhardened demo image; CCS not contacted
+
+One-click sequenced guide for the first minutes of a round: forensics skim → user sync → password policy → firewall → updates → prohibited software. Read-only — it does not run the mutate ops. Each row points at the existing catalog op to open next. Not a CCS scrape and not a substitute for the README.
 

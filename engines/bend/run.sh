@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Thin glue: collect local facts, score with Bend 2, fall back to Python.
 # Usage: run.sh <kind>
-# kinds: files-ww files-suid files-media files-hidden files-rats files-perms files-sticky files-sysprep files-readme users ports agg
+# kinds: files-ww files-suid files-media files-hidden files-rats files-perms files-sticky files-sysprep files-readme files-shell users ports agg
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -10,7 +10,7 @@ KIND="${1:-}"
 export PATH="${HOME}/.bend/bin:/home/box/.bend/bin:${PATH}"
 
 case "$KIND" in
-  files-ww|files-suid|files-media|files-hidden|files-rats|files-perms|files-sticky|files-sysprep|files-readme|users|ports|agg) ;;
+  files-ww|files-suid|files-media|files-hidden|files-rats|files-perms|files-sticky|files-sysprep|files-readme|files-shell|users|ports|agg) ;;
   *)
     echo '{"ok":false,"engine":"none","error":"unknown kind"}' >&2
     exit 2

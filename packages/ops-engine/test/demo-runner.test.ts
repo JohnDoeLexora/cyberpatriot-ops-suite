@@ -167,6 +167,40 @@ describe("demo runner output shape", () => {
     assert.ok(iis.findings.some((f) => /anonymous/i.test(f.title)));
   });
 
+  it("cp-09 parity-plus ops return specialized demo findings", async () => {
+    const sync = await runOp({ opId: "sync-authorized-users", mode: "demo" });
+    const hosts = await runOp({ opId: "clear-suspicious-hosts", mode: "demo" });
+    const shell = await runOp({ opId: "hunt-shell-backdoors", mode: "demo" });
+    const wizard = await runOp({ opId: "round-start-wizard", mode: "demo" });
+    const sfc = await runOp({ opId: "run-sfc-scan", mode: "demo" });
+    const bulk = await runOp({ opId: "force-password-change", mode: "demo" });
+    assert.ok((sync.data.extra?.missingToCreate as string[] | undefined)?.includes("dave"));
+    assert.ok((sync.data.extra?.setPasswordManually as unknown[] | undefined)?.length);
+    assert.ok(hosts.findings.some((f) => /windowsupdate|google/i.test(f.title)));
+    assert.ok(shell.findings.some((f) => /bashrc|profile/i.test(f.title + (f.detail ?? ""))));
+    assert.ok(wizard.data.checklist && wizard.data.checklist.length >= 6);
+    assert.equal(wizard.data.extra?.ccsContacted, false);
+    assert.ok(sfc.findings.length >= 1);
+    assert.ok((bulk.data.extra?.targets as string[] | undefined)?.includes("alice"));
+  });
+
+  it("cp-09 mutate ops are blocked live without confirm", async () => {
+    for (const id of [
+      "sync-authorized-users",
+      "clear-suspicious-hosts",
+      "force-password-change",
+      "lock-root-account",
+      "enable-fail2ban",
+      "apply-security-template",
+    ]) {
+      const blocked = await runOp({ opId: id, mode: "live" });
+      assert.equal(blocked.ok, false, id);
+      assert.match(blocked.blocked?.reason ?? "", /confirm/);
+      const dry = await runOp({ opId: id, mode: "live", params: { dryRun: true } });
+      assert.equal(dry.blocked, undefined, id);
+    }
+  });
+
   it("cp-07 mutate ops are blocked live without confirm", async () => {
     for (const id of ["harden-vsftpd", "disable-llmnr-netbios-wpad", "remove-games-samples"]) {
       const blocked = await runOp({ opId: id, mode: "live" });

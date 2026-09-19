@@ -21,7 +21,7 @@ Hashes and private keys must never appear in API output either — the engines a
 | Live Linux behavior | `packages/ops-engine/src/linux/` and `engines/linux/*.sh` |
 | Live Windows behavior | `engines/windows/<op-id>.ps1` |
 | How-to text | `packages/ops-docs/src/guides/` |
-| Allowlists | `config/*.txt` |
+| Allowlists | `config/allowed-users.txt`, `config/allowed-admins.txt`, `config/examples/` |
 | Dashboard labels / user table | `apps/dashboard/src/catalog/ops.ts` |
 
 Windows scripts are **not** executed on a Mac or Linux laptop. Review them here; run them on the Windows competition image.

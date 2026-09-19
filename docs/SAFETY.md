@@ -22,7 +22,7 @@ exploitation, and no “cheat the CCS” automation.
   Windows PowerShell scripts on a Windows image.
 - On Linux, **Bend 2** (`bend` 2.0.5) scores embarrassingly parallel inventories
   (world-writable / SUID / media / hidden / RAT / sticky-tmp / sysprep leftover /
-  README paths, user heuristics, port baseline diffs, checklist aggregation). A thin `engines/bend/collect.py`
+  README paths, shell/profile backdoors, user heuristics, port baseline diffs, checklist aggregation). A thin `engines/bend/collect.py`
   gathers host facts; Bend never walks Windows APIs and is never used for
   mutations. If `bend` is missing, the same collector scores in Python, then
   the existing TypeScript `find` path.
@@ -33,6 +33,13 @@ exploitation, and no “cheat the CCS” automation.
   required).
 - Usernames, service names, and package names are validated before they are
   passed as argv (never interpolated into a shell string).
+- `sync-authorized-users` creates missing README accounts **without a password**
+  and reports `setPasswordManually`. It never invents or prints passwords, and
+  it flags extras instead of auto-disabling them.
+- `scan-malware-tools` may install distro `clamav`/`chkrootkit` only with
+  `confirm:true`. dryRun is inventory-only. No unofficial installers.
+- `round-start-wizard` is a read-only sequence of existing ops. It does not
+  contact the CCS scoring server.
 
 ## Secrets and evidence
 

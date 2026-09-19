@@ -211,6 +211,64 @@ def collect_files_sysprep() -> list[str]:
     return file_rows(extra + found)
 
 
+SHELL_BACKDOOR_RE = re.compile(
+    r"alias\s+(sudo|su|ls|cd|passwd|chmod|chown|ssh|login)\s*=|"
+    r"nc\s+-e\s+/bin/(ba)?sh|"
+    r"python3?\s+-c.{0,80}socket|"
+    r"wget.{0,80}\|\s*(ba)?sh|"
+    r"curl.{0,80}\|\s*(ba)?sh|"
+    r"LD_PRELOAD=|"
+    r"PROMPT_COMMAND=.+(wget|curl|nc|python)|"
+    r"unset\s+HISTFILE|"
+    r"iptables\s+-F|"
+    r"base64\s+-d.{0,40}\|\s*(ba)?sh|"
+    r"/tmp/\.[A-Za-z0-9]",
+    re.I,
+)
+
+
+def collect_files_shell() -> list[str]:
+    """Inventory rc/profile files; tag content hits as shell-backdoor (no command execution)."""
+    candidates: list[str] = [
+        "/etc/profile",
+        "/etc/bash.bashrc",
+        "/etc/bashrc",
+        "/root/.bashrc",
+        "/root/.profile",
+        "/root/.bash_aliases",
+        "/root/.bash_profile",
+    ]
+    profile_d = Path("/etc/profile.d")
+    if profile_d.is_dir():
+        for child in list(profile_d.iterdir())[:80]:
+            if child.is_file():
+                candidates.append(str(child))
+    home = Path("/home")
+    if home.is_dir():
+        for userdir in list(home.iterdir())[:80]:
+            if not userdir.is_dir():
+                continue
+            for rc in (".bashrc", ".profile", ".bash_aliases", ".bash_profile", ".zshrc"):
+                candidates.append(str(userdir / rc))
+    rows: list[str] = []
+    seen: set[str] = set()
+    for raw in candidates:
+        if raw in seen or not os.path.isfile(raw):
+            continue
+        seen.add(raw)
+        kind = "shell"
+        try:
+            text = Path(raw).read_text(encoding="utf-8", errors="replace")[:8000]
+            if SHELL_BACKDOOR_RE.search(text):
+                kind = "shell-backdoor"
+        except OSError:
+            pass
+        rows.append(f"{sanitize(raw)}|{mode_of(raw)}|{kind}")
+        if len(rows) >= MAX_LINES:
+            break
+    return rows
+
+
 def collect_files_readme() -> list[str]:
     found = run_find(
         [
@@ -428,6 +486,7 @@ COLLECTORS = {
     "files-sticky": lambda repo: collect_files_sticky(),
     "files-sysprep": lambda repo: collect_files_sysprep(),
     "files-readme": lambda repo: collect_files_readme(),
+    "files-shell": lambda repo: collect_files_shell(),
     "users": collect_users,
     "ports": collect_ports,
     "agg": collect_agg,
@@ -443,6 +502,7 @@ KIND_TO_BEND = {
     "files-sticky": "score-files.bend",
     "files-sysprep": "score-files.bend",
     "files-readme": "score-files.bend",
+    "files-shell": "score-files.bend",
     "users": "score-users.bend",
     "ports": "score-ports.bend",
     "agg": "agg-checks.bend",
@@ -498,6 +558,14 @@ def fallback_score(kind: str, tsv: str) -> dict:
             if kind == "files-readme" or (len(cols) > 2 and cols[2] == "readme"):
                 score += 8
                 tags.append("readme")
+            kind_col = cols[2] if len(cols) > 2 else ""
+            if kind == "files-shell" or kind_col in {"shell", "shell-backdoor"}:
+                tags.append("shell-rc")
+                if kind_col == "shell-backdoor":
+                    score += 32
+                    tags.append("shell-backdoor")
+                elif kind == "files-shell":
+                    score += 4
         elif kind == "users":
             uid = cols[1] if len(cols) > 1 else ""
             empty = len(cols) > 4 and cols[4] == "1"

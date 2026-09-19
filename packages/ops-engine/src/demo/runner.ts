@@ -14,33 +14,44 @@ import type {
   RunResult,
 } from "../types.js";
 import {
+  DEFAULT_DEMO_ADMINS,
   DEMO_NOW,
+  demoAuditPolicy,
   demoAutoUpdates,
   demoBrowserBaseline,
   demoBrowserExtensions,
   demoChecksums,
   demoCron,
+  demoDisplayManager,
   demoExpectedPorts,
+  demoFail2ban,
   demoFiles,
   demoFtpConfig,
   demoGames,
   demoGroups,
+  demoHostConf,
   demoHostsEntries,
   demoIdleLock,
   demoIis,
   demoMac,
+  demoMalwareTools,
   demoNameResolution,
   demoNullSession,
+  demoOptionalFeatures,
   demoPackages,
   demoPermDrift,
   demoPersistence,
   demoPolicy,
   demoPorts,
   demoReadmeHits,
+  demoRemoteServices,
   demoRemoteTools,
+  demoSecurityTemplate,
   demoServices,
+  demoSfc,
   demoShareAcls,
   demoShares,
+  demoShellBackdoors,
   demoSnmp,
   demoSysctl,
   demoSysprepFiles,
@@ -986,6 +997,275 @@ export function runDemo(ctx: EngineContext): RunResult {
         detail: h.line,
         resource: h.path,
       })));
+    case "apply-security-template":
+      return pack(ctx, mutateNote(ctx, "import secedit template cp-baseline.inf"), {
+        extra: { template: demoSecurityTemplate, simulated: true },
+      });
+    case "import-firewall-profile":
+      return pack(ctx, mutateNote(ctx, "apply known-good firewall profile (all on, block inbound)"), {
+        policy: { firewallEnabled: true, ufwStatus: "active" },
+        extra: {
+          profiles: [
+            { name: "Domain", enabled: true, inbound: "Block", outbound: "Allow" },
+            { name: "Private", enabled: true, inbound: "Block", outbound: "Allow" },
+            { name: "Public", enabled: true, inbound: "Block", outbound: "Allow" },
+          ],
+        },
+      });
+    case "enable-audit-policy":
+      return pack(ctx, mutateNote(ctx, "enable Success+Failure audit policy"), {
+        extra: {
+          before: demoAuditPolicy,
+          after: {
+            "Account Logon": "Success and Failure",
+            "Account Management": "Success and Failure",
+            "Logon/Logoff": "Success and Failure",
+            "Policy Change": "Success and Failure",
+            "Privilege Use": "Success and Failure",
+            System: "Success and Failure",
+          },
+        },
+      });
+    case "disable-remote-registry":
+      return pack(ctx, mutateNote(ctx, "disable Remote Registry"), {
+        services: [{ name: "RemoteRegistry", state: "stopped", enabled: false, platform: "windows" }],
+        extra: { before: demoRemoteServices.RemoteRegistry },
+      });
+    case "disable-remote-assistance":
+      return pack(ctx, mutateNote(ctx, "disable Remote Assistance"), {
+        extra: { before: demoRemoteServices.RemoteAssistance, after: { fAllowToGetHelp: 0, fAllowFullControl: 0 } },
+      });
+    case "force-password-change": {
+      const allow = allowlistFrom(ctx);
+      const target = username;
+      const bulk = users.filter(
+        (u) =>
+          allow.has(u.name) &&
+          u.name !== "root" &&
+          u.name !== "Administrator" &&
+          u.interactive !== false,
+      );
+      const names = target ? [target] : bulk.map((u) => u.name);
+      return pack(ctx, mutateNote(ctx, target ? `expire password for ${target}` : `bulk-expire ${names.join(", ")}`), {
+        users: users.filter((u) => names.includes(u.name)),
+        extra: { targets: names, bulk: !target, simulated: true },
+      });
+    }
+    case "sync-authorized-users": {
+      const allow = allowlistFrom(ctx);
+      const admins = new Set<string>(DEFAULT_DEMO_ADMINS);
+      const missing = ["dave"].filter((n) => ![...users].some((u) => u.name === n));
+      const extras = users.filter(
+        (u) =>
+          (u.interactive || (u.uid != null && u.uid >= 1000) || u.name.toLowerCase() === "guest") &&
+          !allow.has(u.name) &&
+          u.name !== "root",
+      );
+      const extraAdmins = users.filter(
+        (u) =>
+          (u.uid === 0 || u.groups.some((g) => ["sudo", "wheel", "administrators"].includes(g.toLowerCase()))) &&
+          !admins.has(u.name) &&
+          u.name !== "root",
+      );
+      return pack(
+        ctx,
+        mutateNote(
+          ctx,
+          `create ${missing.join(", ") || "no missing users"}; flag ${extras.length} extras (passwords never invented)`,
+        ),
+        {
+          users: extras,
+          extra: {
+            missingToCreate: missing,
+            setPasswordManually: missing.map((name) => ({
+              name,
+              detail: `Created without a password. Set one manually (passwd ${name} / lusrmgr).`,
+            })),
+            extras: extras.map((u) => u.name),
+            extraAdmins: extraAdmins.map((u) => u.name),
+            allowedAdmins: [...admins],
+            simulated: true,
+          },
+        },
+        [
+          ...missing.map((name) => ({
+            id: `missing:${name}`,
+            severity: "medium" as const,
+            title: `Allowlist user missing: ${name}`,
+            detail: "Would create without a password. Set password manually.",
+            resource: name,
+            remediationOpId: "sync-authorized-users",
+          })),
+          ...extras.map((u) => ({
+            id: `extra:${u.name}`,
+            severity: "high" as const,
+            title: `Extra account not in allowlist: ${u.name}`,
+            detail: "Flagged only — not auto-disabled.",
+            resource: u.name,
+            remediationOpId: "disable-user",
+          })),
+          ...extraAdmins.map((u) => ({
+            id: `extraadmin:${u.name}`,
+            severity: "high" as const,
+            title: `Extra admin: ${u.name}`,
+            detail: "Not in allowed-admins.txt.",
+            resource: u.name,
+            remediationOpId: "remove-user-from-admins",
+          })),
+        ],
+      );
+    }
+    case "disable-optional-windows-features":
+      return pack(ctx, mutateNote(ctx, "disable optional Windows features Telnet/TFTP/SMB1/SimpleTCP"), {
+        extra: { features: demoOptionalFeatures, rebootRequired: true, simulated: true },
+      });
+    case "run-sfc-scan":
+      return pack(
+        ctx,
+        `sfc /verifyonly: ${demoSfc.violations.length} integrity violations (report only, no repair).`,
+        { extra: demoSfc },
+        demoSfc.violations.map((v) => ({
+          id: `sfc:${v.path}`,
+          severity: "medium" as const,
+          title: `SFC integrity violation ${v.path}`,
+          detail: v.detail,
+          resource: v.path,
+        })),
+      );
+    case "clear-suspicious-hosts": {
+      const drop = demoHostsEntries.filter((e) =>
+        e.names.some((n) => /windowsupdate|google\.com|microsoft\.com/i.test(n)),
+      );
+      const keep = demoHostsEntries.filter((e) => !drop.includes(e));
+      return pack(ctx, mutateNote(ctx, `drop ${drop.length} suspicious hosts-file lines`), {
+        extra: { wouldDrop: drop, keep, simulated: true },
+      }, drop.map((e) => ({
+        id: `hosts:${e.names.join(",")}`,
+        severity: "high" as const,
+        title: `Sinkhole ${e.names.join(" ")} → ${e.ip}`,
+        detail: "Would remove this hosts-file line.",
+        resource: e.names[0],
+      })));
+    }
+    case "disable-display-manager-guest":
+      return pack(ctx, mutateNote(ctx, "disable LightDM/GDM guest and autologin"), {
+        extra: {
+          before: demoDisplayManager,
+          after: {
+            lightdmAllowGuest: false,
+            lightdmAutologin: "",
+            gdmAutomaticLoginEnable: false,
+            gdmAutomaticLogin: "",
+          },
+        },
+      });
+    case "lock-root-account":
+      return pack(ctx, mutateNote(ctx, "lock root password (passwd -l)"), {
+        users: users.filter((u) => u.name === "root").map((u) => ({ ...u, locked: true })),
+        extra: { target: "root", simulated: true },
+      });
+    case "enable-fail2ban":
+      return pack(ctx, mutateNote(ctx, "install and enable fail2ban"), {
+        extra: { before: demoFail2ban, after: { installed: true, active: true, packageAvailable: true } },
+      });
+    case "harden-host-conf":
+      return pack(ctx, mutateNote(ctx, "write /etc/host.conf nospoof on"), {
+        extra: { before: demoHostConf, after: { path: "/etc/host.conf", order: "hosts,bind", multi: "on", nospoof: "on" } },
+      });
+    case "set-ufw-logging":
+      return pack(ctx, mutateNote(ctx, "ufw logging high + default deny incoming"), {
+        policy: { firewallEnabled: true, ufwStatus: "active", ufwLogging: "high" },
+        extra: { defaults: { incoming: "deny", outgoing: "allow", logging: "high" } },
+      });
+    case "restrict-cron-at":
+      return pack(ctx, mutateNote(ctx, "restrict cron/at to root via cron.allow/at.allow"), {
+        extra: { cronAllow: ["root"], atAllow: ["root"], wouldRemoveDeny: ["/etc/cron.deny", "/etc/at.deny"] },
+      });
+    case "hunt-shell-backdoors":
+      return pack(
+        ctx,
+        `${demoShellBackdoors.length} suspicious shell/profile backdoors.`,
+        { files: demoShellBackdoors, extra: { scorer: "demo" } },
+        demoShellBackdoors.map((f) => ({
+          id: `shell:${f.path}`,
+          severity: /sudo|wget|DownloadString/i.test(f.note ?? "") ? "critical" as const : "high" as const,
+          title: `Shell backdoor ${f.path}`,
+          detail: f.note ?? "",
+          resource: f.path,
+        })),
+      );
+    case "scan-malware-tools":
+      return pack(ctx, mutateNote(ctx, "inventory clamav/chkrootkit; confirm would install then local-scan /home /tmp"), {
+        extra: { ...demoMalwareTools, wouldInstall: ["clamav", "chkrootkit"], scanRoots: ["/home", "/tmp", "/opt"] },
+      }, [
+        {
+          id: "clamav-absent",
+          severity: "medium",
+          title: "clamav not installed",
+          detail: "dryRun inventory. confirm:true may install the distro package then scan locally.",
+        },
+      ]);
+    case "round-start-wizard": {
+      const items: ChecklistItem[] = [
+        {
+          id: "forensics",
+          title: "1. Skim local README / forensics keywords",
+          status: "fail",
+          detail: `${demoReadmeHits.length} keyword hits on the image. CCS not contacted.`,
+          relatedOpId: "skim-forensics-readme",
+        },
+        {
+          id: "users",
+          title: "2. Sync authorized users from allowlists",
+          status: "fail",
+          detail: "Extras (hacker123, toor, Guest, …) and missing dave. Do not invent passwords.",
+          relatedOpId: "sync-authorized-users",
+        },
+        {
+          id: "passwords",
+          title: "3. Password policy + force change at next logon",
+          status: "fail",
+          detail: `min length ${demoPolicy.PASS_MIN_LEN}. Then force-password-change for README humans.`,
+          relatedOpId: "enforce-password-policy",
+        },
+        {
+          id: "firewall",
+          title: "4. Firewall on, default-deny inbound, logging high",
+          status: demoPolicy.firewallEnabled ? "pass" : "fail",
+          detail: `ufw ${demoPolicy.ufwStatus}. Next: enable-firewall / apply-default-deny-inbound / set-ufw-logging.`,
+          relatedOpId: "enable-firewall",
+        },
+        {
+          id: "updates",
+          title: "5. Security updates",
+          status: Number(demoPolicy.pendingSecurityUpdates) > 0 ? "warn" : "pass",
+          detail: `${demoPolicy.pendingSecurityUpdates} pending security updates.`,
+          relatedOpId: "apply-security-updates",
+        },
+        {
+          id: "prohibited",
+          title: "6. Prohibited software",
+          status: demoPackages.some((p) => p.prohibited) ? "fail" : "pass",
+          detail: demoPackages.filter((p) => p.prohibited).map((p) => p.name).join(", ") || "None found",
+          relatedOpId: "find-prohibited-software",
+        },
+      ];
+      const failed = items.filter((i) => i.status === "fail").length;
+      return pack(
+        ctx,
+        `Round-start wizard: ${items.length} sequenced steps, ${failed} failing. Read-only — open the related op to fix. CCS not contacted.`,
+        { checklist: items, extra: { ccsContacted: false, sequence: items.map((i) => i.relatedOpId) } },
+        items
+          .filter((i) => i.status === "fail" || i.status === "warn")
+          .map((i) => ({
+            id: i.id,
+            severity: i.status === "warn" ? ("medium" as const) : ("high" as const),
+            title: i.title,
+            detail: i.detail,
+            remediationOpId: i.relatedOpId,
+          })),
+      );
+    }
     default:
       return pack(
         ctx,

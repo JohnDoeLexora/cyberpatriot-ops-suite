@@ -1,0 +1,17 @@
+# Optional Windows features commonly disabled on CyberPatriot images.
+# One DISM / Get-WindowsOptionalFeature name per line.
+# disable-optional-windows-features uses this list. Confirm-gated; NoRestart.
+TelnetClient
+TelnetServer
+TFTP
+SMB1Protocol
+SMB1Protocol-Client
+SMB1Protocol-Server
+SimpleTCP
+DirectPlay
+IIS-FTPServer
+IIS-FTPSvc
+IIS-FTPExtensibility
+Printing-Foundation-InternetPrinting-Client
+WindowsMediaPlayer
+MediaPlayback
