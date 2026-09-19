@@ -1,8 +1,9 @@
-import { useEffect, useState, type DragEvent } from 'react'
+import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { OPS_BY_ID } from '../catalog/ops'
+import { mosaicMode, MOSAIC_PANEL_MIN_PERCENT, shouldStackPanes } from '../layout/stack'
 import type { DropEdge, MosaicNode } from '../layout/tree'
-import { leafCount, walkLeaves } from '../layout/tree'
+import { isTwoByTwo, walkLeaves } from '../layout/tree'
 import { cn } from '../lib/cn'
 import { useWorkspace, type DragPayload } from '../state/workspace'
 import { OpPanel } from './OpPanel'
@@ -10,14 +11,24 @@ import { OpPanel } from './OpPanel'
 export function Mosaic() {
   const { tree, focusedId, focusPane, panes } = useWorkspace()
   const leaves = walkLeaves(tree)
-  const many = leafCount(tree) >= 2
-  const stack = useStackPanes(leaves.length)
+  const hostRef = useRef<HTMLDivElement>(null)
+  const width = useElementWidth(hostRef)
+  const stack = shouldStackPanes(leaves.length, width)
+  const mode = mosaicMode(leaves.length, width)
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col bg-app" data-testid="mosaic">
-      {many && (
+    <div
+      ref={hostRef}
+      className="relative flex h-full min-h-0 flex-col bg-app px-3 pb-3 pt-2"
+      data-testid="mosaic"
+      data-mosaic-mode={mode}
+      data-mosaic-grid={isTwoByTwo(tree) ? '2x2' : 'off'}
+    >
+      {stack && (
         <nav
-          className="flex shrink-0 gap-1 overflow-x-auto border-b border-line bg-sidebar px-2 py-1.5"
+          role="tablist"
+          aria-label="Open panes"
+          className="mb-2 flex shrink-0 gap-1 overflow-x-auto rounded-xl border border-line bg-elev/90 px-1.5 py-1.5 shadow-sm"
           data-testid="pane-tabs"
         >
           {leaves.map((id) => {
@@ -28,16 +39,16 @@ export function Mosaic() {
               <button
                 key={id}
                 type="button"
+                role="tab"
+                aria-selected={active}
                 data-testid={`pane-tab-${id}`}
-                onClick={() => {
-                  focusPane(id)
-                  document
-                    .querySelector(`[data-pane-id="${id}"]`)
-                    ?.scrollIntoView({ inline: 'nearest', block: 'nearest' })
-                }}
+                data-op-id={pane?.opId ?? ''}
+                onClick={() => focusPane(id)}
                 className={cn(
-                  'shrink-0 rounded-md px-2.5 py-1 text-[13px]',
-                  active ? 'bg-elev text-ink shadow-sm' : 'text-mute hover:bg-hover hover:text-ink',
+                  'shrink-0 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors',
+                  active
+                    ? 'bg-panel text-ink shadow-sm ring-1 ring-line-strong'
+                    : 'text-mute hover:bg-hover hover:text-ink',
                 )}
               >
                 {op ? op.title : 'Empty'}
@@ -46,14 +57,20 @@ export function Mosaic() {
           })}
         </nav>
       )}
-      <div className={cn('min-h-0 flex-1', stack ? 'overflow-hidden' : 'overflow-auto')}>
+      <div className="min-h-0 flex-1 overflow-hidden">
         {stack ? (
-          <div className="pane-min h-full">
-            <OpPanel paneId={focusedId} />
-            <DropOverlay paneId={focusedId} />
+          <div className="h-full min-h-0">
+            {leaves.map((id) => (
+              <div
+                key={id}
+                className={cn('h-full min-h-0', id === focusedId ? 'block' : 'hidden')}
+              >
+                <PaneFrame paneId={id} overlay={id === focusedId} />
+              </div>
+            ))}
           </div>
         ) : (
-          <div className="h-full min-h-0 min-w-full">
+          <div className="h-full min-h-0">
             <MosaicNodeView node={tree} />
           </div>
         )}
@@ -62,32 +79,50 @@ export function Mosaic() {
   )
 }
 
-function useStackPanes(count: number) {
-  const [narrow, setNarrow] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth < 720,
+function useElementWidth(ref: { current: HTMLElement | null }) {
+  const [width, setWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1280,
   )
   useEffect(() => {
-    const onResize = () => setNarrow(window.innerWidth < 720)
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
-  return count >= 5 || (count >= 4 && narrow) || (count >= 2 && narrow)
+    const el = ref.current
+    if (!el) return
+    const update = () => {
+      const next = el.clientWidth
+      if (next > 0) setWidth(next)
+    }
+    update()
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', update)
+      return () => window.removeEventListener('resize', update)
+    }
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [ref])
+  return width
+}
+
+function PaneFrame({ paneId, overlay = true }: { paneId: string; overlay?: boolean }) {
+  return (
+    <div className="relative h-full min-h-0 p-0.5">
+      <div className="pane-frame h-full min-h-0 overflow-hidden">
+        <OpPanel paneId={paneId} />
+        {overlay && <DropOverlay paneId={paneId} />}
+      </div>
+    </div>
+  )
 }
 
 function MosaicNodeView({ node }: { node: MosaicNode }) {
   const { setRatio } = useWorkspace()
   if (node.type === 'leaf') {
-    return (
-      <div className="relative h-full min-h-0 pane-min">
-        <OpPanel paneId={node.id} />
-        <DropOverlay paneId={node.id} />
-      </div>
-    )
+    return <PaneFrame paneId={node.id} />
   }
 
   const direction = node.direction === 'horizontal' ? 'horizontal' : 'vertical'
   const firstPct = Math.round(node.ratio * 100)
   const secondPct = 100 - firstPct
+  const minSize = MOSAIC_PANEL_MIN_PERCENT
 
   return (
     <PanelGroup
@@ -98,11 +133,11 @@ function MosaicNodeView({ node }: { node: MosaicNode }) {
         if (typeof a === 'number') setRatio(node.id, a / 100)
       }}
     >
-      <Panel defaultSize={firstPct} minSize={14} id={`${node.id}-a`} order={1} className="min-h-0">
+      <Panel defaultSize={firstPct} minSize={minSize} id={`${node.id}-a`} order={1} className="min-h-0">
         <MosaicNodeView node={node.first} />
       </Panel>
       <PanelResizeHandle className="resize-handle" />
-      <Panel defaultSize={secondPct} minSize={14} id={`${node.id}-b`} order={2} className="min-h-0">
+      <Panel defaultSize={secondPct} minSize={minSize} id={`${node.id}-b`} order={2} className="min-h-0">
         <MosaicNodeView node={node.second} />
       </Panel>
     </PanelGroup>
@@ -145,7 +180,7 @@ function DropOverlay({ paneId }: { paneId: string }) {
 
   return (
     <div
-      className="absolute inset-0 z-10"
+      className="absolute inset-1.5 z-10"
       onDragOver={(e) => {
         e.preventDefault()
         e.dataTransfer.dropEffect = e.dataTransfer.types.includes('application/x-cp-pane')
@@ -161,7 +196,7 @@ function DropOverlay({ paneId }: { paneId: string }) {
         if (payload) ws.dropOnPane(paneId, edge, payload)
       }}
     >
-      <div className="pointer-events-none absolute inset-1 grid grid-cols-3 grid-rows-3 gap-1">
+      <div className="pointer-events-none absolute inset-2 grid grid-cols-3 grid-rows-3 gap-1.5">
         <Zone className="col-start-2 row-start-1" on={over === 'top'} label="Top" />
         <Zone className="col-start-1 row-start-2" on={over === 'left'} label="Left" />
         <Zone className="col-start-2 row-start-2" on={over === 'center'} label="Replace" />
@@ -176,7 +211,7 @@ function Zone({ className, on, label }: { className: string; on: boolean; label:
   return (
     <div
       className={cn(
-        'flex items-center justify-center rounded-sm text-[11px] tracking-wide text-accent/80',
+        'flex items-center justify-center rounded-lg text-[12px] font-medium tracking-wide text-accent/80',
         className,
         on ? 'drop-zone' : 'bg-ink/5',
       )}

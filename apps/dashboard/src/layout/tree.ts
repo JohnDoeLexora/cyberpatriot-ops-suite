@@ -51,6 +51,75 @@ export function setSplitRatio(node: MosaicNode, splitId: string, ratio: number):
   }
 }
 
+/**
+ * Default catalog layout: 2-up, then a 2×2 matrix, never a 1×4 strip.
+ *
+ * 1→2  horizontal split (side by side)
+ * 2→3  split the focused leaf perpendicular to its parent
+ * 3→4  split the remaining “fat” leaf (full row/column) so both sides nest
+ *      in the opposite direction — a 2×2, not a third column or fourth row
+ * 5+   still split (the view may tab); prefer perpendicular to avoid strips
+ */
+export function addLeafPreferGrid(
+  root: MosaicNode,
+  focusedId: string,
+  newLeafId: string,
+): MosaicNode {
+  const count = leafCount(root)
+  const splitFrom = containsLeaf(root, focusedId) ? focusedId : walkLeaves(root)[0]
+
+  if (count <= 1) {
+    return splitLeaf(root, splitFrom, 'horizontal', newLeafId)
+  }
+
+  if (count === 3) {
+    const fat = findFatLeaf(root)
+    const target = fat ?? splitFrom
+    const parentDir = parentDirection(root, target) ?? 'horizontal'
+    return splitLeaf(root, target, perpendicular(parentDir), newLeafId)
+  }
+
+  const parentDir = parentDirection(root, splitFrom) ?? 'horizontal'
+  return splitLeaf(root, splitFrom, perpendicular(parentDir), newLeafId)
+}
+
+export function perpendicular(direction: SplitDirection): SplitDirection {
+  return direction === 'horizontal' ? 'vertical' : 'horizontal'
+}
+
+/** Direction of the split that directly contains `leafId`. */
+export function parentDirection(root: MosaicNode, leafId: string): SplitDirection | null {
+  const walk = (node: MosaicNode, parent: SplitNode | null): SplitDirection | null => {
+    if (node.type === 'leaf') return node.id === leafId ? (parent?.direction ?? null) : null
+    return walk(node.first, node) ?? walk(node.second, node)
+  }
+  return walk(root, null)
+}
+
+/**
+ * The leaf that still occupies a full side of a split (sibling of a nested
+ * split). Splitting it completes a 2×2 instead of deepening a strip.
+ */
+export function findFatLeaf(node: MosaicNode): string | null {
+  if (node.type !== 'split') return null
+  if (node.first.type === 'leaf' && node.second.type === 'split') return node.first.id
+  if (node.second.type === 'leaf' && node.first.type === 'split') return node.second.id
+  return findFatLeaf(node.first) ?? findFatLeaf(node.second)
+}
+
+/**
+ * True when the root is a 2-way split and each child is a 2-leaf split in the
+ * perpendicular direction — two across and two below, not 1×4 or 4×1.
+ */
+export function isTwoByTwo(node: MosaicNode): boolean {
+  if (node.type !== 'split' || leafCount(node) !== 4) return false
+  const { first, second, direction } = node
+  if (first.type !== 'split' || second.type !== 'split') return false
+  if (leafCount(first) !== 2 || leafCount(second) !== 2) return false
+  const perp = perpendicular(direction)
+  return first.direction === perp && second.direction === perp
+}
+
 export function splitLeaf(
   root: MosaicNode,
   leafId: string,

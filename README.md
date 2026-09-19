@@ -33,9 +33,9 @@ Open the URL Vite prints (http://localhost:5173).
 ## Using the dashboard
 
 - Left list: 70+ checks. Press `/` to search.
-- Open a check in a pane, then **Run**. Split or drag panes if you want several open.
+- Open a check in a pane, then **Run**. Two across, then two below (a 2×2). Tabs from the fifth pane.
 - **How-to** (or `?`) explains what the check is and why it scores.
-- On account panes, hover a row for Flag / Turn off / Turn on / Expire password.
+- On account panes, hover a row for Flag / Turn off / Turn on / Expire password. Extra columns tuck away on a narrow pane.
 
 More: [docs/SAFETY.md](docs/SAFETY.md) · [docs/OPS.md](docs/OPS.md) (every check) · [docs/howto/](docs/howto/) · [CONTRIBUTING.md](CONTRIBUTING.md)
 

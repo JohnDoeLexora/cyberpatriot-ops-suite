@@ -24,11 +24,11 @@ function Shell() {
       <Header />
       <div className="min-h-0 flex-1">
         <PanelGroup direction="horizontal" autoSaveId="cp-ops-sidebar">
-          <Panel defaultSize={24} minSize={18} maxSize={40} className="min-h-0 min-w-[16rem]">
+          <Panel defaultSize={22} minSize={18} maxSize={34} className="min-h-0 min-w-[17rem]">
             <Catalog />
           </Panel>
           <PanelResizeHandle className="resize-handle" />
-          <Panel className="min-h-0 min-w-[20rem]">
+          <Panel defaultSize={78} className="min-h-0 min-w-[24rem]">
             <Mosaic />
           </Panel>
         </PanelGroup>

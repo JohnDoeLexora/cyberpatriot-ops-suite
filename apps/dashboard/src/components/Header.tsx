@@ -8,26 +8,26 @@ export function Header() {
   const panes = leafCount(ws.tree)
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-line bg-sidebar px-4">
-      <div className="flex items-center gap-2.5 pr-4 border-r border-line">
-        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-dim text-accent">
-          <Shield size={15} strokeWidth={2.1} />
+    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-line bg-sidebar px-5">
+      <div className="flex items-center gap-3 border-r border-line pr-5">
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent-dim text-accent">
+          <Shield size={16} strokeWidth={2.1} />
         </span>
         <div className="leading-tight">
-          <div className="font-display text-[15px] font-semibold tracking-tight text-ink">CP Ops</div>
-          <div className="text-[11px] text-faint">CyberPatriot checks</div>
+          <div className="font-display text-[16px] font-semibold tracking-tight text-ink">CP Ops</div>
+          <div className="text-[12px] text-faint">CyberPatriot checks</div>
         </div>
       </div>
 
-      <div className="hidden items-center gap-2 text-[13px] text-mute md:flex">
-        <kbd className="rounded border border-line-strong bg-elev px-1.5 py-0.5 font-mono text-[11px] text-ink">
+      <div className="hidden items-center gap-2 text-[13.5px] text-mute lg:flex">
+        <kbd className="rounded-md border border-line-strong bg-elev px-1.5 py-0.5 font-mono text-[12px] text-ink">
           /
         </kbd>
         <span>search</span>
         <span className="text-faint">·</span>
-        <span>drag a check into a pane, then split</span>
+        <span>two across, then two below</span>
         <span className="text-faint">·</span>
-        <kbd className="rounded border border-line-strong bg-elev px-1.5 py-0.5 font-mono text-[11px] text-ink">
+        <kbd className="rounded-md border border-line-strong bg-elev px-1.5 py-0.5 font-mono text-[12px] text-ink">
           ?
         </kbd>
         <span>how-to</span>
@@ -39,17 +39,17 @@ export function Header() {
           data-testid="howto-open"
           title="Search how-to guides"
           onClick={() => ws.openHowto()}
-          className="inline-flex items-center gap-1 rounded-md border border-line-strong bg-elev px-2.5 py-1 text-[13px] text-mute hover:bg-hover hover:text-ink"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong bg-elev px-3 py-1.5 text-[13.5px] text-mute shadow-sm hover:bg-hover hover:text-ink"
         >
-          <CircleHelp size={12} />
+          <CircleHelp size={14} />
           How-to
         </button>
-        <span className="hidden text-[13px] text-mute sm:inline" data-testid="pane-count">
+        <span className="hidden text-[13.5px] text-mute sm:inline" data-testid="pane-count">
           {panes} pane{panes === 1 ? '' : 's'}
         </span>
         <button
           type="button"
-          className="rounded-md border border-line-strong bg-elev px-2.5 py-1 text-[13px] text-mute hover:bg-hover hover:text-ink"
+          className="rounded-lg border border-line-strong bg-elev px-3 py-1.5 text-[13.5px] text-mute shadow-sm hover:bg-hover hover:text-ink"
           onClick={ws.resetLayout}
           title="Reset pane layout"
         >
@@ -57,11 +57,11 @@ export function Header() {
         </button>
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded-md border border-line-strong bg-elev px-2.5 py-1 text-[13px] text-mute hover:bg-hover hover:text-ink"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong bg-elev px-3 py-1.5 text-[13.5px] text-mute shadow-sm hover:bg-hover hover:text-ink"
           onClick={ws.resetDemo}
           title="Reset practice accounts and the change log"
         >
-          <RotateCcw size={12} />
+          <RotateCcw size={13} />
           Reset data
         </button>
         <DemoSwitch />
@@ -80,10 +80,10 @@ function DemoSwitch() {
       data-testid="demo-toggle"
       onClick={() => ws.setDemoMode(!ws.demoMode)}
       className={cn(
-        'inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-[13px] font-medium',
+        'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[13.5px] font-medium shadow-sm',
         ws.demoMode
-          ? 'border-accent/30 bg-accent-dim text-accent'
-          : 'border-warn/40 bg-warn-dim text-warn',
+          ? 'border-accent/25 bg-accent-dim text-accent'
+          : 'border-warn/35 bg-warn-dim text-warn',
       )}
       title={
         ws.demoMode

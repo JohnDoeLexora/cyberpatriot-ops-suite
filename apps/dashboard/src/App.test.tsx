@@ -111,4 +111,42 @@ describe('dashboard shell', () => {
     render(<App />)
     expect(screen.getByTestId('app-shell')).toHaveAttribute('data-theme', 'paper')
   })
+
+  it('opens four panes as a 2×2 grid, not tabs', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByTestId('catalog-item-list-users'))
+    await user.click(screen.getByTestId('catalog-item-flag-suspicious-users'))
+    expect(screen.getByTestId('mosaic')).toHaveAttribute('data-mosaic-mode', 'mosaic')
+    await user.click(screen.getByTestId('catalog-item-ssh-hardening-audit'))
+    await waitFor(() => {
+      expect(screen.getAllByTestId('pane')).toHaveLength(3)
+    })
+    expect(screen.getByTestId('mosaic')).toHaveAttribute('data-mosaic-mode', 'mosaic')
+    expect(screen.queryByTestId('pane-tabs')).not.toBeInTheDocument()
+    await user.click(screen.getByTestId('catalog-item-apply-default-deny-inbound'))
+    await waitFor(() => {
+      expect(screen.getAllByTestId('pane')).toHaveLength(4)
+    })
+    expect(screen.getByTestId('mosaic')).toHaveAttribute('data-mosaic-grid', '2x2')
+    expect(screen.getByTestId('mosaic')).toHaveAttribute('data-mosaic-mode', 'mosaic')
+    expect(screen.queryByTestId('pane-tabs')).not.toBeInTheDocument()
+    expect(screen.getByTestId('pane-count')).toHaveTextContent('4 panes')
+  })
+
+  it('tabs from the fifth pane', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByTestId('catalog-item-list-users'))
+    await user.click(screen.getByTestId('catalog-item-flag-suspicious-users'))
+    await user.click(screen.getByTestId('catalog-item-ssh-hardening-audit'))
+    await user.click(screen.getByTestId('catalog-item-apply-default-deny-inbound'))
+    await user.click(screen.getByTestId('catalog-item-enable-firewall'))
+    await waitFor(() => {
+      expect(screen.getAllByTestId('pane')).toHaveLength(5)
+    })
+    expect(screen.getByTestId('mosaic')).toHaveAttribute('data-mosaic-mode', 'tabs')
+    expect(screen.getByTestId('pane-tabs')).toBeInTheDocument()
+    expect(screen.getByTestId('pane-tabs').querySelectorAll('[role="tab"]')).toHaveLength(5)
+  })
 })
