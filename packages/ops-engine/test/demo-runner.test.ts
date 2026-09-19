@@ -142,4 +142,38 @@ describe("demo runner output shape", () => {
     assert.ok(aging.findings.some((f) => /Guest/i.test(f.title)));
     assert.ok(drift.findings.some((f) => /shadow/i.test(f.title)));
   });
+
+  it("cp-07 ops return specialized demo findings", async () => {
+    const unauth = await runOp({ opId: "select-unauthorized-users", mode: "demo" });
+    const sticky = await runOp({ opId: "audit-sticky-tmp", mode: "demo" });
+    const ftp = await runOp({ opId: "audit-anonymous-ftp", mode: "demo" });
+    const web = await runOp({ opId: "audit-web-server", mode: "demo" });
+    const nulls = await runOp({ opId: "audit-null-session", mode: "demo" });
+    const sysprep = await runOp({ opId: "hunt-sysprep-leftovers", mode: "demo" });
+    const snmp = await runOp({ opId: "audit-snmp", mode: "demo" });
+    const mac = await runOp({ opId: "audit-mac-enforcement", mode: "demo" });
+    const skim = await runOp({ opId: "skim-forensics-readme", mode: "demo" });
+    const iis = await runOp({ opId: "audit-iis", mode: "demo" });
+    assert.ok(unauth.data.users && unauth.data.users.some((u) => u.name === "hacker123"));
+    assert.ok((unauth.data.extra?.unauthorizedNames as string[] | undefined)?.includes("toor"));
+    assert.ok(sticky.findings.some((f) => /sticky/i.test(f.title)));
+    assert.ok(ftp.findings.some((f) => /anonymous/i.test(f.title)));
+    assert.ok(web.data.checklist && web.data.checklist.length >= 4);
+    assert.ok(nulls.findings.some((f) => /RestrictAnonymous/i.test(f.title)));
+    assert.ok(sysprep.findings.some((f) => /unattend|sysprep/i.test(f.title + f.detail)));
+    assert.ok(snmp.findings.some((f) => /public|private/i.test(f.title)));
+    assert.ok(mac.findings.some((f) => /SELinux|AppArmor/i.test(f.title)));
+    assert.equal(skim.data.extra?.ccsContacted, false);
+    assert.ok(iis.findings.some((f) => /anonymous/i.test(f.title)));
+  });
+
+  it("cp-07 mutate ops are blocked live without confirm", async () => {
+    for (const id of ["harden-vsftpd", "disable-llmnr-netbios-wpad", "remove-games-samples"]) {
+      const blocked = await runOp({ opId: id, mode: "live" });
+      assert.equal(blocked.ok, false, id);
+      assert.match(blocked.blocked?.reason ?? "", /confirm/);
+      const dry = await runOp({ opId: id, mode: "live", params: { dryRun: true } });
+      assert.equal(dry.blocked, undefined, id);
+    }
+  });
 });

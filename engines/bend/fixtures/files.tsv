@@ -5,3 +5,7 @@
 /home/flag/.hidden_shell|0755|f
 /opt/TeamViewer/tv|0755|rat
 /etc/shadow|0644|f
+/tmp|0777|d
+/var/tmp|1777|d
+/root/unattend.xml|0644|f
+/home/alice/Desktop/README.txt|0644|readme

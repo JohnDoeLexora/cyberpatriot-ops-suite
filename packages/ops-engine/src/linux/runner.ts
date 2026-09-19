@@ -1,7 +1,25 @@
 import { hitsToFiles, hitsToFindings, tryRunBend, type BendKind } from "../bend/runner.js";
-import { findingsFromUsers, scoreUsers } from "../heuristics/suspicious-users.js";
+import {
+  findingsFromUnauthorized,
+  findingsFromUsers,
+  scoreUsers,
+  selectUnauthorizedUsers,
+} from "../heuristics/suspicious-users.js";
 import { readNameList, resolveConfigFile } from "../paths.js";
-import { asBoolean, asString, isSafeUsername } from "../safety.js";
+import { asBoolean, asString, isSafeLocalPath, isSafeUsername } from "../safety.js";
+import {
+  collectAnonymousFtp,
+  collectAutoUpdates,
+  collectBrowserBaseline,
+  collectForensicsReadme,
+  collectIdleLock,
+  collectInstalledPackageNames,
+  collectMacEnforcement,
+  collectSnmp,
+  collectStickyTmpDeep,
+  collectSysprepLeftovers,
+  collectWebServer,
+} from "./cp07-collect.js";
 import { SUSPICIOUS_PORTS, type EngineContext, type Finding, type RunResult, type ServiceRecord } from "../types.js";
 import {
   collectLocalUsers,
@@ -152,8 +170,33 @@ export async function runLinux(ctx: EngineContext): Promise<RunResult> {
         ctx,
         startedAt,
         `Heuristic pack scored ${users.length} accounts; ${findings.length} above threshold.`,
-        { users: users.filter((u) => (u.suspicionScore ?? 0) >= 10) },
+        {
+          users: users.filter((u) => (u.suspicionScore ?? 0) >= 10),
+          extra: { unauthorizedNames: selectUnauthorizedUsers(users).names },
+        },
         findings,
+        warnings,
+      );
+    }
+    case "select-unauthorized-users": {
+      const { users, warnings } = await liveUsers(ctx);
+      const allowlist = new Set(
+        readNameList(resolveConfigFile(ctx.repoRoot, ctx.params.allowlistPath, "config/allowed-users.txt")),
+      );
+      const sel = selectUnauthorizedUsers(users, allowlist);
+      return finish(
+        ctx,
+        startedAt,
+        `${sel.names.length} unauthorized/extra-admin accounts; ${sel.missingAllowlist.length} allowlist names missing.`,
+        {
+          users: sel.unauthorized,
+          extra: {
+            unauthorizedNames: sel.names,
+            extraAdmins: sel.extraAdmins.map((u) => u.name),
+            missingAllowlist: sel.missingAllowlist,
+          },
+        },
+        findingsFromUnauthorized(sel),
         warnings,
       );
     }
@@ -858,12 +901,43 @@ export async function runLinux(ctx: EngineContext): Promise<RunResult> {
       const action = await removePackage(pkg);
       return finish(ctx, startedAt, action.detail, { extra: action }, [], action.ok ? [] : [action.detail], action.ok);
     }
+    case "remove-games-samples": {
+      const list = readNameList(
+        resolveConfigFile(ctx.repoRoot, ctx.params.gamesListPath, "config/games-samples.txt"),
+      ).map((n) => n.toLowerCase());
+      const installed = await collectInstalledPackageNames();
+      const hits = list.filter((n) => installed.has(n));
+      const requiredPkgs = new Set(["openssh-server", "apache2", "sudo", "bash", "systemd", "ssh"]);
+      const blocked = hits.filter((n) => requiredPkgs.has(n));
+      const targets = hits.filter((n) => !requiredPkgs.has(n));
+      if (dryRun) {
+        return finish(ctx, startedAt, `dry-run: would remove ${targets.length} games/sample packages.`, {
+          packages: targets.map((name) => ({ name, prohibited: true })),
+          extra: { blocked, dryRun: true },
+        });
+      }
+      const results = [];
+      for (const name of targets) {
+        results.push({ name, ...(await removePackage(name)) });
+      }
+      const ok = results.every((r) => r.ok) || targets.length === 0;
+      return finish(
+        ctx,
+        startedAt,
+        targets.length ? `Removed ${results.filter((r) => r.ok).length}/${targets.length} games/sample packages.` : "No games/sample packages installed.",
+        { extra: { results, blocked } },
+        [],
+        ok ? [] : results.filter((r) => !r.ok).map((r) => r.detail),
+        ok,
+      );
+    }
     case "harden-sshd":
     case "disable-root-ssh":
     case "enforce-password-policy":
     case "enable-account-lockout":
     case "harden-sysctl":
-    case "apply-security-updates": {
+    case "apply-security-updates":
+    case "harden-vsftpd": {
       const script = `${ctx.repoRoot}/engines/linux/${id}.sh`;
       if (dryRun) {
         return finish(ctx, startedAt, `dry-run: would execute ${script} (see engines/linux).`, { extra: { script, dryRun: true } });
@@ -878,6 +952,89 @@ export async function runLinux(ctx: EngineContext): Promise<RunResult> {
         [],
         ok ? [] : [bash.stderr || `exit ${bash.code}`],
         ok,
+      );
+    }
+    case "audit-sticky-tmp": {
+      const bend = await bendFileOp(ctx, startedAt, "files-sticky", "sticky/temp findings");
+      if (bend) return bend;
+      const { files, findings } = await collectStickyTmpDeep();
+      return finish(ctx, startedAt, `${findings.length} sticky-bit findings on temp dirs.`, { files }, findings);
+    }
+    case "audit-anonymous-ftp": {
+      const { services, warnings } = await collectServices();
+      const { extra, findings } = collectAnonymousFtp(annotateServices(ctx, services));
+      const { ports } = await collectPorts();
+      return finish(
+        ctx,
+        startedAt,
+        findings.length ? "Anonymous FTP knobs are insecure." : "No anonymous FTP knobs detected (or vsftpd absent).",
+        { services: services.filter((s) => /ftp/i.test(s.name)), ports: ports.filter((p) => p.port === 21), extra },
+        findings,
+        warnings,
+      );
+    }
+    case "audit-web-server": {
+      const { checklist, findings } = collectWebServer();
+      const { services } = await collectServices();
+      return finish(
+        ctx,
+        startedAt,
+        `Apache/nginx checklist ${checklist.length} items, ${findings.length} failing.`,
+        { checklist, services: services.filter((s) => /apache|nginx|httpd/i.test(s.name)) },
+        findings,
+      );
+    }
+    case "audit-idle-lock": {
+      const { extra, findings } = collectIdleLock();
+      return finish(ctx, startedAt, findings.length ? "Idle/screensaver lock is weak or unset." : "Idle lock settings look present.", { extra }, findings);
+    }
+    case "hunt-sysprep-leftovers": {
+      const bend = await bendFileOp(ctx, startedAt, "files-sysprep", "sysprep leftovers");
+      if (bend) return bend;
+      const { files, findings } = await collectSysprepLeftovers();
+      return finish(ctx, startedAt, `${files.length} unattend/sysprep leftover files (values omitted).`, { files }, findings);
+    }
+    case "audit-snmp": {
+      const { services, warnings } = await collectServices();
+      const { extra, findings } = collectSnmp(annotateServices(ctx, services));
+      return finish(ctx, startedAt, findings.length ? "SNMP/default communities found." : "No default SNMP communities detected.", { extra, services: services.filter((s) => /snmp/i.test(s.name)) }, findings, warnings);
+    }
+    case "audit-mac-enforcement": {
+      const { extra, findings } = await collectMacEnforcement();
+      return finish(ctx, startedAt, "AppArmor/SELinux status.", { extra }, findings);
+    }
+    case "audit-browser-baseline": {
+      const { extra, findings } = collectBrowserBaseline();
+      return finish(ctx, startedAt, "Firefox/system browser policy snapshot (no cookies/passwords).", { extra }, findings);
+    }
+    case "audit-auto-updates": {
+      const { extra, findings } = collectAutoUpdates();
+      return finish(ctx, startedAt, findings.length ? "Automatic updates channel is not sane." : "Unattended-upgrades config present.", { extra }, findings);
+    }
+    case "skim-forensics-readme": {
+      const rootParam = asString(ctx.params.searchRoot);
+      if (rootParam && !isSafeLocalPath(rootParam)) {
+        return failParam("searchRoot must be a local filesystem path, not a URL");
+      }
+      const keywordsPath = resolveConfigFile(ctx.repoRoot, ctx.params.keywordsPath, "config/forensics-keywords.txt");
+      const bend = await tryRunBend(ctx, "files-readme");
+      const skim = collectForensicsReadme(ctx.repoRoot, rootParam, keywordsPath);
+      const engine: RunResult["engine"] = bend?.engine === "bend" ? "bend" : "linux";
+      return finish(
+        ctx,
+        startedAt,
+        `${(skim.extra.hits as unknown[] | undefined)?.length ?? 0} local README keyword hits. CCS not contacted.`,
+        {
+          extra: {
+            ...skim.extra,
+            scorer: bend?.engine,
+            bendHits: bend?.findings.slice(0, 20),
+          },
+        },
+        skim.findings,
+        [],
+        true,
+        engine,
       );
     }
     default: {

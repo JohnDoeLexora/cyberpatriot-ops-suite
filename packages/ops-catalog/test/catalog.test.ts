@@ -70,6 +70,30 @@ describe("ops catalog integrity", () => {
     }
   });
 
+  it("includes cp-07 capability pack", () => {
+    for (const id of [
+      "select-unauthorized-users",
+      "audit-sticky-tmp",
+      "audit-anonymous-ftp",
+      "harden-vsftpd",
+      "audit-web-server",
+      "disable-llmnr-netbios-wpad",
+      "audit-null-session",
+      "audit-idle-lock",
+      "hunt-sysprep-leftovers",
+      "audit-snmp",
+      "audit-mac-enforcement",
+      "audit-browser-baseline",
+      "audit-auto-updates",
+      "remove-games-samples",
+      "audit-iis",
+      "skim-forensics-readme",
+    ]) {
+      assert.ok(getOp(id), id);
+    }
+    assert.ok(catalog.length >= 90, `expected ≥90 ops, got ${catalog.length}`);
+  });
+
   it("mutate ops mention confirm in the description", () => {
     const missing = catalog.filter(
       (o) => o.risk === "mutate" && !/confirm/i.test(o.description),

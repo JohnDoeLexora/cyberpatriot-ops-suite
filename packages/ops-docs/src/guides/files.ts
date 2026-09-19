@@ -21,7 +21,7 @@ export const FILES: Record<string, HowToBody> = {
       "Read-only. chmod/delete is a separate action — snapshot first if a forensics question might need the file.",
       "Do not ‘test’ world-writable sudoers by writing to them.",
     ],
-    related: ["check-sensitive-file-perms", "audit-cron", "audit-sudoers", "audit-home-permissions"],
+    related: ["check-sensitive-file-perms", "audit-cron", "audit-sudoers", "audit-sticky-tmp"],
     keywords: ["world-writable", "0777", "chmod o-w", "cron.d"],
   },
   "find-suid-sgid": {

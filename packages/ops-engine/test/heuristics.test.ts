@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { scoreUsers, SIGNAL } from "../src/heuristics/suspicious-users.ts";
+import { scoreUsers, selectUnauthorizedUsers, SIGNAL } from "../src/heuristics/suspicious-users.ts";
 import type { UserRecord } from "../src/types.ts";
 
 const now = new Date("2026-09-18T18:00:00.000Z");
@@ -103,5 +103,42 @@ describe("suspicious user heuristics", () => {
     );
     assert.ok(!(www?.signals ?? []).includes(SIGNAL.notInAllowlist));
     assert.ok((www?.suspicionScore ?? 0) < 10);
+  });
+
+  it("selectUnauthorizedUsers bulk-selects allowlist misses and extra admins", () => {
+    const users = scoreUsers(
+      [
+        u({
+          name: "alice",
+          uid: 1000,
+          home: "/home/alice",
+          shell: "/bin/bash",
+          groups: ["sudo"],
+          lastLogin: "2026-09-18T12:00:00.000Z",
+        }),
+        u({
+          name: "hacker123",
+          uid: 1010,
+          home: "/home/hacker123",
+          shell: "/bin/bash",
+          lastLogin: "2026-09-18T01:00:00.000Z",
+        }),
+        u({
+          name: "nologin_admin",
+          uid: 1005,
+          home: "/home/nologin_admin",
+          shell: "/bin/bash",
+          groups: ["sudo"],
+          lastLogin: null,
+        }),
+      ],
+      { allowlist, now },
+    );
+    const sel = selectUnauthorizedUsers(users, new Set(["alice", "bob", "coach"]));
+    assert.ok(sel.names.includes("hacker123"));
+    assert.ok(sel.names.includes("nologin_admin"));
+    assert.ok(!sel.names.includes("alice"));
+    assert.ok(sel.missingAllowlist.includes("bob"));
+    assert.ok(sel.extraAdmins.some((u) => u.name === "nologin_admin"));
   });
 });

@@ -346,6 +346,166 @@ function Invoke-CpOp {
                 extra    = @{ extensions = @($ext | ForEach-Object { $_.FullName }) }
             }
         }
+        "select-unauthorized-users" {
+            $s = Get-CpSuspiciousUsers -AllowlistPath $AllowlistPath
+            $allow = Get-CpAllowlist -Path $AllowlistPath
+            $unauth = @($s.users | Where-Object { $_.signals -contains "not-in-allowlist" })
+            $extraAdmins = @($s.users | Where-Object { $_.signals -contains "extra-admin" })
+            $present = @($s.users | ForEach-Object { $_.name })
+            $missing = @($allow | Where-Object { $present -notcontains $_ })
+            return [pscustomobject]@{
+                ok    = $true
+                users = $unauth
+                extra = @{
+                    unauthorizedNames = @($unauth | ForEach-Object { $_.name })
+                    extraAdmins       = @($extraAdmins | ForEach-Object { $_.name })
+                    missingAllowlist  = $missing
+                }
+            }
+        }
+        "audit-anonymous-ftp" {
+            $all = Get-CpServices
+            $hits = @($all.services | Where-Object { $_.name -match "ftp|FTPSVC|vsftpd" })
+            return [pscustomobject]@{ ok = $true; services = $hits; extra = @{ note = "Check FTPSVC anonymous auth on the image; do not log in anonymously." } }
+        }
+        "audit-idle-lock" {
+            $desk = Get-ItemProperty "HKCU:\Control Panel\Desktop" -ErrorAction SilentlyContinue
+            $p = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -ErrorAction SilentlyContinue
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{
+                    ScreenSaveActive    = $desk.ScreenSaveActive
+                    ScreenSaverIsSecure = $desk.ScreenSaverIsSecure
+                    ScreenSaveTimeOut   = $desk.ScreenSaveTimeOut
+                    InactivityTimeoutSecs = $p.InactivityTimeoutSecs
+                }
+            }
+        }
+        "hunt-sysprep-leftovers" {
+            $paths = @(
+                "$env:WINDIR\Panther\unattend.xml",
+                "$env:WINDIR\Panther\Unattend.xml",
+                "$env:WINDIR\System32\Sysprep\unattend.xml",
+                "$env:SystemDrive\unattend.xml",
+                "$env:SystemDrive\autounattend.xml",
+                "$env:WINDIR\Panther\UnattendGC\unattend.xml"
+            )
+            $files = @()
+            foreach ($p in $paths) {
+                if (Test-Path $p) {
+                    $text = Get-Content $p -ErrorAction SilentlyContinue -Raw
+                    $keys = @()
+                    if ($text -match "AutoLogon") { $keys += "AutoLogon" }
+                    if ($text -match "Password") { $keys += "Password" }
+                    $files += [pscustomobject]@{ path = $p; note = if ($keys) { ($keys -join ", ") + " keys (values omitted)" } else { "sysprep leftover" } }
+                }
+            }
+            return [pscustomobject]@{ ok = $true; files = $files; extra = @{ note = "Password values omitted." } }
+        }
+        "audit-snmp" {
+            $svc = Get-Service SNMP -ErrorAction SilentlyContinue
+            $comm = Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\SNMP\Parameters\ValidCommunities" -ErrorAction SilentlyContinue
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{
+                    service     = if ($svc) { $svc.Status.ToString() } else { "absent" }
+                    communities = if ($comm) { $comm.PSObject.Properties.Name | Where-Object { $_ -notmatch "^PS" } } else { @() }
+                    note        = "Community names only; do not walk other hosts."
+                }
+            }
+        }
+        "audit-browser-baseline" {
+            $ie = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings" -ErrorAction SilentlyContinue
+            $ss = Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -ErrorAction SilentlyContinue
+            $ieZone = Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\Zones\3" -ErrorAction SilentlyContinue
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{
+                    DisablePasswordSaving = $ie.DisablePasswordSaving
+                    SmartScreenEnabled    = $ss.SmartScreenEnabled
+                    note                  = "Cookies/history/saved passwords not dumped."
+                }
+            }
+        }
+        "audit-auto-updates" {
+            $au = Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -ErrorAction SilentlyContinue
+            $svc = Get-Service wuauserv -ErrorAction SilentlyContinue
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{
+                    AUOptions = $au.AUOptions
+                    NoAutoUpdate = $au.NoAutoUpdate
+                    wuauserv  = if ($svc) { "$($svc.Status)/$($svc.StartType)" } else { "absent" }
+                }
+            }
+        }
+        "audit-null-session" {
+            $lsa = Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -ErrorAction SilentlyContinue
+            $lan = Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" -ErrorAction SilentlyContinue
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{
+                    RestrictAnonymous          = $lsa.RestrictAnonymous
+                    RestrictAnonymousSAM       = $lsa.RestrictAnonymousSAM
+                    EveryoneIncludesAnonymous  = $lsa.EveryoneIncludesAnonymous
+                    RestrictNullSessAccess     = $lan.RestrictNullSessAccess
+                    NullSessionPipes           = $lan.NullSessionPipes
+                    NullSessionShares          = $lan.NullSessionShares
+                    note                       = "SAM contents and hashes are not dumped."
+                }
+            }
+        }
+        "audit-iis" {
+            $features = @()
+            try {
+                $features = Get-WindowsOptionalFeature -Online -ErrorAction SilentlyContinue |
+                    Where-Object { $_.FeatureName -like "IIS-*" -and $_.State -eq "Enabled" } |
+                    Select-Object -ExpandProperty FeatureName
+            } catch {}
+            $anon = $null
+            $browse = $null
+            try {
+                Import-Module WebAdministration -ErrorAction SilentlyContinue
+                $anon = (Get-WebConfigurationProperty -Filter /system.webServer/security/authentication/anonymousAuthentication -Name enabled -ErrorAction SilentlyContinue).Value
+                $browse = (Get-WebConfigurationProperty -Filter /system.webServer/directoryBrowse -Name enabled -ErrorAction SilentlyContinue).Value
+            } catch {}
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{
+                    features                = @($features)
+                    anonymousAuthentication = $anon
+                    directoryBrowse         = $browse
+                    note                    = "Site content not dumped."
+                }
+            }
+        }
+        "skim-forensics-readme" {
+            $roots = @(
+                "$env:PUBLIC\Desktop",
+                "$env:USERPROFILE\Desktop",
+                "$env:USERPROFILE\Documents",
+                "C:\Users"
+            )
+            $hits = @()
+            $needles = @("password", "forensic", "question", "media", "prohibited", "unauthorized", "ftp", "telnet", "hash")
+            foreach ($r in $roots) {
+                if (-not (Test-Path $r)) { continue }
+                Get-ChildItem $r -Recurse -Include README*, *forensic*, *QUESTION*, *.txt -ErrorAction SilentlyContinue |
+                    Select-Object -First 40 | ForEach-Object {
+                        $lines = Get-Content $_.FullName -ErrorAction SilentlyContinue -TotalCount 80
+                        foreach ($line in $lines) {
+                            if ($line -match '^[a-fA-F0-9]{32,}$') { continue }
+                            foreach ($n in $needles) {
+                                if ($line -match $n) {
+                                    $hits += [pscustomobject]@{ path = $_.FullName; keyword = $n; line = $line.Substring(0, [Math]::Min(160, $line.Length)) }
+                                    break
+                                }
+                            }
+                        }
+                    }
+            }
+            return [pscustomobject]@{ ok = $true; extra = @{ hits = $hits; ccsContacted = $false; note = "Local files only. CCS not contacted." } }
+        }
         "report-password-never-expires" {
             $users = Get-LocalUser
             $never = @($users | Where-Object { $_.PasswordNeverExpires })
@@ -405,12 +565,25 @@ function Invoke-CpOp {
             return [pscustomobject]@{ ok = $true; checklist = $items }
         }
         default {
+            $linuxOnly = @(
+                "audit-uid-zero", "check-user-shells", "audit-duplicate-uids", "audit-pam",
+                "disable-root-ssh", "audit-sudoers", "disable-legacy-r-services",
+                "ssh-hardening-audit", "harden-sshd", "find-world-writable", "find-suid-sgid",
+                "audit-home-permissions", "check-sensitive-file-perms", "audit-ssh-authorized-keys",
+                "check-auditd", "audit-cron", "audit-at-jobs", "audit-sysctl", "harden-sysctl",
+                "check-password-aging", "audit-sticky-tmp", "harden-vsftpd", "audit-web-server",
+                "audit-mac-enforcement"
+            )
+            if ($OpId -in $linuxOnly) {
+                return [pscustomobject]@{ ok = $true; extra = @{ note = "Linux-only op; run engines/linux on a Linux image." } }
+            }
             if ($OpId -in @(
                     "disable-user", "lock-user", "remove-user-from-admins", "disable-guest-account",
                     "expire-user-password", "enforce-password-policy", "enable-account-lockout",
                     "disable-service", "disable-telnet", "disable-rdp", "enable-firewall",
                     "apply-default-deny-inbound", "remove-package", "apply-security-updates",
-                    "disable-smbv1", "enable-windows-defender", "disable-autoplay"
+                    "disable-smbv1", "enable-windows-defender", "disable-autoplay",
+                    "disable-llmnr-netbios-wpad", "remove-games-samples"
                 )) {
                 Test-CpConfirm -ConfirmLive:$ConfirmLive -DryRun:$DryRun
                 if ($DryRun) {
@@ -442,6 +615,26 @@ function Invoke-CpOp {
                     "enable-account-lockout" { net accounts /lockoutthreshold:5 /lockoutduration:10 /lockoutwindow:10 | Out-Null; break }
                     "remove-package" { Uninstall-Package -Name $Package -ErrorAction SilentlyContinue; break }
                     "apply-security-updates" { return [pscustomobject]@{ ok = $true; extra = @{ note = "Trigger Windows Update on-image; no off-host targeting." } }
+                    }
+                    "disable-llmnr-netbios-wpad" {
+                        New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\DNSClient" -Force | Out-Null
+                        Set-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\DNSClient" -Name EnableMulticast -Value 0
+                        Get-CimInstance Win32_NetworkAdapterConfiguration -ErrorAction SilentlyContinue |
+                            Where-Object { $_.IPEnabled } |
+                            ForEach-Object { $_.SetTcpipNetbios(2) | Out-Null }
+                        Set-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings" -Name AutoDetect -Value 0 -ErrorAction SilentlyContinue
+                        New-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\WinHttp" -Force | Out-Null
+                        Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\WinHttp" -Name DisableWpad -Value 1 -ErrorAction SilentlyContinue
+                        Stop-Service WinHttpAutoProxySvc -Force -ErrorAction SilentlyContinue
+                        Set-Service WinHttpAutoProxySvc -StartupType Disabled -ErrorAction SilentlyContinue
+                        break
+                    }
+                    "remove-games-samples" {
+                        $names = @("Microsoft.XboxApp", "Microsoft.XboxGamingOverlay", "Microsoft.MicrosoftSolitaireCollection", "Microsoft.ZuneMusic", "king.com.CandyCrushSaga")
+                        foreach ($n in $names) {
+                            Get-AppxPackage -Name $n -ErrorAction SilentlyContinue | Remove-AppxPackage -ErrorAction SilentlyContinue
+                        }
+                        break
                     }
                 }
                 return [pscustomobject]@{ ok = $true; extra = @{ op = $OpId; applied = $true } }

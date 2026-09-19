@@ -12,7 +12,8 @@ Runners live in `@cyberpatriot/ops-engine`. These directories are the
 Demo mode never calls these scripts. It uses in-process fixtures so macOS UI
 work does not touch the host.
 
-Linux live reads (`list-users`, ports, services, find, …) are implemented in
+Linux live reads (`list-users`, ports, services, find, sticky `/tmp`, vsftpd,
+Apache/nginx, SNMP, AppArmor/SELinux, README keyword skim, …) are implemented in
 TypeScript collectors *and* mirrored here as standalone shell for teams that
 want to run them without the API.
 

@@ -20,6 +20,8 @@ export {
   allowlistParams,
   emptyParams,
   expectedPortsParams,
+  forensicsSkimParams,
+  gamesSamplesParams,
   mutateFlagParams,
   packageParams,
   serviceParams,

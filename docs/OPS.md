@@ -5,7 +5,7 @@ Every op is **defensive, authorized-image hardening** for CyberPatriot.
 See [SAFETY.md](./SAFETY.md) before running anything with `mode: "live"`.
 How-to explainers for every op: [howto/](./howto/).
 
-- **Count:** 79
+- **Count:** 95
 - **Default run mode:** demo (Mac-safe fixtures, no host mutation)
 - **Mutations:** live mode requires `confirm: true` in `POST /ops/:id/run`
 
@@ -99,6 +99,22 @@ exportable redacted evidence — like Sabbath coffee: creative, not cheating.
 | `audit-critical-perm-drift` | Audit critical permission drift | files | both | read |
 | `scoreboard-preflight` | Scoreboard preflight checklist | evidence | both | read |
 | `post-harden-checklist` | Post-harden verification checklist | evidence | both | read |
+| `select-unauthorized-users` | Select unauthorized users (allowlist miss) | users | both | read |
+| `audit-sticky-tmp` | Audit sticky bit on temp dirs | files | linux | read |
+| `audit-anonymous-ftp` | Audit anonymous FTP / vsftpd | services | both | read |
+| `harden-vsftpd` | Harden vsftpd (disable anonymous) | services | linux | mutate |
+| `audit-web-server` | Apache/nginx hardening checklist | services | linux | read |
+| `disable-llmnr-netbios-wpad` | Disable LLMNR / NetBIOS / WPAD | network | windows | mutate |
+| `audit-null-session` | Audit null session / anonymous SAM | auth | windows | read |
+| `audit-idle-lock` | Audit screensaver / idle lock | auth | both | read |
+| `hunt-sysprep-leftovers` | Hunt unattended / sysprep leftovers | files | both | read |
+| `audit-snmp` | Audit SNMP community / insecure mgmt | services | both | read |
+| `audit-mac-enforcement` | Audit AppArmor/SELinux enforcement | kernel | linux | read |
+| `audit-browser-baseline` | Audit Firefox/IE/Edge security baseline | files | both | read |
+| `audit-auto-updates` | Audit unattended-upgrades / Windows Update | updates | both | read |
+| `remove-games-samples` | Remove games and sample content | packages | both | mutate |
+| `audit-iis` | IIS feature inventory + anonymous auth | windows | windows | read |
+| `skim-forensics-readme` | Skim local README for forensics keywords | evidence | both | read |
 
 ## Details
 
@@ -244,6 +260,16 @@ Find distinct usernames sharing a UID. Duplicate UID 0 is critical; other collis
 
 Force a password change at next login (chage -d 0 / net user /logonpasswordchg:yes). Useful for authorized users with stale or known-default passwords. Live mode requires confirm:true.
 
+#### `select-unauthorized-users`
+
+- **Title:** Select unauthorized users (allowlist miss)
+- **Platforms:** both
+- **Risk:** read
+- **Params:** `allowlistPath` (string)
+- **Demo fixture:** hacker123, toor, zygote, nologin_admin, flag, Guest selected; alice/bob/coach/root not selected; extra-admin nologin_admin
+
+Bulk-select interactive accounts that miss config/allowed-users.txt (or the README list). Returns a disable/lock-ready name list plus extra admins and allowlist names missing from the image. Deepens flag-suspicious-users: this is the round-one 'who do we turn off' table, not a credential dump. Authorized-image hardening only: never used against other teams, scoring endpoints, or off-image hosts.
+
 ### auth
 
 #### `audit-password-policy`
@@ -336,6 +362,26 @@ Read EnableLUA, ConsentPromptBehaviorAdmin, and PromptOnSecureDesktop. UAC disab
 
 Combine password-aging (shadow MAX_DAYS -1/99999 or Windows PasswordNeverExpires) with empty-password classification. Human accounts that never expire, especially with a blank password, are high. Never prints hashes — only empty/locked/set + never-expires booleans.
 
+#### `audit-null-session`
+
+- **Title:** Audit null session / anonymous SAM
+- **Platforms:** windows
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** RestrictAnonymous=0, RestrictAnonymousSAM=0, EveryoneIncludesAnonymous=1, NullSessionShares listed
+
+Read RestrictAnonymous, RestrictAnonymousSAM, EveryoneIncludesAnonymous, RestrictNullSessAccess, NullSessionPipes, and NullSessionShares. Anonymous SAM/null sessions are high Windows findings. Classification only — never dumps SAM, hashes, or pipe contents.
+
+#### `audit-idle-lock`
+
+- **Title:** Audit screensaver / idle lock
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** No TMOUT; IdleAction ignore; Windows ScreenSaverIsSecure=0 timeout 9999
+
+Check idle/screensaver lock: Linux TMOUT/logind IdleAction and dconf idle-delay; Windows ScreenSaveActive, ScreenSaverIsSecure, and ScreenSaveTimeOut. Unlocked idle sessions are a frequent policy item. Read-only.
+
 ### services
 
 #### `list-services`
@@ -407,6 +453,46 @@ Disable rsh, rlogin, rexec, and related xinetd entries. These trust-based remote
 - **Demo fixture:** smbd running, map to guest, SMBv1 enabled, public share with Everyone Full
 
 Report smbd/nmbd/LanmanServer state, guest/anonymous access, SMBv1, and share list. Guest shares and SMBv1 are high findings unless the README requires file sharing.
+
+#### `audit-anonymous-ftp`
+
+- **Title:** Audit anonymous FTP / vsftpd
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** vsftpd anonymous_enable=YES, write_enable=YES, anon_upload_enable=YES; port 21 open
+
+Parse vsftpd/proftpd/pure-ftpd (and Windows FTPSVC) for anonymous_enable, anon_upload, write_enable, and chroot. Deeper than audit-ftp-telnet: reports the insecure knobs, not just that ftpd is running. Does not log in anonymously or scan other hosts.
+
+#### `harden-vsftpd`
+
+- **Title:** Harden vsftpd (disable anonymous)
+- **Platforms:** linux
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates writing anonymous_enable=NO and disabling vsftpd because it is not required
+
+Set anonymous_enable=NO, write_enable=NO, and anon_upload_enable=NO in vsftpd.conf (or the distro equivalent). If FTP is not a required service, also stop/disable vsftpd. Live requires confirm:true. README-required FTP stays up, just without anonymous write.
+
+#### `audit-web-server`
+
+- **Title:** Apache/nginx hardening checklist
+- **Platforms:** linux
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** Options Indexes on; ServerTokens OS; nginx autoindex on; TLSv1 still offered
+
+Read-only Apache/httpd/nginx checklist: directory listings, ServerTokens/server_tokens, ServerSignature, TraceEnable, weak SSLProtocol/ssl_protocols, AllowOverride All, and cgi/userdir if present. Does not disable a README-required web server and does not scan other hosts.
+
+#### `audit-snmp`
+
+- **Title:** Audit SNMP community / insecure mgmt
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** snmpd running, rocommunity public, rwcommunity private, UDP/161 open
+
+Detect snmpd/SNMP service and default community strings (public/private), rwcommunity, and related insecure mgmt listeners (chargen, discard, ident). Reports community *names* that look default; never uses them to walk other hosts.
 
 ### ports
 
@@ -491,6 +577,16 @@ Read /etc/hosts or drivers/etc/hosts for unexpected redirects (windows update, a
 - **Demo fixture:** timesyncd inactive; fake NTP server 10.0.0.1 in config
 
 Check chronyd/systemd-timesyncd/w32time status. Wrong clocks break logs and Kerberos; this is a local config audit, not an NTP amplification test.
+
+#### `disable-llmnr-netbios-wpad`
+
+- **Title:** Disable LLMNR / NetBIOS / WPAD
+- **Platforms:** windows
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates LLMNR off, NetBIOS disabled on adapters, WPAD AutoDetect=0
+
+Turn off LLMNR (EnableMulticast=0), NetBIOS over TCP/IP (SetTcpipNetbios 2), and WPAD/autodetect proxy on the local Windows image. These name-resolution shortcuts are common CP plants and are not needed on a hardened workstation. Live requires confirm:true. dryRun reports current state without changing it.
 
 ### firewall
 
@@ -636,6 +732,36 @@ Inventory Samba share options and Windows SMB share ACLs. Flags guest/Everyone F
 
 Read-only mode/ACL check for /etc/shadow, gshadow, sudoers, ssh host keys, and Windows SAM/SYSTEM file ACLs via icacls. Flags world-readable shadow or Everyone-readable SAM. Does not dump SAM, hashes, or private keys.
 
+#### `audit-sticky-tmp`
+
+- **Title:** Audit sticky bit on temp dirs
+- **Platforms:** linux
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** /tmp mode 0777 missing sticky (critical); /var/tmp 1777 ok; /tmp/world dir 0777
+
+Check /tmp, /var/tmp, and /dev/shm for the sticky bit (1777) and inventory world-writable temp files/dirs that are missing sticky. 0777 /tmp without sticky is a classic plant; sticky /tmp is expected. Local filesystem only — Bend-parallel when available.
+
+#### `hunt-sysprep-leftovers`
+
+- **Title:** Hunt unattended / sysprep leftovers
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** C:\Windows\Panther\unattend.xml with AutoLogon key (value omitted); /root/unattend.xml
+
+Find leftover unattend.xml, autounattend.xml, sysprep.xml, Panther, and kickstart files on the authorized image. Flags AutoLogon/Password keys by name only — values are never printed. Local files only; Bend-parallel path hunt when available.
+
+#### `audit-browser-baseline`
+
+- **Title:** Audit Firefox/IE/Edge security baseline
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** Firefox safebrowsing off; IE DisablePasswordSaving=0; Edge SmartScreen off
+
+Check enterprise Firefox policies/user.js and IE/Edge SmartScreen, form-fill, and popup settings on the local image. Flags safebrowsing off, password-saving on a shared image, and insecure protocol handlers. Does not dump cookies, history, or saved passwords.
+
 ### packages
 
 #### `list-installed-packages`
@@ -677,6 +803,16 @@ Remove a local package (apt-get remove --purge / dnf remove / Uninstall-Package)
 - **Demo fixture:** teamviewer + anydesk packages; x11vnc binary; one unpacked Chrome extension id
 
 Find TeamViewer, AnyDesk, VNC, Chrome Remote Desktop, RustDesk and similar on the authorized image, plus browser extension directories (Chrome/Edge/Firefox profile ids only — no extension source dump). Cross-checks config/remote-access-tools.txt. Discovery, not an exploit.
+
+#### `remove-games-samples`
+
+- **Title:** Remove games and sample content
+- **Platforms:** both
+- **Risk:** mutate
+- **Params:** `gamesListPath` (string), `dryRun` (boolean)
+- **Demo fixture:** Simulates removing aisleriot, gnome-mines, example-content, and MicrosoftSolitaireCollection
+
+Remove games and vendor sample/content packages listed in config/games-samples.txt (aisleriot, solitaire, Xbox apps, example-content, IIS samples, …). Live requires confirm:true. Refuses names that look like required services. Snapshot first if a forensics question might name a game.
 
 ### logging
 
@@ -721,6 +857,16 @@ Report whether unattended-upgrades/apt/dnf or Windows Update indicates pending s
 - **Demo fixture:** Simulates installing 12 security updates with a package list
 
 Apply local security updates (apt-get upgrade, dnf update --security, or Start-WindowsUpdate). Long-running; live requires confirm:true. Stays on the authorized image's update channels.
+
+#### `audit-auto-updates`
+
+- **Title:** Audit unattended-upgrades / Windows Update
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** 20auto-upgrades Unattended-Upgrade 0; wuauserv disabled; AUOptions=1 (never check)
+
+Check that unattended-upgrades (APT Periodic) or Windows Update (WUAU/AUOptions, wuauserv) is enabled and not blocked by policy/hosts. Complements check-pending-updates: this is the *channel* sanity check, not a patch install. Local config only.
 
 ### scheduled
 
@@ -796,6 +942,16 @@ Write /etc/sysctl.d/99-cp-hardening.conf with conservative workstation values (n
 
 List systemd enabled units, rc.local, Windows Run keys, and Startup folder entries. Flag unsigned or temp-path payloads.
 
+#### `audit-mac-enforcement`
+
+- **Title:** Audit AppArmor/SELinux enforcement
+- **Platforms:** linux
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** SELinux Permissive; AppArmor loaded but complain-mode profiles present
+
+Report AppArmor (aa-status) and SELinux (getenforce/sestatus) mode. Permissive or disabled MAC is a finding on images that shipped with a profile. Suggests enforce; this op does not flip the mode (setenforce is a separate admin action after a README check).
+
 ### windows
 
 #### `disable-smbv1`
@@ -847,6 +1003,16 @@ Disable Autoplay/Autorun via registry (NoDriveTypeAutoRun). Standard CP Windows 
 - **Demo fixture:** C: Protection Off; no recovery key material in the result
 
 Report BitLocker protection status per volume. Informational; CP scoring may or may not require encryption. Does not export recovery keys.
+
+#### `audit-iis`
+
+- **Title:** IIS feature inventory + anonymous auth
+- **Platforms:** windows
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** IIS-WebServer installed; anonymousAuthentication enabled; directoryBrowse enabled; IIS samples present
+
+Inventory IIS optional features and flag anonymous authentication, directory browsing, ASP classic, and sample applications. Local Windows image only. Does not dump site content or attack other hosts.
 
 ### evidence
 
@@ -919,4 +1085,14 @@ Pre-competition local checklist: firewall, guest, time sync, logging, no telnet,
 - **Demo fixture:** 10 post-harden rows still failing on the unhardened demo image
 
 After-action verification on the authorized image: password policy, SSH/UAC, extra UID 0, empty/never-expire passwords, media, prohibited software, default-deny firewall, remote-access tools. Read-only — does not re-apply hardening. Each fail points at the mutate op.
+
+#### `skim-forensics-readme`
+
+- **Title:** Skim local README for forensics keywords
+- **Platforms:** both
+- **Risk:** read
+- **Params:** `searchRoot` (string), `keywordsPath` (string)
+- **Demo fixture:** Hits: README Desktop 'forensics question 1 media', /home/alice/README.txt 'unauthorized ftp'; CCS not contacted
+
+Keyword-skim local README/forensics/question text files (Desktop, homes, /root, optional searchRoot). Helps answer forensics questions from files *on the image*. Never contacts the CCS scoring server, other teams, or the internet. Hash-looking lines are skipped; passwords in files are not copied wholesale. Authorized-image hardening only: never used against other teams, scoring endpoints, or off-image hosts.
 

@@ -13,6 +13,16 @@ export function isSafeUsername(name: string): boolean {
   return true;
 }
 
+/** Local filesystem path only — never a URL or UNC share of another host. */
+export function isSafeLocalPath(value: string): boolean {
+  const p = value.trim();
+  if (!p || p.includes("\0") || p.includes("://")) return false;
+  if (/^\\\\/.test(p)) return false;
+  if (p.startsWith("/")) return true;
+  if (/^[A-Za-z]:[\\/]/.test(p)) return true;
+  return false;
+}
+
 export function asString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }

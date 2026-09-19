@@ -45,5 +45,5 @@ Linux files pass, with check-sensitive-file-perms and audit-cron.
 - [`check-sensitive-file-perms`](./check-sensitive-file-perms.md) — Check sensitive file permissions
 - [`audit-cron`](./audit-cron.md) — Audit cron jobs
 - [`audit-sudoers`](./audit-sudoers.md) — Audit sudoers
-- [`audit-home-permissions`](./audit-home-permissions.md) — Audit home directory permissions
+- [`audit-sticky-tmp`](./audit-sticky-tmp.md) — Audit sticky bit on temp dirs
 

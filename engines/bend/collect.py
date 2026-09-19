@@ -177,6 +177,67 @@ def collect_files_perms() -> list[str]:
     return file_rows(existing)
 
 
+def collect_files_sticky() -> list[str]:
+    mounts = [p for p in ("/tmp", "/var/tmp", "/dev/shm") if os.path.exists(p)]
+    found = run_find([*mounts, "-xdev", "-perm", "-0002", "(", "-type", "d", "-o", "-type", "f", ")"]) if mounts else []
+    return file_rows(mounts + found)
+
+
+def collect_files_sysprep() -> list[str]:
+    found = run_find(
+        [
+            "/home",
+            "/root",
+            "/tmp",
+            "/opt",
+            "/var/tmp",
+            "-xdev",
+            "-maxdepth",
+            "4",
+            "(",
+            "-iname",
+            "*unattend*",
+            "-o",
+            "-iname",
+            "*sysprep.xml",
+            "-o",
+            "-iname",
+            "ks.cfg",
+            ")",
+        ],
+        timeout=12,
+    )
+    extra = [p for p in ("/unattend.xml", "/autounattend.xml", "/root/unattend.xml") if os.path.exists(p)]
+    return file_rows(extra + found)
+
+
+def collect_files_readme() -> list[str]:
+    found = run_find(
+        [
+            "/home",
+            "/root",
+            "/opt",
+            "/tmp",
+            "/usr/local/share",
+            "-xdev",
+            "-maxdepth",
+            "3",
+            "(",
+            "-iname",
+            "README*",
+            "-o",
+            "-iname",
+            "*forensic*",
+            "-o",
+            "-iname",
+            "*QUESTION*",
+            ")",
+        ],
+        timeout=12,
+    )
+    return file_rows(found, "readme")
+
+
 def classify_shadow(field: str) -> tuple[bool, bool]:
     if field == "":
         return True, False
@@ -364,6 +425,9 @@ COLLECTORS = {
     "files-hidden": lambda repo: collect_files_hidden(),
     "files-rats": collect_files_rats,
     "files-perms": lambda repo: collect_files_perms(),
+    "files-sticky": lambda repo: collect_files_sticky(),
+    "files-sysprep": lambda repo: collect_files_sysprep(),
+    "files-readme": lambda repo: collect_files_readme(),
     "users": collect_users,
     "ports": collect_ports,
     "agg": collect_agg,
@@ -376,6 +440,9 @@ KIND_TO_BEND = {
     "files-hidden": "score-files.bend",
     "files-rats": "score-files.bend",
     "files-perms": "score-files.bend",
+    "files-sticky": "score-files.bend",
+    "files-sysprep": "score-files.bend",
+    "files-readme": "score-files.bend",
     "users": "score-users.bend",
     "ports": "score-ports.bend",
     "agg": "agg-checks.bend",
@@ -419,6 +486,18 @@ def fallback_score(kind: str, tsv: str) -> dict:
                 tags.append("plant-path")
                 if "suid" in tags:
                     score += 30
+            low = path.lower()
+            if "unattend" in low or "sysprep" in low:
+                score += 30
+                tags.append("sysprep")
+            if (kind.startswith("files-sticky") or path in {"/tmp", "/var/tmp", "/dev/shm"} or path.startswith("/tmp/")) and last in "2367":
+                padded = mode.zfill(4)
+                if not padded.startswith("1"):
+                    score += 35
+                    tags.append("missing-sticky")
+            if kind == "files-readme" or (len(cols) > 2 and cols[2] == "readme"):
+                score += 8
+                tags.append("readme")
         elif kind == "users":
             uid = cols[1] if len(cols) > 1 else ""
             empty = len(cols) > 4 and cols[4] == "1"

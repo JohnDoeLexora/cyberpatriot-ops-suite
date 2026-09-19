@@ -21,8 +21,8 @@ exploitation, and no “cheat the CCS” automation.
 - `{ "mode": "live" }` runs the Linux engine (this box / a Linux image) or the
   Windows PowerShell scripts on a Windows image.
 - On Linux, **Bend 2** (`bend` 2.0.5) scores embarrassingly parallel inventories
-  (world-writable / SUID / media / hidden / RAT paths, user heuristics, port
-  baseline diffs, checklist aggregation). A thin `engines/bend/collect.py`
+  (world-writable / SUID / media / hidden / RAT / sticky-tmp / sysprep leftover /
+  README paths, user heuristics, port baseline diffs, checklist aggregation). A thin `engines/bend/collect.py`
   gathers host facts; Bend never walks Windows APIs and is never used for
   mutations. If `bend` is missing, the same collector scores in Python, then
   the existing TypeScript `find` path.

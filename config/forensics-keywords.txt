@@ -1,0 +1,45 @@
+# Local-file keyword hints for forensics questions on the authorized image.
+# skim-forensics-readme never contacts CCS, other teams, or the internet.
+password
+passwd
+forensic
+forensics
+question
+media
+prohibited
+unauthorized
+authorized
+service
+services
+port
+ports
+firewall
+hash
+hashes
+user
+users
+account
+admin
+administrator
+readme
+hidden
+backdoor
+malware
+music
+mp3
+movie
+video
+share
+ftp
+telnet
+ssh
+rdp
+guest
+policy
+update
+windows update
+unattended
+sysprep
+snmp
+community
+anonymous

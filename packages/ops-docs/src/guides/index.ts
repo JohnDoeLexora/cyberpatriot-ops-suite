@@ -1,5 +1,6 @@
 import type { HowToBody } from "../types.js";
 import { AUTH } from "./auth.js";
+import { CP07 } from "./cp07.js";
 import { EVIDENCE } from "./evidence.js";
 import { FILES } from "./files.js";
 import { NETWORK } from "./network.js";
@@ -19,4 +20,5 @@ export const BODIES: Record<string, HowToBody> = {
   ...SCHEDULED,
   ...WINDOWS,
   ...EVIDENCE,
+  ...CP07,
 };

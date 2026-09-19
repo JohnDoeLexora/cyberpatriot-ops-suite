@@ -97,6 +97,38 @@ export const expectedPortsParams: ParamsSchema = {
   },
 };
 
+export const forensicsSkimParams: ParamsSchema = {
+  type: "object",
+  properties: {
+    searchRoot: {
+      type: "string",
+      description:
+        "Optional local directory to skim (Desktop, homes, README files). Never a URL; CCS is never contacted.",
+    },
+    keywordsPath: {
+      type: "string",
+      description: "Path to forensics-keywords.txt",
+      default: "config/forensics-keywords.txt",
+    },
+  },
+};
+
+export const gamesSamplesParams: ParamsSchema = {
+  type: "object",
+  properties: {
+    gamesListPath: {
+      type: "string",
+      description: "Path to games-samples.txt (package/AppX names to remove)",
+      default: "config/games-samples.txt",
+    },
+    dryRun: {
+      type: "boolean",
+      description: "Describe the change without applying it",
+      default: false,
+    },
+  },
+};
+
 export function op(
   id: string,
   title: string,

@@ -273,6 +273,78 @@ export function scoreUsers(users: UserRecord[], options: HeuristicOptions): User
   });
 }
 
+export interface UnauthorizedSelection {
+  unauthorized: UserRecord[];
+  extraAdmins: UserRecord[];
+  missingAllowlist: string[];
+  names: string[];
+}
+
+/** Bulk-select interactive allowlist misses + extra admins. Service nologin accounts stay out. */
+export function selectUnauthorizedUsers(
+  users: UserRecord[],
+  allowlist: Set<string> = new Set(),
+): UnauthorizedSelection {
+  const unauthorized = users.filter(
+    (u) =>
+      (u.signals ?? []).includes(SIGNAL.notInAllowlist) &&
+      (u.interactive || u.name.toLowerCase() === "guest"),
+  );
+  const extraAdmins = users.filter((u) => (u.signals ?? []).includes(SIGNAL.extraAdmin));
+  const present = new Set(users.map((u) => u.name));
+  const missingAllowlist = [...allowlist].filter((n) => n && !present.has(n));
+  const names = [...new Set([...unauthorized.map((u) => u.name), ...extraAdmins.map((u) => u.name)])];
+  return { unauthorized, extraAdmins, missingAllowlist, names };
+}
+
+export function selectUnauthorizedUsersWithAllowlist(
+  users: UserRecord[],
+  allowlist: Set<string>,
+): UnauthorizedSelection {
+  return selectUnauthorizedUsers(users, allowlist);
+}
+
+export function findingsFromUnauthorized(sel: UnauthorizedSelection): Finding[] {
+  const findings: Finding[] = [];
+  for (const user of sel.unauthorized) {
+    const extra = (user.signals ?? []).includes(SIGNAL.extraAdmin);
+    findings.push({
+      id: `unauth:${user.name}`,
+      severity: extra || user.uid === 0 ? "critical" : "high",
+      title: `Allowlist miss: ${user.name}`,
+      detail: `${user.name} is interactive and not in allowed-users.txt (${(user.signals ?? []).join(", ") || "not-in-allowlist"}).`,
+      resource: user.name,
+      score: user.suspicionScore,
+      signals: user.signals,
+      remediationOpId: extra ? "remove-user-from-admins" : "disable-user",
+    });
+  }
+  for (const user of sel.extraAdmins) {
+    if (sel.unauthorized.some((u) => u.name === user.name)) continue;
+    findings.push({
+      id: `admin:${user.name}`,
+      severity: "high",
+      title: `Extra admin: ${user.name}`,
+      detail: "Privileged group member not justified by the allowlist.",
+      resource: user.name,
+      score: user.suspicionScore,
+      signals: user.signals,
+      remediationOpId: "remove-user-from-admins",
+    });
+  }
+  for (const name of sel.missingAllowlist) {
+    findings.push({
+      id: `missing:${name}`,
+      severity: "medium",
+      title: `Allowlist user missing from image: ${name}`,
+      detail: "README-promised account is not present. Do not invent it unless the README requires creating it.",
+      resource: name,
+    });
+  }
+  findings.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  return findings;
+}
+
 export function findingsFromUsers(users: UserRecord[]): Finding[] {
   const findings: Finding[] = [];
   for (const user of users) {
