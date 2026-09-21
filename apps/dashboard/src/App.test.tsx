@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import App from './App'
@@ -132,6 +132,95 @@ describe('dashboard shell', () => {
     expect(screen.getByTestId('mosaic')).toHaveAttribute('data-mosaic-mode', 'mosaic')
     expect(screen.queryByTestId('pane-tabs')).not.toBeInTheDocument()
     expect(screen.getByTestId('pane-count')).toHaveTextContent('4 panes')
+  })
+
+  it('hides advanced checks in beginner mode until Show advanced', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    expect(screen.getByTestId('app-shell')).toHaveAttribute('data-beginner', 'true')
+    expect(screen.getByTestId('catalog-item-list-users')).toBeInTheDocument()
+    expect(screen.queryByTestId('catalog-item-audit-iis')).not.toBeInTheDocument()
+    await user.click(screen.getByTestId('show-advanced'))
+    expect(screen.getByTestId('catalog-item-audit-iis')).toBeInTheDocument()
+    await user.click(screen.getByTestId('beginner-toggle'))
+    expect(screen.getByTestId('app-shell')).toHaveAttribute('data-beginner', 'false')
+    expect(screen.getByTestId('catalog-item-audit-iis')).toBeInTheDocument()
+  })
+
+  it('runs the next playlist step through the engine', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    expect(screen.getByTestId('playlist-panel')).toHaveAttribute('data-playlist-id', 'linux-starter')
+    expect(screen.getByTestId('empty-playlist-linux-starter')).toBeInTheDocument()
+    await user.click(screen.getByTestId('playlist-run-next'))
+    const pane = await screen.findByTestId('pane')
+    await waitFor(() => {
+      expect(within(pane).getByTestId('run-status')).toHaveAttribute('data-status', 'done')
+    })
+    expect(pane).toHaveAttribute('data-op-id', 'skim-forensics-readme')
+    expect(screen.getByTestId('playlist-progress')).toHaveTextContent('1/')
+    expect(screen.getByTestId('playlist-step-skim-forensics-readme')).toHaveAttribute('data-status', 'done')
+    expect(screen.getByTestId('coach-tip')).toHaveTextContent(/forensics/i)
+    await user.click(screen.getByTestId('playlist-howto-list-users'))
+    expect(screen.getByTestId('howto-article')).toHaveAttribute('data-op-id', 'list-users')
+  })
+
+  it('playlist run-all runs existing demo ops', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.selectOptions(screen.getByTestId('playlist-select'), 'forensics-first')
+    expect(screen.getByTestId('playlist-panel')).toHaveAttribute('data-playlist-id', 'forensics-first')
+    await user.click(screen.getByTestId('playlist-run-all'))
+    await waitFor(
+      () => {
+        expect(screen.getByTestId('playlist-progress')).toHaveTextContent('11/11')
+      },
+      { timeout: 15_000 },
+    )
+    expect(screen.getByTestId('playlist-step-export-evidence-bundle')).toHaveAttribute('data-status', 'done')
+    expect(screen.getByTestId('pane')).toHaveAttribute('data-op-id', 'export-evidence-bundle')
+  })
+
+  it('playlist run next confirms live mutations', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    for (let i = 0; i < 5; i++) {
+      const next = screen.getByTestId('playlist-run-next')
+      await waitFor(() => expect(next).not.toBeDisabled())
+      await user.click(next)
+    }
+    await waitFor(() => expect(screen.getByTestId('playlist-run-next')).not.toBeDisabled())
+    expect(screen.getByTestId('playlist-step-list-admin-users')).toHaveAttribute('data-status', 'done')
+    expect(screen.getByTestId('playlist-step-disable-guest-account')).toHaveAttribute('data-status', 'idle')
+    await user.click(screen.getByTestId('demo-toggle'))
+    expect(screen.getByTestId('mode-label')).toHaveTextContent('this computer')
+    await user.click(screen.getByTestId('playlist-run-next'))
+    expect(await screen.findByTestId('confirm-dialog')).toHaveTextContent(/Change this computer/i)
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByTestId('confirm-dialog')).not.toBeInTheDocument()
+    expect(screen.getByTestId('playlist-step-disable-guest-account')).toHaveAttribute('data-status', 'idle')
+  })
+
+  it('edits allowlists in localStorage and accepts uploaded txt', async () => {
+    const user = userEvent.setup()
+    const { unmount } = render(<App />)
+    await user.click(screen.getByTestId('allowlist-open'))
+    const editor = screen.getByTestId('allowlist-editor')
+    expect(editor).toHaveTextContent(/allowed-users\.txt/)
+    fireEvent.change(screen.getByTestId('allowlist-users'), {
+      target: { value: '# README\nalice\nbob\ndave\n' },
+    })
+    await user.click(screen.getByTestId('allowlist-close'))
+    expect(screen.queryByTestId('allowlist-editor')).not.toBeInTheDocument()
+    unmount()
+    render(<App />)
+    await user.click(screen.getByTestId('allowlist-open'))
+    expect(screen.getByTestId('allowlist-users')).toHaveValue('# README\nalice\nbob\ndave\n')
+    const file = new File(['# uploaded\nroot\ncoach\n'], 'allowed-users.txt', { type: 'text/plain' })
+    fireEvent.change(screen.getByTestId('allowlist-users-file'), { target: { files: [file] } })
+    await waitFor(() => {
+      expect(screen.getByTestId('allowlist-users')).toHaveValue('# uploaded\nroot\ncoach\n')
+    })
   })
 
   it('tabs from the fifth pane', async () => {

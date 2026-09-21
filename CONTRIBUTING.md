@@ -17,6 +17,7 @@ Hashes and private keys must never appear in API output either — the engines a
 | You want to… | Look here |
 | --- | --- |
 | Add or edit a check (op) | `packages/ops-catalog/src/catalog.ts` |
+| Round playlists (ordered existing ops) | `packages/ops-catalog/src/playlists.ts` |
 | Practice-data (demo) output | `packages/ops-engine/src/demo/` |
 | Live Linux behavior | `packages/ops-engine/src/linux/` and `engines/linux/*.sh` |
 | Live Windows behavior | `engines/windows/<op-id>.ps1` |

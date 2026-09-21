@@ -1,3 +1,4 @@
+import { coachTipFor } from '@cyberpatriot/ops-catalog'
 import { CircleHelp, Play, SquareSplitHorizontal, SquareSplitVertical, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { getEngineOp, OPS_BY_ID } from '../catalog/ops'
@@ -87,7 +88,7 @@ export function OpPanel({ paneId }: { paneId: string }) {
               <CircleHelp size={14} />
               How to
             </button>
-            <span className="hide-narrow min-w-0 flex-1 line-clamp-2 text-[13.5px] leading-5 text-mute">
+            <span className="op-blurb hide-narrow min-w-0 flex-1 line-clamp-2 text-[13.5px] leading-5 text-mute">
               {op.description}
             </span>
             {op.risk === 'mutate' && !ws.demoMode && (
@@ -96,6 +97,7 @@ export function OpPanel({ paneId }: { paneId: string }) {
               </span>
             )}
           </div>
+          <CoachTip opId={op.id} />
           <ParamBar paneId={paneId} />
           <div className="pane-cq min-h-0 flex-1 overflow-auto" data-testid={`pane-body-${paneId}`}>
             <PaneBody paneId={paneId} />
@@ -103,6 +105,27 @@ export function OpPanel({ paneId }: { paneId: string }) {
         </div>
       )}
     </section>
+  )
+}
+
+function CoachTip({ opId }: { opId: string }) {
+  const ws = useWorkspace()
+  const tip = coachTipFor(opId, ws.playlistId)
+  if (!tip) return null
+  return (
+    <div
+      className="coach-tip flex items-start gap-2 border-b border-line bg-accent-dim/40 px-4 py-2 text-[13.5px] leading-5 text-ink"
+      data-testid="coach-tip"
+    >
+      <span className="min-w-0 flex-1">{tip}</span>
+      <button
+        type="button"
+        className="shrink-0 text-[13px] font-medium text-accent hover:underline"
+        onClick={() => ws.openHowto(opId)}
+      >
+        How-to
+      </button>
+    </div>
   )
 }
 

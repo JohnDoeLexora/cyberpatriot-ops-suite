@@ -6,6 +6,7 @@ import { describe, it } from "node:test";
 import {
   CATEGORIES,
   assertCatalogIntegrity,
+  assertPlaylistsIntegrity,
   catalog,
   getOp,
   listOps,
@@ -20,6 +21,10 @@ describe("ops catalog integrity", () => {
 
   it("has unique kebab-case ids and required fields", () => {
     assert.doesNotThrow(() => assertCatalogIntegrity(catalog));
+  });
+
+  it("round playlists only reference catalog ops", () => {
+    assert.doesNotThrow(() => assertPlaylistsIntegrity(catalog));
   });
 
   it("covers both platforms, both risk levels, and several categories", () => {

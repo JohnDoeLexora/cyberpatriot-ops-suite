@@ -2,6 +2,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { useEffect } from 'react'
 import { Catalog } from './components/Catalog'
 import { Header } from './components/Header'
+import { PlaylistPanel } from './components/PlaylistPanel'
 import { HowToDrawer } from './components/HowToDrawer'
 import { Mosaic } from './components/Mosaic'
 import { OverlayLayer } from './components/Modals'
@@ -18,14 +19,25 @@ export default function App() {
 }
 
 function Shell() {
+  const ws = useWorkspace()
   useGlobalKeys()
   return (
-    <div className="flex h-full min-h-0 flex-col bg-app text-ink" data-testid="app-shell" data-theme="paper">
+    <div
+      className="flex h-full min-h-0 flex-col bg-app text-ink"
+      data-testid="app-shell"
+      data-theme="paper"
+      data-beginner={ws.beginnerMode ? 'true' : 'false'}
+    >
       <Header />
       <div className="min-h-0 flex-1">
         <PanelGroup direction="horizontal" autoSaveId="cp-ops-sidebar">
           <Panel defaultSize={22} minSize={18} maxSize={34} className="min-h-0 min-w-[17rem]">
-            <Catalog />
+            <div className="flex h-full min-h-0 flex-col">
+              <PlaylistPanel />
+              <div className="min-h-0 flex-1">
+                <Catalog />
+              </div>
+            </div>
           </Panel>
           <PanelResizeHandle className="resize-handle" />
           <Panel defaultSize={78} className="min-h-0 min-w-[24rem]">
@@ -61,8 +73,15 @@ function useGlobalKeys() {
           ws.closeHowto()
           return
         }
+        if (ws.allowlistOpen) {
+          ws.setAllowlistOpen(false)
+          return
+        }
+        if (ws.confirm) {
+          ws.cancelConfirm()
+          return
+        }
         ws.setContextMenu(null)
-        ws.setConfirm(null)
         ws.setPasswordModal(null)
         ws.setDetailsUserId(null)
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()

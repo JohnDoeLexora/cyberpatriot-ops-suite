@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { catalog } from '@cyberpatriot/ops-catalog'
+import { PLAYLISTS, catalog, isBeginnerOp } from '@cyberpatriot/ops-catalog'
 import { CATEGORIES, ENGINE_OPS, filterOps, LEGACY_OP_IDS, migrateOpId, OPS } from './ops'
 
 describe('ops catalog', () => {
@@ -21,6 +21,23 @@ describe('ops catalog', () => {
     expect(uid.some((op) => op.id === 'audit-uid-zero')).toBe(true)
 
     expect(filterOps('no-such-op-xyz')).toEqual([])
+  })
+
+  it('playlists only name catalog engine ops', () => {
+    expect(PLAYLISTS.map((p) => p.id)).toEqual([
+      'linux-starter',
+      'windows-starter',
+      'linux-deep',
+      'windows-deep',
+      'forensics-first',
+    ])
+    for (const pl of PLAYLISTS) {
+      for (const step of pl.steps) {
+        expect(ENGINE_OPS.some((op) => op.id === step.opId), `${pl.id}:${step.opId}`).toBe(true)
+      }
+    }
+    expect(isBeginnerOp('list-users')).toBe(true)
+    expect(isBeginnerOp('audit-iis')).toBe(false)
   })
 
   it('maps the old dotted ids onto the typed catalog', () => {

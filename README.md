@@ -33,6 +33,9 @@ Open the URL Vite prints (http://localhost:5173).
 ## Using the dashboard
 
 - Left list: 130+ checks. Press `/` to search.
+- **Round playlists** (Linux starter, Windows starter, Linux deep, Windows deep, Forensics first): pick one, **Run next** or **Run all**. Each step is an existing check with a coach tip and a how-to. Live mutations still ask you to confirm. Nothing talks to CCS.
+- **Beginner** (on by default): larger tips, starter checks first, **Show advanced** for the rest. Empty panes suggest a playlist. Turn it off for the full catalog.
+- **Edit allowlists**: paste the README user/admin lists (saved in this browser). Download/upload `allowed-users.txt` / `allowed-admins.txt` in the same format as `config/`.
 - Open a check in a pane, then **Run**. Two across, then two below (a 2×2). Tabs from the fifth pane.
 - **How-to** (or `?`) explains what the check is and why it scores.
 - On account panes, hover a row for Flag / Turn off / Turn on / Expire password. Extra columns tuck away on a narrow pane.
@@ -55,7 +58,7 @@ More: [docs/SAFETY.md](docs/SAFETY.md) · [docs/OPS.md](docs/OPS.md) (every chec
 
 Edit `config/allowed-users.txt` and `config/allowed-admins.txt` to match **this image’s README** before you trust “flag suspicious users” or “sync authorized users.” Example lists (other teams call these `users.txt` / `admins.txt`) live in `config/examples/`. New accounts are created **without a password** — set one yourself; the tool will not invent one.
 
-Start-of-round sequence: open **Round-start wizard** (`round-start-wizard`), then follow the related ops (forensics skim → user sync → password policy → firewall → updates → prohibited software). Mutations still ask you to confirm.
+Start-of-round: pick a **Round playlist** (or open **Round-start wizard**). Playlists only run existing ops through the engine/API. Mutations still ask you to confirm.
 
 ## Other commands
 

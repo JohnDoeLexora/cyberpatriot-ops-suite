@@ -4,8 +4,10 @@ Typed operations exported from `@cyberpatriot/ops-catalog`.
 Every op is **defensive, authorized-image hardening** for CyberPatriot.
 See [SAFETY.md](./SAFETY.md) before running anything with `mode: "live"`.
 How-to explainers for every op: [howto/](./howto/).
+Round playlists (ordered existing ops only): [Playlists](#round-playlists).
 
 - **Count:** 138
+- **Playlists:** 5 (linux-starter, windows-starter, linux-deep, windows-deep, forensics-first)
 - **Default run mode:** demo (Mac-safe fixtures, no host mutation)
 - **Mutations:** live mode requires `confirm: true` in `POST /ops/:id/run`
 
@@ -1568,4 +1570,112 @@ One-click sequenced guide for the first minutes of a round: forensics skim → u
 - **Demo fixture:** ZIP listing SUMMARY.md + findings.json + inventories; redacted=true; ccsContacted=false; no secrets
 
 Assemble a redacted handoff ZIP for a coach: SUMMARY.md, findings.json, user/service/port inventories (no hashes), checklist snapshot. Never includes shadow/SAM, private keys, Wi-Fi PSKs, cookies, or CCS URLs. Distinct from export-evidence-bundle: this is the coach-facing packet, still on-image only. Authorized-image hardening only: never used against other teams, scoring endpoints, or off-image hosts.
+
+
+## Round playlists
+
+Ordered lists of **existing** catalog ids. The dashboard Playlist panel runs them through the engine/API; live mutations still require `confirm: true`. No CCS.
+
+### `linux-starter`
+
+Linux starter — First minutes on a Linux image: forensics, accounts, firewall, SSH, banned software.
+
+| # | Op | Coach tip | How-to |
+| --- | --- | --- | --- |
+| 1 | `skim-forensics-readme` | Copy forensics questions into Team notes before you change anything. | [how-to](./howto/skim-forensics-readme.md) |
+| 2 | `list-users` | See who is on this box. Compare names to the image README. | [how-to](./howto/list-users.md) |
+| 3 | `select-unauthorized-users` | Paste the README user list into Allowlists, then see who is extra. | [how-to](./howto/select-unauthorized-users.md) |
+| 4 | `flag-suspicious-users` | Scores UID 0, never-logged-in, and allowlist misses. Read first — do not disable yet. | [how-to](./howto/flag-suspicious-users.md) |
+| 5 | `list-admin-users` | Who has sudo? Cross-check allowed-admins.txt. | [how-to](./howto/list-admin-users.md) |
+| 6 | `disable-guest-account` | Guest is almost never authorized. Live mode will ask before turning it off. | [how-to](./howto/disable-guest-account.md) |
+| 7 | `audit-password-policy` | Check length and aging before you apply a policy. | [how-to](./howto/audit-password-policy.md) |
+| 8 | `audit-firewall` | Is the host firewall even on? | [how-to](./howto/audit-firewall.md) |
+| 9 | `enable-firewall` | Turn it on. Live mode asks first. | [how-to](./howto/enable-firewall.md) |
+| 10 | `apply-default-deny-inbound` | Default-deny inbound, then allow only scored services. Confirms in live mode. | [how-to](./howto/apply-default-deny-inbound.md) |
+| 11 | `ssh-hardening-audit` | PermitRootLogin, empty passwords, protocol. Read this before harden-sshd. | [how-to](./howto/ssh-hardening-audit.md) |
+| 12 | `find-prohibited-software` | Inventory nmap/hydra/netcat. Removal is a separate confirm-gated op. | [how-to](./howto/find-prohibited-software.md) |
+| 13 | `scoreboard-preflight` | Local checklist only — this never talks to the CCS scoring server. | [how-to](./howto/scoreboard-preflight.md) |
+
+### `windows-starter`
+
+Windows starter — First minutes on a Windows image: forensics, accounts, firewall, Defender, AutoPlay.
+
+| # | Op | Coach tip | How-to |
+| --- | --- | --- | --- |
+| 1 | `skim-forensics-readme` | Copy forensics questions into Team notes before you change anything. | [how-to](./howto/skim-forensics-readme.md) |
+| 2 | `list-users` | See who is on this box. Compare names to the image README. | [how-to](./howto/list-users.md) |
+| 3 | `select-unauthorized-users` | Paste the README user list into Allowlists, then see who is extra. | [how-to](./howto/select-unauthorized-users.md) |
+| 4 | `flag-suspicious-users` | Scores Guest, extra admins, and allowlist misses. Read first. | [how-to](./howto/flag-suspicious-users.md) |
+| 5 | `disable-guest-account` | Guest is almost never authorized. Live mode will ask before turning it off. | [how-to](./howto/disable-guest-account.md) |
+| 6 | `audit-password-policy` | Check length, lockout, and aging before you apply a template. | [how-to](./howto/audit-password-policy.md) |
+| 7 | `audit-uac` | UAC off is a high Windows finding. Read, then fix with a template. | [how-to](./howto/audit-uac.md) |
+| 8 | `audit-firewall` | Are Domain/Private/Public profiles on? | [how-to](./howto/audit-firewall.md) |
+| 9 | `enable-firewall` | Turn all profiles on. Live mode asks first. | [how-to](./howto/enable-firewall.md) |
+| 10 | `enable-windows-defender` | Realtime monitoring should be on. Live mode asks first. | [how-to](./howto/enable-windows-defender.md) |
+| 11 | `disable-autoplay` | AutoPlay is a classic plant. Live mode asks first. | [how-to](./howto/disable-autoplay.md) |
+| 12 | `find-prohibited-software` | Inventory banned tools. Removal is a separate confirm-gated op. | [how-to](./howto/find-prohibited-software.md) |
+| 13 | `scoreboard-preflight` | Local checklist only — this never talks to the CCS scoring server. | [how-to](./howto/scoreboard-preflight.md) |
+
+### `linux-deep`
+
+Linux deep — After the starter: UID 0, sudo, SSH harden, Telnet/FTP, SUID, cron, kernel.
+
+| # | Op | Coach tip | How-to |
+| --- | --- | --- | --- |
+| 1 | `round-start-wizard` | Huddle list: forensics → users → passwords → firewall → updates. | [how-to](./howto/round-start-wizard.md) |
+| 2 | `audit-uid-zero` | Only root should be UID 0. Extra roots are backdoors. | [how-to](./howto/audit-uid-zero.md) |
+| 3 | `check-empty-passwords` | Flags empty/unusable passwords. Never prints hashes. | [how-to](./howto/check-empty-passwords.md) |
+| 4 | `audit-sudoers` | NOPASSWD and world-writable sudoers.d files. | [how-to](./howto/audit-sudoers.md) |
+| 5 | `harden-sshd` | PermitRootLogin no, no empty passwords. Live mode asks first. | [how-to](./howto/harden-sshd.md) |
+| 6 | `disable-root-ssh` | Belt and suspenders after the sshd drop-in. | [how-to](./howto/disable-root-ssh.md) |
+| 7 | `enforce-password-policy` | Length 14, history, aging. Does not change existing hashes. | [how-to](./howto/enforce-password-policy.md) |
+| 8 | `enable-account-lockout` | faillock after repeated failures. Live mode asks first. | [how-to](./howto/enable-account-lockout.md) |
+| 9 | `flag-risky-services` | Telnet, anonymous FTP, and other README-unexpected listeners. | [how-to](./howto/flag-risky-services.md) |
+| 10 | `disable-telnet` | Stop Telnet and block tcp/23. Live mode asks first. | [how-to](./howto/disable-telnet.md) |
+| 11 | `audit-anonymous-ftp` | vsftpd anonymous/write knobs — not a login test. | [how-to](./howto/audit-anonymous-ftp.md) |
+| 12 | `find-suid-sgid` | SUID copies under /tmp and /home are critical. | [how-to](./howto/find-suid-sgid.md) |
+| 13 | `find-world-writable` | World-writable cron, sudoers, or PATH dirs. | [how-to](./howto/find-world-writable.md) |
+| 14 | `audit-cron` | wget|sh and /tmp payloads in crontab/cron.d. | [how-to](./howto/audit-cron.md) |
+| 15 | `hunt-shell-backdoors` | Alias hijacks and wget|sh in profile/bashrc. | [how-to](./howto/hunt-shell-backdoors.md) |
+| 16 | `harden-sysctl` | No forwarding, syncookies, rp_filter. Live mode asks first. | [how-to](./howto/harden-sysctl.md) |
+| 17 | `post-harden-checklist` | Re-check the image. Read-only — it will not re-apply. | [how-to](./howto/post-harden-checklist.md) |
+
+### `windows-deep`
+
+Windows deep — After the starter: secedit, auditpol, RDP/RA, SMBv1, LLMNR, IIS, SFC.
+
+| # | Op | Coach tip | How-to |
+| --- | --- | --- | --- |
+| 1 | `round-start-wizard` | Huddle list: forensics → users → passwords → firewall → updates. | [how-to](./howto/round-start-wizard.md) |
+| 2 | `apply-security-template` | Import cp-baseline.inf (password, lockout, Guest). Prefer dry-run first. | [how-to](./howto/apply-security-template.md) |
+| 3 | `enable-audit-policy` | Success+Failure on the six local categories. Not a log dump. | [how-to](./howto/enable-audit-policy.md) |
+| 4 | `import-firewall-profile` | Known-good: profiles on, inbound block. Add README ports after. | [how-to](./howto/import-firewall-profile.md) |
+| 5 | `disable-rdp` | Unless the README requires Remote Desktop. Live mode asks first. | [how-to](./howto/disable-rdp.md) |
+| 6 | `disable-remote-registry` | Workstations do not need Remote Registry. | [how-to](./howto/disable-remote-registry.md) |
+| 7 | `disable-remote-assistance` | fAllowToGetHelp=0. Complements disable-rdp. | [how-to](./howto/disable-remote-assistance.md) |
+| 8 | `disable-smbv1` | SMBv1 is in-scope hardening. Live mode asks first. | [how-to](./howto/disable-smbv1.md) |
+| 9 | `disable-llmnr-netbios-wpad` | Name-resolution shortcuts are common plants. | [how-to](./howto/disable-llmnr-netbios-wpad.md) |
+| 10 | `audit-null-session` | Anonymous SAM / null sessions. Classification only — no dumps. | [how-to](./howto/audit-null-session.md) |
+| 11 | `audit-iis` | Anonymous auth, directory browse, samples. Local inventory. | [how-to](./howto/audit-iis.md) |
+| 12 | `disable-optional-windows-features` | Telnet/TFTP/SMB1 extras from the features list. Live mode asks first. | [how-to](./howto/disable-optional-windows-features.md) |
+| 13 | `run-sfc-scan` | sfc /verifyonly — report only, no repair. | [how-to](./howto/run-sfc-scan.md) |
+| 14 | `post-harden-checklist` | Re-check the image. Read-only — it will not re-apply. | [how-to](./howto/post-harden-checklist.md) |
+
+### `forensics-first`
+
+Forensics first — Evidence before hardening: README skim, media, hidden binaries, persistence, export.
+
+| # | Op | Coach tip | How-to |
+| --- | --- | --- | --- |
+| 1 | `skim-forensics-readme` | Keyword-skim local README files. Never contacts CCS or the internet. | [how-to](./howto/skim-forensics-readme.md) |
+| 2 | `list-users` | Account inventory for write-ups. Hashes are never listed. | [how-to](./howto/list-users.md) |
+| 3 | `find-media-files` | mp3/mp4 under homes — snapshot before you delete. | [how-to](./howto/find-media-files.md) |
+| 4 | `find-hidden-executables` | Dotfile binaries under homes, /tmp, and Startup. | [how-to](./howto/find-hidden-executables.md) |
+| 5 | `hunt-shell-backdoors` | Alias hijacks and profile plants. Do not execute the rc files. | [how-to](./howto/hunt-shell-backdoors.md) |
+| 6 | `hunt-sysprep-leftovers` | unattend.xml / Panther leftovers. Password values are never printed. | [how-to](./howto/hunt-sysprep-leftovers.md) |
+| 7 | `audit-hosts-file` | Unexpected redirects of update/AV names. | [how-to](./howto/audit-hosts-file.md) |
+| 8 | `find-backdoor-binaries` | nc/ncat in /tmp and :31337 process binaries. Inventory only. | [how-to](./howto/find-backdoor-binaries.md) |
+| 9 | `audit-startup-items` | rc.local, Run keys, Startup folder. | [how-to](./howto/audit-startup-items.md) |
+| 10 | `package-forensics-evidence` | Redacted pack: users, ports, persistence. No hashes or private keys. | [how-to](./howto/package-forensics-evidence.md) |
+| 11 | `export-evidence-bundle` | One-click redacted bundle for the team scratchpad. | [how-to](./howto/export-evidence-bundle.md) |
 

@@ -9,9 +9,11 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react'
+import { getPlaylist } from '@cyberpatriot/ops-catalog'
 import { resolveHowtoOpId } from '@cyberpatriot/ops-docs'
 import { getEngineOp, OPS_BY_ID } from '../catalog/ops'
 import { adaptRunResult } from '../lib/adapt-result'
+import { loadAllowlist, parseNameList, saveAllowlist } from '../lib/allowlist'
 import { uid } from '../lib/id'
 import { executeOp, fetchHealth, type EngineSource } from '../lib/run-client'
 import { liveUsers, upsertUsers, type UiUser } from '../lib/users'
@@ -61,7 +63,10 @@ export type ConfirmState = {
   danger?: boolean
   extraHome?: boolean
   onConfirm: (opts: { removeHome: boolean }) => void
+  onCancel?: () => void
 }
+
+export type RunOutcome = 'ok' | 'error' | 'cancelled' | 'empty'
 
 export type PasswordModalState = {
   userId: string
@@ -77,6 +82,7 @@ type WorkspaceApi = PersistedWorkspace & {
   setContextMenu: (m: ContextMenuState | null) => void
   confirm: ConfirmState | null
   setConfirm: (c: ConfirmState | null) => void
+  cancelConfirm: () => void
   passwordModal: PasswordModalState | null
   setPasswordModal: (m: PasswordModalState | null) => void
   detailsUserId: string | null
@@ -94,6 +100,18 @@ type WorkspaceApi = PersistedWorkspace & {
   journal: JournalEntry[]
   log: (kind: JournalEntry['kind'], text: string) => void
   setDemoMode: (on: boolean) => void
+  setBeginnerMode: (on: boolean) => void
+  setShowAdvanced: (on: boolean) => void
+  setPlaylistId: (id: string) => void
+  resetPlaylistProgress: () => void
+  runPlaylistNext: (opts?: { all?: boolean }) => Promise<void>
+  playlistBusy: boolean
+  allowlistUsers: string
+  allowlistAdmins: string
+  setAllowlistUsers: (text: string) => void
+  setAllowlistAdmins: (text: string) => void
+  allowlistOpen: boolean
+  setAllowlistOpen: (open: boolean) => void
   setNotes: (notes: string) => void
   setMediaExtensions: (v: string) => void
   toggleFavorite: (opId: string) => void
@@ -105,7 +123,7 @@ type WorkspaceApi = PersistedWorkspace & {
   closePane: (paneId: string) => void
   dropOnPane: (targetPaneId: string, edge: DropEdge, payload: DragPayload) => void
   setRatio: (splitId: string, ratio: number) => void
-  runPane: (paneId: string, opts?: { confirm?: boolean }) => Promise<void>
+  runPane: (paneId: string, opts?: { confirm?: boolean; opId?: string }) => Promise<RunOutcome>
   resetDemo: () => void
   resetLayout: () => void
   mutateUser: (userId: string, patch: Partial<UiUser>, label: string) => void
@@ -139,14 +157,41 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [howtoOpen, setHowtoOpen] = useState(false)
   const [howtoOpId, setHowtoOpId] = useState<string | null>(null)
   const [howtoQuery, setHowtoQuery] = useState('')
+  const [playlistBusy, setPlaylistBusy] = useState(false)
+  const [allowlistOpen, setAllowlistOpen] = useState(false)
+  const [allowlistUsers, setAllowlistUsersState] = useState(() =>
+    typeof window === 'undefined' ? '' : loadAllowlist('users'),
+  )
+  const [allowlistAdmins, setAllowlistAdminsState] = useState(() =>
+    typeof window === 'undefined' ? '' : loadAllowlist('admins'),
+  )
   const searchRef = useRef<HTMLInputElement | null>(null)
   const stateRef = useRef(state)
   stateRef.current = state
+  const confirmRef = useRef<ConfirmState | null>(null)
+  confirmRef.current = confirm
+  const playlistBusyRef = useRef(false)
+  const allowlistUsersRef = useRef(allowlistUsers)
+  allowlistUsersRef.current = allowlistUsers
+  const allowlistAdminsRef = useRef(allowlistAdmins)
+  allowlistAdminsRef.current = allowlistAdmins
+  const runPaneRef = useRef<(
+    paneId: string,
+    opts?: { confirm?: boolean; opId?: string },
+  ) => Promise<RunOutcome>>(async () => 'empty')
 
   useEffect(() => {
     const t = window.setTimeout(() => saveWorkspace(state), 120)
     return () => window.clearTimeout(t)
   }, [state])
+
+  useEffect(() => {
+    saveAllowlist('users', allowlistUsers)
+  }, [allowlistUsers])
+
+  useEffect(() => {
+    saveAllowlist('admins', allowlistAdmins)
+  }, [allowlistAdmins])
 
   useEffect(() => {
     let cancelled = false
@@ -211,22 +256,25 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const assignOp = useCallback(
     (paneId: string, opId: string) => {
       const op = OPS_BY_ID[opId]
-      setState((s) => ({
-        ...s,
-        focusedId: paneId,
-        panes: {
-          ...s.panes,
-          [paneId]: {
-            ...s.panes[paneId],
-            opId,
-            status: 'idle',
-            output: null,
-            error: null,
-            selectedUserIds: [],
-            params: s.panes[paneId]?.params ?? {},
+      setState((s) => {
+        const same = s.panes[paneId]?.opId === opId
+        return {
+          ...s,
+          focusedId: paneId,
+          panes: {
+            ...s.panes,
+            [paneId]: {
+              ...s.panes[paneId],
+              opId,
+              status: 'idle',
+              output: same ? s.panes[paneId]?.output ?? null : null,
+              error: null,
+              selectedUserIds: same ? (s.panes[paneId]?.selectedUserIds ?? []) : [],
+              params: same ? (s.panes[paneId]?.params ?? {}) : {},
+            },
           },
-        },
-      }))
+        }
+      })
       log('layout', `Opened ${op?.title ?? opId}`)
     },
     [log],
@@ -373,14 +421,32 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const markPlaylistStep = useCallback((opId: string, status: 'done' | 'error') => {
+    setState((s) => {
+      const pl = getPlaylist(s.playlistId)
+      if (!pl?.steps.some((step) => step.opId === opId)) return s
+      return {
+        ...s,
+        playlistProgress: {
+          ...s.playlistProgress,
+          [s.playlistId]: {
+            ...(s.playlistProgress[s.playlistId] ?? {}),
+            [opId]: status,
+          },
+        },
+      }
+    })
+  }, [])
+
   const runPane = useCallback(
-    async (paneId: string, opts?: { confirm?: boolean }) => {
+    async (paneId: string, opts?: { confirm?: boolean; opId?: string }): Promise<RunOutcome> => {
       const snapshot = stateRef.current
       const pane = snapshot.panes[paneId]
-      if (!pane?.opId) return
-      const uiOp = OPS_BY_ID[pane.opId]
+      const opId = opts?.opId ?? pane?.opId
+      if (!pane || !opId) return 'empty'
+      const uiOp = OPS_BY_ID[opId]
       const mode = snapshot.demoMode ? 'demo' : 'live'
-      const catalogOp = getEngineOp(pane.opId)
+      const catalogOp = getEngineOp(opId)
 
       if (uiOp && !uiOp.engine) {
         const summary =
@@ -395,6 +461,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             ...s.panes,
             [paneId]: {
               ...s.panes[paneId],
+              opId,
               status: 'done',
               output: { summary, findings: [] },
               error: null,
@@ -403,69 +470,107 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           journal: [journalEntry('run', summary), ...s.journal].slice(0, 400),
         }))
         toast({ tone: 'ok', title: uiOp.title, detail: summary })
-        return
+        markPlaylistStep(opId, 'done')
+        return 'ok'
       }
 
       if (mode === 'live' && catalogOp?.risk === 'mutate' && opts?.confirm !== true) {
-        setConfirm({
-          title: `Change this computer?`,
-          body: `${uiOp?.title ?? pane.opId} will change the authorized CyberPatriot image. Practice data is off. Continue only on a competition image you are allowed to harden.`,
-          confirmLabel: 'Yes, apply',
-          danger: true,
-          onConfirm: () => {
-            void runPane(paneId, { confirm: true })
-          },
+        return await new Promise<RunOutcome>((resolve) => {
+          setConfirm({
+            title: `Change this computer?`,
+            body: `${uiOp?.title ?? opId} will change the authorized CyberPatriot image. Practice data is off. Continue only on a competition image you are allowed to harden.`,
+            confirmLabel: 'Yes, apply',
+            danger: true,
+            onConfirm: () => {
+              void runPaneRef.current(paneId, { confirm: true, opId }).then(resolve)
+            },
+            onCancel: () => resolve('cancelled'),
+          })
         })
-        return
       }
 
       setState((s) => ({
         ...s,
         panes: {
           ...s.panes,
-          [paneId]: { ...s.panes[paneId], status: 'running', error: null },
+          [paneId]: { ...s.panes[paneId], opId, status: 'running', error: null },
         },
       }))
 
-      const params: Record<string, unknown> = { ...pane.params }
-      if (pane.params.dryRun === 'true') params.dryRun = true
-      if (uiOp?.id === 'find-media-files' && snapshot.mediaExtensions) {
+      const params: Record<string, unknown> = pane.opId === opId ? { ...pane.params } : {}
+      if (params.dryRun === 'true') params.dryRun = true
+      if (opId === 'find-media-files' && snapshot.mediaExtensions) {
         params.extensions = snapshot.mediaExtensions
+      }
+      const allowProps = catalogOp?.paramsSchema.properties ?? {}
+      if (allowProps.allowlistPath) {
+        const names = parseNameList(allowlistUsersRef.current)
+        if (names.length) params.allowlistNames = names
+      }
+      if (allowProps.adminsPath) {
+        const names = parseNameList(allowlistAdminsRef.current)
+        if (names.length) params.adminNames = names
       }
 
       try {
         const { result, source } = await executeOp({
-          opId: pane.opId,
+          opId,
           mode,
           params,
           confirm: opts?.confirm === true,
         })
         setEngineSource(source)
         const output = adaptRunResult(result)
-        const replaceUsers = pane.opId === 'list-users'
+        const replaceUsers = opId === 'list-users'
         const incoming = result.data.users
         setState((s) => {
           let users = s.users
           if (incoming?.length) users = upsertUsers(s.users, incoming, replaceUsers)
           let firewall = s.firewall
-          if (result.ok && (pane.opId === 'enable-firewall' || pane.opId === 'apply-default-deny-inbound')) {
+          if (result.ok && (opId === 'enable-firewall' || opId === 'apply-default-deny-inbound')) {
             firewall = {
               enabled: true,
-              profile: pane.opId === 'apply-default-deny-inbound' ? 'default-deny' : 'on',
+              profile: opId === 'apply-default-deny-inbound' ? 'default-deny' : 'on',
             }
           }
-          if (result.ok && pane.opId === 'audit-firewall' && result.data.policy) {
+          if (result.ok && opId === 'audit-firewall' && result.data.policy) {
             const on = result.data.policy.firewallEnabled === true
             firewall = { enabled: on, profile: on ? 'on' : 'off' }
           }
+          const progressPatch =
+            result.ok && getPlaylist(s.playlistId)?.steps.some((step) => step.opId === opId)
+              ? {
+                  playlistProgress: {
+                    ...s.playlistProgress,
+                    [s.playlistId]: {
+                      ...(s.playlistProgress[s.playlistId] ?? {}),
+                      [opId]: 'done' as const,
+                    },
+                  },
+                }
+              : result.ok
+                ? {}
+                : getPlaylist(s.playlistId)?.steps.some((step) => step.opId === opId)
+                  ? {
+                      playlistProgress: {
+                        ...s.playlistProgress,
+                        [s.playlistId]: {
+                          ...(s.playlistProgress[s.playlistId] ?? {}),
+                          [opId]: 'error' as const,
+                        },
+                      },
+                    }
+                  : {}
           return {
             ...s,
+            ...progressPatch,
             users,
             firewall,
             panes: {
               ...s.panes,
               [paneId]: {
                 ...s.panes[paneId],
+                opId,
                 status: result.ok ? 'done' : 'error',
                 output,
                 error: result.ok ? null : result.summary,
@@ -474,7 +579,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             journal: [
               journalEntry(
                 'run',
-                `Ran ${uiOp?.title ?? pane.opId} (${result.mode}/${result.engine}): ${result.summary}`,
+                `Ran ${uiOp?.title ?? opId} (${result.mode}/${result.engine}): ${result.summary}`,
               ),
               ...s.journal,
             ].slice(0, 400),
@@ -482,29 +587,35 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         })
         if (result.blocked) {
           toast({ tone: 'warn', title: 'Confirm required', detail: result.blocked.reason })
-        } else if (result.ok) {
+          return 'error'
+        }
+        if (result.ok) {
           toast({
             tone: 'ok',
             title: uiOp?.title ?? 'Run complete',
             detail: result.summary,
           })
-        } else {
-          toast({ tone: 'crit', title: 'Run failed', detail: result.summary })
+          return 'ok'
         }
+        toast({ tone: 'crit', title: 'Run failed', detail: result.summary })
+        return 'error'
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Run failed'
         setState((s) => ({
           ...s,
           panes: {
             ...s.panes,
-            [paneId]: { ...s.panes[paneId], status: 'error', error: message },
+            [paneId]: { ...s.panes[paneId], opId, status: 'error', error: message },
           },
         }))
         toast({ tone: 'crit', title: 'Run failed', detail: message })
+        markPlaylistStep(opId, 'error')
+        return 'error'
       }
     },
-    [toast],
+    [markPlaylistStep, toast],
   )
+  runPaneRef.current = runPane
 
   const setDemoMode = useCallback(
     (on: boolean) => {
@@ -519,6 +630,106 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       })
     },
     [log, toast],
+  )
+
+  const cancelConfirm = useCallback(() => {
+    const current = confirmRef.current
+    setConfirm(null)
+    current?.onCancel?.()
+  }, [])
+
+  const setBeginnerMode = useCallback((on: boolean) => {
+    setState((s) => ({ ...s, beginnerMode: on, showAdvanced: on ? s.showAdvanced : true }))
+    log('system', on ? 'Beginner mode on' : 'Beginner mode off — all checks visible')
+  }, [log])
+
+  const setShowAdvanced = useCallback((on: boolean) => {
+    setState((s) => ({ ...s, showAdvanced: on }))
+  }, [])
+
+  const setPlaylistId = useCallback((id: string) => {
+    const pl = getPlaylist(id)
+    if (!pl) return
+    setState((s) => ({ ...s, playlistId: id }))
+    log('layout', `Playlist ${pl.title}`)
+  }, [log])
+
+  const resetPlaylistProgress = useCallback(() => {
+    setState((s) => ({
+      ...s,
+      playlistProgress: { ...s.playlistProgress, [s.playlistId]: {} },
+    }))
+  }, [])
+
+  const setAllowlistUsers = useCallback((text: string) => {
+    setAllowlistUsersState(text)
+  }, [])
+
+  const setAllowlistAdmins = useCallback((text: string) => {
+    setAllowlistAdminsState(text)
+  }, [])
+
+  const runPlaylistNext = useCallback(
+    async (opts?: { all?: boolean }) => {
+      if (playlistBusyRef.current) return
+      playlistBusyRef.current = true
+      setPlaylistBusy(true)
+      try {
+        do {
+          const s = stateRef.current
+          const pl = getPlaylist(s.playlistId)
+          if (!pl) return
+          const progress = s.playlistProgress[s.playlistId] ?? {}
+          const idx = pl.steps.findIndex((step) => progress[step.opId] !== 'done')
+          if (idx < 0) {
+            toast({
+              tone: 'ok',
+              title: `${pl.title} complete`,
+              detail: 'Every step has been run in this session.',
+            })
+            return
+          }
+          const step = pl.steps[idx]
+          const paneId = s.focusedId
+          assignOp(paneId, step.opId)
+          const outcome = await runPane(paneId, { opId: step.opId })
+          const status = outcome === 'ok' ? 'done' : 'error'
+          const latest = stateRef.current
+          const nextProgress = {
+            ...latest.playlistProgress,
+            [latest.playlistId]: {
+              ...(latest.playlistProgress[latest.playlistId] ?? {}),
+              [step.opId]: status as 'done' | 'error',
+            },
+          }
+          if (outcome === 'ok' || outcome === 'error') {
+            stateRef.current = { ...latest, playlistProgress: nextProgress }
+          }
+          if (outcome === 'cancelled') {
+            toast({
+              tone: 'info',
+              title: 'Playlist paused',
+              detail: 'Live changes still need a confirm. Run next when you are ready.',
+            })
+            return
+          }
+          if (outcome !== 'ok') {
+            if (opts?.all) {
+              toast({
+                tone: 'warn',
+                title: 'Playlist stopped',
+                detail: `${pl.steps[idx]?.opId ?? 'step'} did not finish.`,
+              })
+            }
+            return
+          }
+        } while (opts?.all)
+      } finally {
+        playlistBusyRef.current = false
+        setPlaylistBusy(false)
+      }
+    },
+    [assignOp, runPane, toast],
   )
 
   const setNotes = useCallback((notes: string) => {
@@ -559,6 +770,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         ]),
       ),
       focusedId: stateRef.current.focusedId,
+      beginnerMode: stateRef.current.beginnerMode,
+      showAdvanced: stateRef.current.showAdvanced,
+      playlistId: stateRef.current.playlistId,
+      playlistProgress: stateRef.current.playlistProgress,
     })
     toast({ tone: 'info', title: 'Practice data reset', detail: 'Accounts and the change log were restored. Layout kept.' })
   }, [toast])
@@ -653,6 +868,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setContextMenu,
       confirm,
       setConfirm,
+      cancelConfirm,
       passwordModal,
       setPasswordModal,
       detailsUserId,
@@ -669,6 +885,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       toast,
       log,
       setDemoMode,
+      setBeginnerMode,
+      setShowAdvanced,
+      setPlaylistId,
+      resetPlaylistProgress,
+      runPlaylistNext,
+      playlistBusy,
+      allowlistUsers,
+      allowlistAdmins,
+      setAllowlistUsers,
+      setAllowlistAdmins,
+      allowlistOpen,
+      setAllowlistOpen,
       setNotes,
       setMediaExtensions,
       toggleFavorite,
@@ -699,6 +927,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       dismissToast,
       contextMenu,
       confirm,
+      cancelConfirm,
       passwordModal,
       detailsUserId,
       howtoOpen,
@@ -711,6 +940,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       toast,
       log,
       setDemoMode,
+      setBeginnerMode,
+      setShowAdvanced,
+      setPlaylistId,
+      resetPlaylistProgress,
+      runPlaylistNext,
+      playlistBusy,
+      allowlistUsers,
+      allowlistAdmins,
+      setAllowlistUsers,
+      setAllowlistAdmins,
+      allowlistOpen,
+      setAllowlistOpen,
       setNotes,
       setMediaExtensions,
       toggleFavorite,

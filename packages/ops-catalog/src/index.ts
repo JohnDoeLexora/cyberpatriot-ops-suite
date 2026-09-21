@@ -16,6 +16,16 @@ export {
   getOp,
   listOps,
 } from "./catalog.js";
+export type { Playlist, PlaylistId, PlaylistLevel, PlaylistStep } from "./playlists.js";
+export {
+  PLAYLISTS,
+  PLAYLIST_IDS,
+  assertPlaylistsIntegrity,
+  beginnerOpIds,
+  coachTipFor,
+  getPlaylist,
+  isBeginnerOp,
+} from "./playlists.js";
 export {
   allowlistParams,
   coachPacketParams,
