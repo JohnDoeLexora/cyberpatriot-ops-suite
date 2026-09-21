@@ -637,6 +637,148 @@ function Invoke-CpOp {
             )
             return [pscustomobject]@{ ok = $true; checklist = $items }
         }
+        "audit-lsa-protection" {
+            $lsa = Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -ErrorAction SilentlyContinue
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{
+                    RunAsPPL     = $lsa.RunAsPPL
+                    RunAsPPLBoot = $lsa.RunAsPPLBoot
+                    note         = "LSASS/hashes not dumped."
+                }
+            }
+        }
+        "audit-credential-guard" {
+            $dg = $null
+            try {
+                $dg = Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\Microsoft\Windows\DeviceGuard -ErrorAction Stop
+            } catch {}
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{
+                    CredentialGuard         = [bool]($dg -and ($dg.SecurityServicesRunning -contains 1))
+                    SecurityServicesRunning = if ($dg) { @($dg.SecurityServicesRunning) } else { @() }
+                    VirtualizationBasedSecurityStatus = if ($dg) { $dg.VirtualizationBasedSecurityStatus } else { $null }
+                    note                    = "No isolated secrets in the result."
+                }
+            }
+        }
+        "audit-secure-boot" {
+            $sb = $null
+            try { $sb = Confirm-SecureBootUEFI -ErrorAction Stop } catch { $sb = $false }
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{ SecureBoot = [bool]$sb; note = "PK/KEK material not dumped." }
+            }
+        }
+        "audit-wifi-profiles" {
+            $raw = netsh wlan show profiles 2>$null | Out-String
+            $names = @()
+            foreach ($line in $raw -split "`n") {
+                if ($line -match ":\s*(.+)$" -and $line -match "All User Profile|User Profile") {
+                    $names += $Matches[1].Trim()
+                }
+            }
+            $profiles = @()
+            foreach ($n in $names) {
+                $info = netsh wlan show profile name="$n" 2>$null | Out-String
+                $auth = if ($info -match "Authentication\s*:\s*(.+)") { $Matches[1].Trim() } else { "unknown" }
+                $profiles += [pscustomobject]@{ ssid = $n; auth = $auth; keyOmitted = $true }
+            }
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{ profiles = $profiles; keysOmitted = $true; note = "PSKs/EAP secrets never printed. key=clear is not used." }
+            }
+        }
+        "audit-dns-client" {
+            $servers = @()
+            try {
+                $servers = @(Get-DnsClientServerAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+                    Where-Object { $_.ServerAddresses } |
+                    ForEach-Object { $_.ServerAddresses } |
+                    Select-Object -Unique)
+            } catch {}
+            $doh = $null
+            try { $doh = Get-DnsClientDohServerAddress -ErrorAction SilentlyContinue } catch {}
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{ servers = $servers; doh = $doh; note = "Local adapter config only; names were not queried." }
+            }
+        }
+        "audit-windows-roles" {
+            $roles = @()
+            try {
+                Import-Module ServerManager -ErrorAction SilentlyContinue
+                $roles = @(Get-WindowsFeature -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Installed -and $_.Name -match "AD-|DNS|DHCP|Web-Server|FS-|NPAS|Remote-Desktop" } |
+                    ForEach-Object { [pscustomobject]@{ name = $_.Name; installed = $true; unexpected = ($_.Name -match "AD-Domain|DNS|DHCP") } })
+            } catch {}
+            if (-not $roles.Count) {
+                try {
+                    $roles = @(Get-WindowsOptionalFeature -Online -ErrorAction SilentlyContinue |
+                        Where-Object { $_.State -eq "Enabled" -and $_.FeatureName -match "IIS-|DirectoryServices|DNS|DHCP|SMB1" } |
+                        Select-Object -First 40 |
+                        ForEach-Object { [pscustomobject]@{ name = $_.FeatureName; installed = $true; unexpected = ($_.FeatureName -match "SMB1|Directory") } })
+                } catch {}
+            }
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{ roles = $roles; note = "Read-only. Does not promote/demote a domain." }
+            }
+        }
+        "audit-browser-policy" {
+            $ie = Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Internet Explorer\Main" -ErrorAction SilentlyContinue
+            $proxy = Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings" -ErrorAction SilentlyContinue
+            $ext = @()
+            $extRoot = "$env:LOCALAPPDATA\Google\Chrome\User Data\Default\Extensions"
+            if (Test-Path $extRoot) {
+                $ext = @(Get-ChildItem $extRoot -ErrorAction SilentlyContinue | Select-Object -First 20 -ExpandProperty Name)
+            }
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{
+                    homepage       = $ie.Start Page
+                    proxyEnable    = $proxy.ProxyEnable
+                    proxyServer    = $proxy.ProxyServer
+                    extensionIds   = $ext
+                    note           = "Cookies, history, saved passwords, and extension source are not dumped."
+                }
+            }
+        }
+        "audit-time-timezone" {
+            $tz = tzutil /g 2>$null
+            $w32 = w32tm /query /status 2>&1 | Out-String
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{ timezone = "$tz"; w32tm = $w32.Substring(0, [Math]::Min(1500, $w32.Length)); note = "Not an NTP amplification test." }
+            }
+        }
+        "export-coach-packet" {
+            $dir = Join-Path $env:TEMP "cp-ops-coach-packet"
+            New-Item -ItemType Directory -Force -Path $dir | Out-Null
+            @(
+                "# Coach packet",
+                "",
+                "Redacted authorized-image handoff. No hashes, no private keys, no Wi-Fi PSKs, no CCS URLs."
+            ) | Set-Content (Join-Path $dir "SUMMARY.md")
+            "[]" | Set-Content (Join-Path $dir "findings.json")
+            "Coach packet. Competition-legal. CCS not contacted." | Set-Content (Join-Path $dir "NOTES.md")
+            $zip = Join-Path $dir "coach-packet.zip"
+            if (Test-Path $zip) { Remove-Item $zip -Force }
+            Compress-Archive -Path (Join-Path $dir "*.md"), (Join-Path $dir "*.json") -DestinationPath $zip -ErrorAction SilentlyContinue
+            return [pscustomobject]@{
+                ok    = $true
+                extra = @{
+                    files            = @("SUMMARY.md", "findings.json", "NOTES.md")
+                    written          = $zip
+                    redacted         = $true
+                    containsSecrets  = $false
+                    ccsContacted     = $false
+                    wifiKeysIncluded = $false
+                    hashesIncluded   = $false
+                }
+            }
+        }
         default {
             $linuxOnly = @(
                 "audit-uid-zero", "check-user-shells", "audit-duplicate-uids", "audit-pam",
@@ -647,7 +789,10 @@ function Invoke-CpOp {
                 "check-password-aging", "audit-sticky-tmp", "harden-vsftpd", "audit-web-server",
                 "audit-mac-enforcement", "disable-display-manager-guest", "lock-root-account",
                 "enable-fail2ban", "harden-host-conf", "set-ufw-logging", "restrict-cron-at",
-                "scan-malware-tools"
+                "scan-malware-tools", "blacklist-kernel-modules", "enforce-apparmor-profiles",
+                "enable-unattended-upgrades", "audit-mail-services", "audit-database-bind",
+                "audit-php-hardening", "audit-snap-flatpak", "disable-ctrl-alt-del",
+                "audit-ipv6-privacy", "audit-log-persistence"
             )
             if ($OpId -in $linuxOnly) {
                 return [pscustomobject]@{ ok = $true; extra = @{ note = "Linux-only op; run engines/linux on a Linux image." } }
@@ -661,7 +806,9 @@ function Invoke-CpOp {
                     "disable-llmnr-netbios-wpad", "remove-games-samples",
                     "apply-security-template", "import-firewall-profile", "enable-audit-policy",
                     "disable-remote-registry", "disable-remote-assistance", "force-password-change",
-                    "sync-authorized-users", "disable-optional-windows-features", "clear-suspicious-hosts"
+                    "sync-authorized-users", "disable-optional-windows-features", "clear-suspicious-hosts",
+                    "harden-print-spooler", "harden-powershell-constrained", "disable-smb-client-v1",
+                    "harden-null-session", "harden-usb-storage"
                 )) {
                 Test-CpConfirm -ConfirmLive:$ConfirmLive -DryRun:$DryRun
                 if ($DryRun) {
@@ -818,6 +965,59 @@ function Invoke-CpOp {
                             if (-not $bad) { $keep += $line }
                         }
                         Set-Content -Path $hostsPath -Value $keep
+                        break
+                    }
+                    "harden-print-spooler" {
+                        $pp = "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PointAndPrint"
+                        New-Item -Path $pp -Force | Out-Null
+                        Set-ItemProperty $pp -Name RestrictDriverInstallationToAdministrators -Value 1
+                        Set-ItemProperty $pp -Name NoWarningNoElevationOnInstall -Value 0
+                        Set-ItemProperty $pp -Name UpdatePromptSettings -Value 0
+                        $prn = "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Printers"
+                        New-Item -Path $prn -Force | Out-Null
+                        Set-ItemProperty $prn -Name RegisterSpoolerRemoteRpcEndPoint -Value 2
+                        Set-ItemProperty $prn -Name RpcAuthnLevelPrivacyEnabled -Value 1 -ErrorAction SilentlyContinue
+                        break
+                    }
+                    "harden-powershell-constrained" {
+                        $base = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell"
+                        New-Item -Path "$base\ScriptBlockLogging" -Force | Out-Null
+                        Set-ItemProperty "$base\ScriptBlockLogging" -Name EnableScriptBlockLogging -Value 1
+                        New-Item -Path "$base\ModuleLogging" -Force | Out-Null
+                        Set-ItemProperty "$base\ModuleLogging" -Name EnableModuleLogging -Value 1
+                        New-Item -Path "$base\Transcription" -Force | Out-Null
+                        Set-ItemProperty "$base\Transcription" -Name EnableTranscripting -Value 1
+                        $trans = "C:\ProgramData\cp-ops\ps-transcripts"
+                        New-Item -ItemType Directory -Force -Path $trans | Out-Null
+                        Set-ItemProperty "$base\Transcription" -Name OutputDirectory -Value $trans
+                        break
+                    }
+                    "disable-smb-client-v1" {
+                        try { Set-SmbClientConfiguration -EnableSMB1Protocol $false -Force -ErrorAction SilentlyContinue } catch {}
+                        Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart -ErrorAction SilentlyContinue | Out-Null
+                        Stop-Service mrxsmb10 -Force -ErrorAction SilentlyContinue
+                        Set-Service mrxsmb10 -StartupType Disabled -ErrorAction SilentlyContinue
+                        break
+                    }
+                    "harden-null-session" {
+                        $lsa = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"
+                        Set-ItemProperty $lsa -Name RestrictAnonymous -Value 1
+                        Set-ItemProperty $lsa -Name RestrictAnonymousSAM -Value 1
+                        Set-ItemProperty $lsa -Name EveryoneIncludesAnonymous -Value 0
+                        Set-ItemProperty $lsa -Name LimitBlankPasswordUse -Value 1 -ErrorAction SilentlyContinue
+                        $lan = "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters"
+                        New-Item -Path $lan -Force | Out-Null
+                        Set-ItemProperty $lan -Name RestrictNullSessAccess -Value 1
+                        break
+                    }
+                    "harden-usb-storage" {
+                        $ex = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+                        New-Item -Path $ex -Force | Out-Null
+                        Set-ItemProperty $ex -Name NoDriveTypeAutoRun -Value 255
+                        $rs = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\RemovableStorageDevices"
+                        New-Item -Path $rs -Force | Out-Null
+                        New-Item -Path "$rs\{53f5630d-b6bf-11d0-94f2-00a0c91efb8b}" -Force | Out-Null
+                        Set-ItemProperty "$rs\{53f5630d-b6bf-11d0-94f2-00a0c91efb8b}" -Name Deny_Execute -Value 1 -ErrorAction SilentlyContinue
                         break
                     }
                 }

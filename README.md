@@ -32,7 +32,7 @@ Open the URL Vite prints (http://localhost:5173).
 
 ## Using the dashboard
 
-- Left list: 110+ checks. Press `/` to search.
+- Left list: 130+ checks. Press `/` to search.
 - Open a check in a pane, then **Run**. Two across, then two below (a 2×2). Tabs from the fifth pane.
 - **How-to** (or `?`) explains what the check is and why it scores.
 - On account panes, hover a row for Flag / Turn off / Turn on / Expire password. Extra columns tuck away on a narrow pane.

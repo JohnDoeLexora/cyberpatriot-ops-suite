@@ -126,6 +126,44 @@ describe("ops catalog integrity", () => {
     assert.match(sync?.description ?? "", /password/i);
   });
 
+  it("includes cp-10 depth pack", () => {
+    for (const id of [
+      "harden-print-spooler",
+      "audit-lsa-protection",
+      "audit-credential-guard",
+      "audit-secure-boot",
+      "audit-wifi-profiles",
+      "harden-powershell-constrained",
+      "disable-smb-client-v1",
+      "audit-dns-client",
+      "audit-windows-roles",
+      "harden-null-session",
+      "blacklist-kernel-modules",
+      "enforce-apparmor-profiles",
+      "enable-unattended-upgrades",
+      "audit-mail-services",
+      "audit-database-bind",
+      "audit-php-hardening",
+      "audit-snap-flatpak",
+      "disable-ctrl-alt-del",
+      "audit-ipv6-privacy",
+      "audit-log-persistence",
+      "audit-browser-policy",
+      "harden-usb-storage",
+      "audit-time-timezone",
+      "export-coach-packet",
+    ]) {
+      assert.ok(getOp(id), id);
+    }
+    assert.ok(catalog.length >= 130, `expected ≥130 ops, got ${catalog.length}`);
+    assert.equal(getOp("harden-print-spooler")?.risk, "mutate");
+    assert.equal(getOp("audit-lsa-protection")?.risk, "read");
+    assert.equal(getOp("audit-ipv6-privacy")?.risk, "read");
+    assert.equal(getOp("export-coach-packet")?.risk, "read");
+    assert.match(getOp("audit-wifi-profiles")?.description ?? "", /PSK|key/i);
+    assert.match(getOp("export-coach-packet")?.description ?? "", /CCS/i);
+  });
+
   it("mutate ops mention confirm in the description", () => {
     const missing = catalog.filter(
       (o) => o.risk === "mutate" && !/confirm/i.test(o.description),

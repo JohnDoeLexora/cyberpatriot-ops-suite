@@ -6,7 +6,7 @@ Source of truth: `packages/ops-docs`. The dashboard How-to drawer searches title
 Competition-legal only: authorized-image hardening. No offense, no exploit recipes, no CCS cheats.
 Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFETY.md).
 
-- **Guides:** 114
+- **Guides:** 138
 - **Open in the dashboard:** How-to button on each OpPanel, or the header How-to control. Press `?` to open the focused pane’s guide.
 
 ## Index
@@ -127,6 +127,30 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 | [`hunt-shell-backdoors`](./hunt-shell-backdoors.md) | Hunt shell aliases and profile backdoors | files | read |
 | [`scan-malware-tools`](./scan-malware-tools.md) | ClamAV / chkrootkit scan report | packages | mutate |
 | [`round-start-wizard`](./round-start-wizard.md) | Round-start wizard | evidence | read |
+| [`harden-print-spooler`](./harden-print-spooler.md) | Harden Print Spooler / disable remote print | windows | mutate |
+| [`audit-lsa-protection`](./audit-lsa-protection.md) | Audit LSA protection / RunAsPPL | windows | read |
+| [`audit-credential-guard`](./audit-credential-guard.md) | Audit Credential Guard / Device Guard | windows | read |
+| [`audit-secure-boot`](./audit-secure-boot.md) | Audit Secure Boot / UEFI | windows | read |
+| [`audit-wifi-profiles`](./audit-wifi-profiles.md) | Audit leftover Wi-Fi profiles | windows | read |
+| [`harden-powershell-constrained`](./harden-powershell-constrained.md) | Harden PowerShell logging / Constrained Language | windows | mutate |
+| [`disable-smb-client-v1`](./disable-smb-client-v1.md) | Disable SMBv1 client leftovers | windows | mutate |
+| [`audit-dns-client`](./audit-dns-client.md) | Audit DNS client / DoH | network | read |
+| [`audit-windows-roles`](./audit-windows-roles.md) | Audit Windows Server roles | windows | read |
+| [`harden-null-session`](./harden-null-session.md) | Harden anonymous enumeration / null sessions | auth | mutate |
+| [`blacklist-kernel-modules`](./blacklist-kernel-modules.md) | Blacklist uncommon kernel modules | kernel | mutate |
+| [`enforce-apparmor-profiles`](./enforce-apparmor-profiles.md) | Enforce AppArmor profiles for common apps | kernel | mutate |
+| [`enable-unattended-upgrades`](./enable-unattended-upgrades.md) | Enable unattended-upgrades | updates | mutate |
+| [`audit-mail-services`](./audit-mail-services.md) | Audit Postfix/Exim/Dovecot relay | services | read |
+| [`audit-database-bind`](./audit-database-bind.md) | Audit database bind-address / anonymous | services | read |
+| [`audit-php-hardening`](./audit-php-hardening.md) | Audit PHP expose_php / dangerous functions | services | read |
+| [`audit-snap-flatpak`](./audit-snap-flatpak.md) | Audit Snap/Flatpak unnecessary apps | packages | read |
+| [`disable-ctrl-alt-del`](./disable-ctrl-alt-del.md) | Disable Ctrl+Alt+Del and extra TTYs | kernel | mutate |
+| [`audit-ipv6-privacy`](./audit-ipv6-privacy.md) | Audit IPv6 privacy / optional disable | kernel | read |
+| [`audit-log-persistence`](./audit-log-persistence.md) | Audit rsyslog/journald persistence | logging | read |
+| [`audit-browser-policy`](./audit-browser-policy.md) | Audit browser homepage / proxy / extensions | files | read |
+| [`harden-usb-storage`](./harden-usb-storage.md) | Harden USB autorun / storage policy | kernel | mutate |
+| [`audit-time-timezone`](./audit-time-timezone.md) | Audit time sync and timezone | network | read |
+| [`export-coach-packet`](./export-coach-packet.md) | Export redacted coach packet ZIP | evidence | read |
 
 ## Browse by category
 
@@ -166,6 +190,7 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`audit-idle-lock`](./audit-idle-lock.md) — Audit screensaver / idle lock
 - [`disable-display-manager-guest`](./disable-display-manager-guest.md) — Disable display-manager guest and autologin
 - [`enable-fail2ban`](./enable-fail2ban.md) — Install and enable fail2ban
+- [`harden-null-session`](./harden-null-session.md) — Harden anonymous enumeration / null sessions
 
 ### services
 
@@ -180,6 +205,9 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`harden-vsftpd`](./harden-vsftpd.md) — Harden vsftpd (disable anonymous)
 - [`audit-web-server`](./audit-web-server.md) — Apache/nginx hardening checklist
 - [`audit-snmp`](./audit-snmp.md) — Audit SNMP community / insecure mgmt
+- [`audit-mail-services`](./audit-mail-services.md) — Audit Postfix/Exim/Dovecot relay
+- [`audit-database-bind`](./audit-database-bind.md) — Audit database bind-address / anonymous
+- [`audit-php-hardening`](./audit-php-hardening.md) — Audit PHP expose_php / dangerous functions
 
 ### ports
 
@@ -197,6 +225,8 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`disable-llmnr-netbios-wpad`](./disable-llmnr-netbios-wpad.md) — Disable LLMNR / NetBIOS / WPAD
 - [`clear-suspicious-hosts`](./clear-suspicious-hosts.md) — Clear suspicious hosts-file entries
 - [`harden-host-conf`](./harden-host-conf.md) — Harden host.conf nospoof
+- [`audit-dns-client`](./audit-dns-client.md) — Audit DNS client / DoH
+- [`audit-time-timezone`](./audit-time-timezone.md) — Audit time sync and timezone
 
 ### firewall
 
@@ -223,6 +253,7 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`hunt-sysprep-leftovers`](./hunt-sysprep-leftovers.md) — Hunt unattended / sysprep leftovers
 - [`audit-browser-baseline`](./audit-browser-baseline.md) — Audit Firefox/IE/Edge security baseline
 - [`hunt-shell-backdoors`](./hunt-shell-backdoors.md) — Hunt shell aliases and profile backdoors
+- [`audit-browser-policy`](./audit-browser-policy.md) — Audit browser homepage / proxy / extensions
 
 ### packages
 
@@ -232,18 +263,21 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`hunt-remote-access-tools`](./hunt-remote-access-tools.md) — Hunt remote-access tools and browser extensions
 - [`remove-games-samples`](./remove-games-samples.md) — Remove games and sample content
 - [`scan-malware-tools`](./scan-malware-tools.md) — ClamAV / chkrootkit scan report
+- [`audit-snap-flatpak`](./audit-snap-flatpak.md) — Audit Snap/Flatpak unnecessary apps
 
 ### logging
 
 - [`audit-logging`](./audit-logging.md) — Audit logging configuration
 - [`check-auditd`](./check-auditd.md) — Check auditd
 - [`enable-audit-policy`](./enable-audit-policy.md) — Enable Success+Failure audit policy
+- [`audit-log-persistence`](./audit-log-persistence.md) — Audit rsyslog/journald persistence
 
 ### updates
 
 - [`check-pending-updates`](./check-pending-updates.md) — Check pending updates
 - [`apply-security-updates`](./apply-security-updates.md) — Apply security updates
 - [`audit-auto-updates`](./audit-auto-updates.md) — Audit unattended-upgrades / Windows Update
+- [`enable-unattended-upgrades`](./enable-unattended-upgrades.md) — Enable unattended-upgrades
 
 ### scheduled
 
@@ -259,6 +293,11 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`harden-sysctl`](./harden-sysctl.md) — Apply sysctl hardening
 - [`audit-startup-items`](./audit-startup-items.md) — Audit startup items
 - [`audit-mac-enforcement`](./audit-mac-enforcement.md) — Audit AppArmor/SELinux enforcement
+- [`blacklist-kernel-modules`](./blacklist-kernel-modules.md) — Blacklist uncommon kernel modules
+- [`enforce-apparmor-profiles`](./enforce-apparmor-profiles.md) — Enforce AppArmor profiles for common apps
+- [`disable-ctrl-alt-del`](./disable-ctrl-alt-del.md) — Disable Ctrl+Alt+Del and extra TTYs
+- [`audit-ipv6-privacy`](./audit-ipv6-privacy.md) — Audit IPv6 privacy / optional disable
+- [`harden-usb-storage`](./harden-usb-storage.md) — Harden USB autorun / storage policy
 
 ### windows
 
@@ -273,6 +312,14 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`disable-remote-assistance`](./disable-remote-assistance.md) — Disable Remote Assistance
 - [`disable-optional-windows-features`](./disable-optional-windows-features.md) — Disable optional Windows features
 - [`run-sfc-scan`](./run-sfc-scan.md) — Run system file integrity check
+- [`harden-print-spooler`](./harden-print-spooler.md) — Harden Print Spooler / disable remote print
+- [`audit-lsa-protection`](./audit-lsa-protection.md) — Audit LSA protection / RunAsPPL
+- [`audit-credential-guard`](./audit-credential-guard.md) — Audit Credential Guard / Device Guard
+- [`audit-secure-boot`](./audit-secure-boot.md) — Audit Secure Boot / UEFI
+- [`audit-wifi-profiles`](./audit-wifi-profiles.md) — Audit leftover Wi-Fi profiles
+- [`harden-powershell-constrained`](./harden-powershell-constrained.md) — Harden PowerShell logging / Constrained Language
+- [`disable-smb-client-v1`](./disable-smb-client-v1.md) — Disable SMBv1 client leftovers
+- [`audit-windows-roles`](./audit-windows-roles.md) — Audit Windows Server roles
 
 ### evidence
 
@@ -285,4 +332,5 @@ Mutations still require `confirm: true` in live mode — see [SAFETY.md](../SAFE
 - [`post-harden-checklist`](./post-harden-checklist.md) — Post-harden verification checklist
 - [`skim-forensics-readme`](./skim-forensics-readme.md) — Skim local README for forensics keywords
 - [`round-start-wizard`](./round-start-wizard.md) — Round-start wizard
+- [`export-coach-packet`](./export-coach-packet.md) — Export redacted coach packet ZIP
 

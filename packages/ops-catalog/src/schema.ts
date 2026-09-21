@@ -218,6 +218,85 @@ export const optionalFeaturesParams: ParamsSchema = {
   },
 };
 
+export const kernelModuleParams: ParamsSchema = {
+  type: "object",
+  properties: {
+    usbStorage: {
+      type: "boolean",
+      description:
+        "Also blacklist usb-storage (optional; default false so HID/keyboards stay). Confirm README before disabling removable storage.",
+      default: false,
+    },
+    dryRun: {
+      type: "boolean",
+      description: "Describe the blacklist without writing it",
+      default: false,
+    },
+  },
+};
+
+export const ipv6Params: ParamsSchema = {
+  type: "object",
+  properties: {
+    disableIPv6: {
+      type: "boolean",
+      description:
+        "If true, write sysctl to disable IPv6. Default false = audit-only. Live disable requires confirm:true.",
+      default: false,
+    },
+    dryRun: {
+      type: "boolean",
+      description: "Describe a disable without applying it",
+      default: false,
+    },
+  },
+};
+
+export const usbStorageParams: ParamsSchema = {
+  type: "object",
+  properties: {
+    disableUsbStorage: {
+      type: "boolean",
+      description:
+        "Also disable the USB mass-storage driver (optional; default false). Autorun/execute policy is applied either way.",
+      default: false,
+    },
+    dryRun: {
+      type: "boolean",
+      description: "Describe the USB policy without applying it",
+      default: false,
+    },
+  },
+};
+
+export const powershellHardenParams: ParamsSchema = {
+  type: "object",
+  properties: {
+    constrainedLanguage: {
+      type: "boolean",
+      description:
+        "Also set Constrained Language Mode (default false). Logging and transcription still apply without this.",
+      default: false,
+    },
+    dryRun: {
+      type: "boolean",
+      description: "Describe the PowerShell policy without applying it",
+      default: false,
+    },
+  },
+};
+
+export const coachPacketParams: ParamsSchema = {
+  type: "object",
+  properties: {
+    outputDir: {
+      type: "string",
+      description:
+        "Optional local directory to write the redacted ZIP. Never a URL or UNC path. If omitted, the engine writes under the system temp dir.",
+    },
+  },
+};
+
 export function op(
   id: string,
   title: string,

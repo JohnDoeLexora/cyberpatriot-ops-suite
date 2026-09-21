@@ -18,18 +18,23 @@ export {
 } from "./catalog.js";
 export {
   allowlistParams,
+  coachPacketParams,
   emptyParams,
   expectedPortsParams,
   firewallProfileParams,
   forcePasswordChangeParams,
   forensicsSkimParams,
   gamesSamplesParams,
+  ipv6Params,
+  kernelModuleParams,
   mutateFlagParams,
   optionalFeaturesParams,
   packageParams,
+  powershellHardenParams,
   securityTemplateParams,
   serviceParams,
   syncUsersParams,
+  usbStorageParams,
   usernameDryRunParams,
   usernameParams,
 } from "./schema.js";
