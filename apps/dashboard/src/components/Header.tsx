@@ -64,9 +64,36 @@ export function Header() {
           <RotateCcw size={13} />
           Reset data
         </button>
+        <BeginnerSwitch />
         <DemoSwitch />
       </div>
     </header>
+  )
+}
+
+function BeginnerSwitch() {
+  const ws = useWorkspace()
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={ws.beginnerMode}
+      data-testid="beginner-toggle"
+      onClick={() => ws.setBeginnerMode(!ws.beginnerMode)}
+      className={cn(
+        'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[13.5px] font-medium shadow-sm',
+        ws.beginnerMode
+          ? 'border-accent/25 bg-accent-dim text-accent'
+          : 'border-line-strong bg-elev text-mute hover:text-ink',
+      )}
+      title={
+        ws.beginnerMode
+          ? 'Beginner mode — larger tips, starter checks first'
+          : 'All checks — power-user catalog'
+      }
+    >
+      {ws.beginnerMode ? 'Beginner' : 'All checks'}
+    </button>
   )
 }
 

@@ -1,3 +1,4 @@
+import { getPlaylist } from '@cyberpatriot/ops-catalog'
 import { OPS_BY_ID } from '../catalog/ops'
 import { leafCount } from '../layout/tree'
 import { useWorkspace } from '../state/workspace'
@@ -20,6 +21,11 @@ export function StatusBar() {
           ? 'engine ready'
           : 'practice fallback'
 
+  const playlist = getPlaylist(ws.playlistId)
+  const done = playlist
+    ? playlist.steps.filter((s) => (ws.playlistProgress[playlist.id] ?? {})[s.opId] === 'done').length
+    : 0
+
   return (
     <footer className="flex h-9 shrink-0 items-center gap-3 border-t border-line bg-sidebar px-5 text-[13px] text-mute">
       <span className="text-accent">{engineLabel}</span>
@@ -32,6 +38,11 @@ export function StatusBar() {
         {op ? op.title : 'empty pane'} {focused?.status && op ? `· ${focused.status}` : ''}
       </span>
       <span className="ml-auto flex items-center gap-3">
+        {playlist && (
+          <span data-testid="status-playlist">
+            {playlist.title} {done}/{playlist.steps.length}
+          </span>
+        )}
         {crit > 0 && <span className="text-crit">{crit} urgent</span>}
         <span>{ws.journal.length} log</span>
         <span className={ws.demoMode ? 'text-accent' : 'text-warn'} data-testid="mode-label">

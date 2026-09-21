@@ -1,5 +1,7 @@
+import { PLAYLISTS } from '@cyberpatriot/ops-catalog'
 import { LayoutDashboard } from 'lucide-react'
 import { OPS_BY_ID } from '../catalog/ops'
+import { cn } from '../lib/cn'
 import { useWorkspace } from '../state/workspace'
 
 const SUGGEST = [
@@ -11,6 +13,8 @@ const SUGGEST = [
 
 export function EmptyPane({ paneId }: { paneId: string }) {
   const ws = useWorkspace()
+  const suggestions = PLAYLISTS.filter((p) => p.emptySuggest)
+
   return (
     <div
       className="flex h-full flex-col items-center justify-center px-8 py-10 text-center"
@@ -20,16 +24,35 @@ export function EmptyPane({ paneId }: { paneId: string }) {
         <LayoutDashboard size={26} strokeWidth={1.75} />
       </div>
       <div className="font-display text-[22px] font-semibold tracking-tight text-ink">
-        Start with a check
+        {ws.beginnerMode ? 'Start a round playlist' : 'Start with a check'}
       </div>
-      <p className="mt-3 max-w-md text-[15px] leading-7 text-mute">
-        Pick something from the list on the left — like Scan users — or drag it into this space.
-        Press{' '}
-        <kbd className="rounded-md border border-line-strong bg-elev px-1.5 py-0.5 font-mono text-[13px] text-ink">
-          /
-        </kbd>{' '}
-        to search.
+      <p className="coach-tip mt-3 max-w-md text-[15px] leading-7 text-mute">
+        {ws.beginnerMode
+          ? 'Not sure what to click? Pick a playlist. Each step is an existing check with a short tip and a how-to. Live changes still ask first.'
+          : 'Pick something from the list on the left — like Scan users — or drag it into this space. Press / to search.'}
       </p>
+      <div className="mt-6 flex max-w-lg flex-wrap justify-center gap-2" data-testid="empty-playlists">
+        {suggestions.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            data-testid={`empty-playlist-${p.id}`}
+            className={cn(
+              'rounded-full border px-3.5 py-1.5 text-[13px] shadow-sm hover:border-accent hover:text-accent',
+              p.id === 'linux-starter'
+                ? 'border-accent/40 bg-accent-dim text-accent'
+                : 'border-line bg-elev text-ink',
+            )}
+            onClick={() => {
+              ws.setPlaylistId(p.id)
+              const first = p.steps[0]
+              if (first) ws.assignOp(paneId, first.opId)
+            }}
+          >
+            {p.title}
+          </button>
+        ))}
+      </div>
       <button
         type="button"
         data-testid="howto-browse"
@@ -38,22 +61,24 @@ export function EmptyPane({ paneId }: { paneId: string }) {
       >
         Browse how-tos
       </button>
-      <div className="mt-6 flex max-w-lg flex-wrap justify-center gap-2">
-        {SUGGEST.map((id) => {
-          const op = OPS_BY_ID[id]
-          if (!op) return null
-          return (
-            <button
-              key={id}
-              type="button"
-              className="rounded-full border border-line bg-elev px-3.5 py-1.5 text-[13px] text-ink shadow-sm hover:border-accent hover:text-accent"
-              onClick={() => ws.assignOp(paneId, id)}
-            >
-              {op.runLabel}
-            </button>
-          )
-        })}
-      </div>
+      {!ws.beginnerMode && (
+        <div className="mt-6 flex max-w-lg flex-wrap justify-center gap-2">
+          {SUGGEST.map((id) => {
+            const op = OPS_BY_ID[id]
+            if (!op) return null
+            return (
+              <button
+                key={id}
+                type="button"
+                className="rounded-full border border-line bg-elev px-3.5 py-1.5 text-[13px] text-ink shadow-sm hover:border-accent hover:text-accent"
+                onClick={() => ws.assignOp(paneId, id)}
+              >
+                {op.runLabel}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

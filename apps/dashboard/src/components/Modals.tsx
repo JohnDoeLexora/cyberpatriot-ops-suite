@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { liveUsers } from '../lib/users'
 import { cn } from '../lib/cn'
 import { useWorkspace } from '../state/workspace'
+import { AllowlistEditor } from './AllowlistEditor'
 
 export function OverlayLayer() {
   return (
@@ -10,6 +11,7 @@ export function OverlayLayer() {
       <ConfirmDialog />
       <PasswordDialog />
       <UserDetails />
+      <AllowlistEditor />
     </>
   )
 }
@@ -108,7 +110,7 @@ function ConfirmDialog() {
   if (!ws.confirm) return null
   const c = ws.confirm
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25" onClick={() => ws.setConfirm(null)}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25" onClick={() => ws.cancelConfirm()}>
       <div
         className="w-[min(440px,calc(100vw-2rem))] rounded-2xl border border-line-strong bg-panel p-6 shadow-[0_18px_50px_rgba(43,38,31,0.16)]"
         onClick={(e) => e.stopPropagation()}
@@ -126,7 +128,7 @@ function ConfirmDialog() {
           <button
             type="button"
             className="rounded-lg border border-line-strong px-3.5 py-2 text-[14px] hover:bg-hover"
-            onClick={() => ws.setConfirm(null)}
+            onClick={() => ws.cancelConfirm()}
           >
             Cancel
           </button>

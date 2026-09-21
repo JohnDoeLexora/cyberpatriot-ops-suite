@@ -39,11 +39,19 @@ export function journalEntry(kind: JournalKind, text: string): JournalEntry {
   return { id: uid('j'), ts: Date.now(), kind, text }
 }
 
+export type PlaylistStepStatus = 'done' | 'error'
+
+export type PlaylistProgress = Record<string, Record<string, PlaylistStepStatus>>
+
 export type PersistedWorkspace = {
   tree: MosaicNode
   panes: Record<string, PaneState>
   focusedId: string
   demoMode: boolean
+  beginnerMode: boolean
+  showAdvanced: boolean
+  playlistId: string
+  playlistProgress: PlaylistProgress
   favorites: string[]
   notes: string
   users: UiUser[]
@@ -97,6 +105,10 @@ export function initialWorkspace(): PersistedWorkspace {
     panes: { [pane.id]: pane },
     focusedId: pane.id,
     demoMode: true,
+    beginnerMode: true,
+    showAdvanced: false,
+    playlistId: 'linux-starter',
+    playlistProgress: {},
     favorites: [
       'flag-suspicious-users',
       'audit-uid-zero',
@@ -146,6 +158,10 @@ export function loadWorkspace(): PersistedWorkspace {
       panes,
       focusedId: parsed.focusedId && panes[parsed.focusedId] ? parsed.focusedId : Object.keys(panes)[0],
       demoMode: parsed.demoMode !== false,
+      beginnerMode: parsed.beginnerMode !== false,
+      showAdvanced: parsed.showAdvanced === true,
+      playlistId: parsed.playlistId || fallback.playlistId,
+      playlistProgress: parsed.playlistProgress ?? {},
       users: parsed.users?.length ? parsed.users : fallback.users,
       groups: parsed.groups?.length ? parsed.groups : fallback.groups,
       firewall: parsed.firewall ?? fallback.firewall,

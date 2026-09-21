@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { catalog } from "../src/catalog.ts";
+import { PLAYLISTS, assertPlaylistsIntegrity } from "../src/playlists.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -24,6 +25,8 @@ for (const op of catalog) {
   grouped.set(op.category, list as typeof catalog);
 }
 
+assertPlaylistsIntegrity(catalog);
+
 const lines: string[] = [
   "# CyberPatriot ops catalog",
   "",
@@ -31,8 +34,10 @@ const lines: string[] = [
   "Every op is **defensive, authorized-image hardening** for CyberPatriot.",
   "See [SAFETY.md](./SAFETY.md) before running anything with `mode: \"live\"`.",
   "How-to explainers for every op: [howto/](./howto/).",
+  "Round playlists (ordered existing ops only): [Playlists](#round-playlists).",
   "",
   `- **Count:** ${catalog.length}`,
+  `- **Playlists:** ${PLAYLISTS.length} (${PLAYLISTS.map((p) => p.id).join(", ")})`,
   `- **Default run mode:** demo (Mac-safe fixtures, no host mutation)`,
   `- **Mutations:** live mode requires \`confirm: true\` in \`POST /ops/:id/run\``,
   "",
@@ -72,6 +77,24 @@ for (const [category, ops] of grouped) {
   }
 }
 
+lines.push("", "## Round playlists", "");
+lines.push(
+  "Ordered lists of **existing** catalog ids. The dashboard Playlist panel runs them through the engine/API; live mutations still require `confirm: true`. No CCS.",
+  "",
+);
+for (const pl of PLAYLISTS) {
+  lines.push(`### \`${pl.id}\``, "");
+  lines.push(`${pl.title} — ${pl.summary}`, "");
+  lines.push("| # | Op | Coach tip | How-to |");
+  lines.push("| --- | --- | --- | --- |");
+  pl.steps.forEach((s, i) => {
+    lines.push(
+      `| ${i + 1} | \`${s.opId}\` | ${s.tip} | [how-to](./howto/${s.opId}.md) |`,
+    );
+  });
+  lines.push("");
+}
+
 mkdirSync(path.join(root, "docs"), { recursive: true });
 writeFileSync(path.join(root, "docs/OPS.md"), `${lines.join("\n")}\n`);
-console.log(`Wrote docs/OPS.md with ${catalog.length} ops`);
+console.log(`Wrote docs/OPS.md with ${catalog.length} ops and ${PLAYLISTS.length} playlists`);

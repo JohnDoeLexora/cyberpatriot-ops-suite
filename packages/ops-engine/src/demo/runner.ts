@@ -64,13 +64,23 @@ import {
 /** Default README allowlist used when no names are injected (browser demo fallback). */
 export const DEFAULT_DEMO_ALLOWLIST = ["root", "alice", "bob", "coach", "Administrator"] as const;
 
-function allowlistFrom(ctx: EngineContext): Set<string> {
-  const raw = ctx.params.allowlistNames;
+function namesFromParam(raw: unknown, fallback: readonly string[]): Set<string> {
   if (Array.isArray(raw)) {
-    const names = raw.filter((n): n is string => typeof n === "string").map((n) => n.trim()).filter(Boolean);
+    const names = raw
+      .filter((n): n is string => typeof n === "string")
+      .map((n) => n.trim())
+      .filter(Boolean);
     if (names.length) return new Set(names);
   }
-  return new Set(DEFAULT_DEMO_ALLOWLIST);
+  return new Set(fallback);
+}
+
+function allowlistFrom(ctx: EngineContext): Set<string> {
+  return namesFromParam(ctx.params.allowlistNames, DEFAULT_DEMO_ALLOWLIST);
+}
+
+function adminsFrom(ctx: EngineContext): Set<string> {
+  return namesFromParam(ctx.params.adminNames, DEFAULT_DEMO_ADMINS);
 }
 
 function scored(ctx: EngineContext) {
@@ -1057,7 +1067,7 @@ export function runDemo(ctx: EngineContext): RunResult {
     }
     case "sync-authorized-users": {
       const allow = allowlistFrom(ctx);
-      const admins = new Set<string>(DEFAULT_DEMO_ADMINS);
+      const admins = adminsFrom(ctx);
       const missing = ["dave"].filter((n) => ![...users].some((u) => u.name === n));
       const extras = users.filter(
         (u) =>

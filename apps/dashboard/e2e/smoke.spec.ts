@@ -46,3 +46,39 @@ test('catalog search, three panes, and wired run', async ({ page }) => {
 
   await page.screenshot({ path: 'test-results/dashboard-smoke.png', fullPage: true })
 })
+
+test('playlist, beginner mode, and allowlist editor', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByTestId('app-shell')).toHaveAttribute('data-theme', 'paper')
+  await expect(page.getByTestId('app-shell')).toHaveAttribute('data-beginner', 'true')
+  await expect(page.getByTestId('playlist-panel')).toHaveAttribute('data-playlist-id', 'linux-starter')
+  await expect(page.getByTestId('empty-playlist-linux-starter')).toBeVisible()
+
+  await page.getByTestId('playlist-select').selectOption('forensics-first')
+  await expect(page.getByTestId('playlist-panel')).toHaveAttribute('data-playlist-id', 'forensics-first')
+
+  await page.getByTestId('playlist-run-next').click()
+  const pane = page.locator('[data-testid="pane"][data-op-id="skim-forensics-readme"]')
+  await expect(pane.getByTestId('run-status')).toHaveAttribute('data-status', 'done', { timeout: 15_000 })
+  await expect(page.getByTestId('playlist-step-skim-forensics-readme')).toHaveAttribute('data-status', 'done')
+  await expect(page.getByTestId('coach-tip')).toBeVisible()
+
+  await page.getByTestId('playlist-howto-list-users').click()
+  await expect(page.getByTestId('howto-drawer')).toBeVisible()
+  await expect(page.getByTestId('howto-article')).toHaveAttribute('data-op-id', 'list-users')
+  await page.getByTestId('howto-close').click()
+
+  await expect(page.getByTestId('catalog-item-list-users')).toBeVisible()
+  await expect(page.getByTestId('catalog-item-audit-iis')).toHaveCount(0)
+  await page.getByTestId('show-advanced').click()
+  await expect(page.getByTestId('catalog-item-audit-iis')).toBeVisible()
+
+  await page.getByTestId('allowlist-open').click()
+  await expect(page.getByTestId('allowlist-editor')).toBeVisible()
+  await page.getByTestId('allowlist-users').fill('# README\nalice\nbob\n')
+  await page.getByTestId('allowlist-close').click()
+  await page.getByTestId('allowlist-open').click()
+  await expect(page.getByTestId('allowlist-users')).toHaveValue('# README\nalice\nbob\n')
+
+  await page.screenshot({ path: 'test-results/playlist-beginner.png', fullPage: true })
+})

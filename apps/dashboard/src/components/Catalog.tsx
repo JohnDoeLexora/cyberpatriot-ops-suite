@@ -1,5 +1,6 @@
 import { ChevronDown, Search, Star } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { isBeginnerOp } from '@cyberpatriot/ops-catalog'
 import { CATEGORIES, filterOps, OPS, OPS_BY_ID } from '../catalog/ops'
 import type { UiOp } from '../catalog/types'
 import { cn } from '../lib/cn'
@@ -7,7 +8,15 @@ import { useWorkspace } from '../state/workspace'
 
 export function Catalog() {
   const ws = useWorkspace()
-  const filtered = useMemo(() => filterOps(ws.query), [ws.query])
+  const filtered = useMemo(() => {
+    let ops = filterOps(ws.query)
+    if (ws.beginnerMode && !ws.showAdvanced && !ws.query.trim()) {
+      ops = ops.filter((op) => isBeginnerOp(op.id))
+    }
+    return ops
+  }, [ws.query, ws.beginnerMode, ws.showAdvanced])
+  const hidingAdvanced =
+    ws.beginnerMode && !ws.showAdvanced && !ws.query.trim() && filtered.length < OPS.length
   const byCat = useMemo(() => {
     const map = new Map<string, UiOp[]>()
     for (const op of filtered) {
@@ -65,6 +74,24 @@ export function Catalog() {
         {filtered.length === 0 && (
           <div className="px-5 py-10 text-center text-[15px] leading-7 text-mute">
             Nothing matches “{ws.query}”. Try “users”, “firewall”, or “ssh”.
+          </div>
+        )}
+
+        {ws.beginnerMode && (
+          <div className="px-4 py-3">
+            <button
+              type="button"
+              data-testid="show-advanced"
+              onClick={() => ws.setShowAdvanced(!ws.showAdvanced)}
+              className="w-full rounded-lg border border-line-strong bg-elev px-3 py-2 text-[13px] font-medium text-ink shadow-sm hover:border-accent hover:text-accent"
+            >
+              {ws.showAdvanced ? 'Hide advanced checks' : 'Show advanced'}
+            </button>
+            {hidingAdvanced && (
+              <p className="coach-tip mt-2 text-center text-[12.5px] leading-5 text-faint">
+                Starter checks only. Power users: Show advanced, or turn Beginner off.
+              </p>
+            )}
           </div>
         )}
       </div>
