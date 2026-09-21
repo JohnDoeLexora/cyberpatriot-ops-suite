@@ -1,0 +1,29 @@
+# Uncommon / rarely needed kernel modules to blacklist on a CP workstation.
+# usb-storage is NOT listed here — pass usbStorage:true to include it.
+# Authorized-image hardening only.
+dccp
+sctp
+rds
+tipc
+cramfs
+freevxfs
+jffs2
+hfs
+hfsplus
+udf
+firewire-core
+n_hdlc
+ax25
+netrom
+x25
+rose
+decnet
+econet
+af_802154
+ipx
+appletalk
+psnap
+p8023
+p8022
+can
+atm

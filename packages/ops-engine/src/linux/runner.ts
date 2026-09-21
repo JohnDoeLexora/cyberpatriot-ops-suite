@@ -39,6 +39,7 @@ import {
 } from "./collect.js";
 import { runCmd } from "./exec.js";
 import { runCp09Linux } from "./cp09.js";
+import { runCp10Linux } from "./cp10.js";
 import {
   disableService as disableServiceLive,
   disableUser as disableUserLive,
@@ -138,6 +139,9 @@ export async function runLinux(ctx: EngineContext): Promise<RunResult> {
 
   const cp09 = await runCp09Linux(ctx, startedAt, finish);
   if (cp09) return cp09;
+
+  const cp10 = await runCp10Linux(ctx, startedAt, finish);
+  if (cp10) return cp10;
 
   switch (id) {
     case "list-users": {

@@ -25,7 +25,8 @@ exploitation, and no “cheat the CCS” automation.
   README paths, shell/profile backdoors, user heuristics, port baseline diffs, checklist aggregation). A thin `engines/bend/collect.py`
   gathers host facts; Bend never walks Windows APIs and is never used for
   mutations. If `bend` is missing, the same collector scores in Python, then
-  the existing TypeScript `find` path.
+  the existing TypeScript `find` path. Windows-only depth ops (Print Spooler,
+  LSA/Credential Guard, Secure Boot, Wi-Fi profiles) stay on PowerShell.
 - **Read** ops inventory the local image: users, services, ports, files, policy.
 - **Mutate** ops (disable user, enable firewall, purge a package, …) are blocked
   unless the body includes `"confirm": true`.
@@ -48,6 +49,11 @@ exploitation, and no “cheat the CCS” automation.
 - Private keys and `id_rsa` material are never copied into API responses.
 - `export-evidence-bundle` is a redacted local pack (checksums, inventories,
   findings) for forensics write-ups — not off-image exfiltration.
+- `export-coach-packet` is a redacted coach-handoff ZIP (SUMMARY + inventories).
+  It never includes shadow/SAM, private keys, Wi-Fi PSKs, cookies, or CCS URLs.
+- `audit-wifi-profiles` never prints PSKs (`key=clear` is not used).
+- `audit-ipv6-privacy` is audit-only unless `disableIPv6: true`, which still
+  requires `confirm: true` on live.
 
 ## Heuristics are not the scoreboard
 

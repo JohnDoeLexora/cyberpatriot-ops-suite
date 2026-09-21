@@ -13,6 +13,7 @@ import type {
   RunData,
   RunResult,
 } from "../types.js";
+import { runCp10Demo } from "./cp10.js";
 import {
   DEFAULT_DEMO_ADMINS,
   DEMO_NOW,
@@ -280,6 +281,9 @@ export function runDemo(ctx: EngineContext): RunResult {
   const username = asString(ctx.params.username);
   const service = asString(ctx.params.service);
   const pkg = asString(ctx.params.package);
+
+  const cp10 = runCp10Demo(ctx);
+  if (cp10) return cp10;
 
   switch (id) {
     case "list-users":

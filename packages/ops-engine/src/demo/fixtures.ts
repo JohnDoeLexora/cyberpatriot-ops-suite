@@ -585,3 +585,150 @@ export const demoSecurityTemplate = {
 };
 
 export const DEFAULT_DEMO_ADMINS = ["root", "alice", "Administrator"] as const;
+
+export const demoPrintSpooler = {
+  RestrictDriverInstallationToAdministrators: 0,
+  NoWarningNoElevationOnInstall: 1,
+  UpdatePromptSettings: 1,
+  RegisterSpoolerRemoteRpcEndPoint: 1,
+  RpcAuthnLevelPrivacyEnabled: 0,
+  Spooler: "running",
+};
+
+export const demoLsaProtection = {
+  RunAsPPL: 0,
+  RunAsPPLBoot: null as number | null,
+  note: "LSASS/hashes not dumped.",
+};
+
+export const demoCredentialGuard = {
+  CredentialGuard: false,
+  ConfigurableTCB: false,
+  SecurityServicesRunning: [] as string[],
+  note: "No isolated secrets in the result.",
+};
+
+export const demoSecureBoot = {
+  SecureBoot: false,
+  SetupMode: true,
+  UEFI: true,
+};
+
+export const demoWifiProfiles = [
+  { ssid: "CP-GUEST", auth: "Open", keyPresent: false },
+  { ssid: "HomeRouter", auth: "WPA2PSK", keyPresent: true, keyOmitted: true },
+  { ssid: "SchoolWPA", auth: "WPA2", keyPresent: true, keyOmitted: true },
+];
+
+export const demoPowershellConstrained = {
+  LanguageMode: "FullLanguage",
+  ScriptBlockLogging: false,
+  ModuleLogging: false,
+  Transcription: false,
+  TranscriptionPath: null as string | null,
+};
+
+export const demoSmbClientV1 = {
+  EnableSMB1Protocol: true,
+  mrxsmb10: "running",
+  SMB1ProtocolFeature: "Enabled",
+};
+
+export const demoDnsClient = {
+  servers: ["10.13.37.1", "8.8.8.8"],
+  doh: "unset",
+  nrpt: [],
+};
+
+export const demoWindowsRoles = [
+  { name: "AD-Domain-Services", installed: true, unexpected: true },
+  { name: "DNS", installed: true, unexpected: true },
+  { name: "DHCP", installed: true, unexpected: true },
+  { name: "Web-Server", installed: true, unexpected: false },
+];
+
+export const demoKernelModules = {
+  blacklist: ["dccp", "sctp", "rds", "tipc", "cramfs", "freevxfs", "jffs2", "hfs", "hfsplus", "udf", "firewire-core"],
+  usbStorageLoaded: true,
+  usbStorageBlacklisted: false,
+};
+
+export const demoMailServices = {
+  postfix: {
+    present: true,
+    inet_interfaces: "all",
+    mynetworks: "0.0.0.0/0",
+    disable_vrfy_command: "no",
+  },
+  exim: { present: false },
+  dovecot: { present: true, disable_plaintext_auth: "no" },
+};
+
+export const demoDatabaseBind = {
+  mysql: { present: true, bindAddress: "0.0.0.0", skipGrantTables: true },
+  postgres: { present: true, listenAddresses: "*", pgHbaTrust: true },
+  note: "No SQL connections; config files only. Passwords not printed.",
+};
+
+export const demoPhpHardening = {
+  expose_php: "On",
+  display_errors: "On",
+  allow_url_include: "On",
+  allow_url_fopen: "On",
+  disable_functions: "",
+  infoPhp: ["/var/www/html/info.php"],
+};
+
+export const demoSnapFlatpak = [
+  { kind: "snap", name: "steam", suspicious: true },
+  { kind: "snap", name: "discord", suspicious: true },
+  { kind: "snap", name: "core22", suspicious: false },
+  { kind: "flatpak", name: "org.videolan.VLC", suspicious: true },
+  { kind: "flatpak", name: "com.anydesk.Anydesk", suspicious: true },
+];
+
+export const demoIpv6 = {
+  use_tempaddr: 0,
+  accept_ra: 1,
+  forwarding: 1,
+  disable_ipv6: 0,
+};
+
+export const demoLogPersistence = {
+  journaldStorage: "volatile",
+  journalDir: false,
+  rsyslogActive: false,
+};
+
+export const demoBrowserPolicy = {
+  homepage: "http://10.13.37.1/pwn",
+  proxy: "10.13.37.1:8080",
+  pac: null as string | null,
+  extensions: demoBrowserExtensions,
+  note: "Cookies, history, saved passwords, and extension source are not dumped.",
+};
+
+export const demoUsbStorage = {
+  NoDriveTypeAutoRun: 0,
+  Deny_Execute: 0,
+  USBSTOR: "started",
+  linuxAutomount: true,
+};
+
+export const demoTimeTimezone = {
+  ntpSynchronized: false,
+  ntpServer: "10.13.37.1",
+  timezone: "Etc/GMT+12",
+  timesyncd: "inactive",
+  w32time: "stopped",
+};
+
+export const demoCoachPacket = {
+  files: ["SUMMARY.md", "findings.json", "users.json", "services.json", "ports.json", "NOTES.md"],
+  redacted: true,
+  containsSecrets: false,
+  ccsContacted: false,
+  wifiKeysIncluded: false,
+  hashesIncluded: false,
+  note: "Coach handoff packet. Authorized-image only.",
+};

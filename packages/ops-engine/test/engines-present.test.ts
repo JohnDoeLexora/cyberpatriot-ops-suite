@@ -52,6 +52,20 @@ describe("engine scripts on disk", () => {
       "hunt-shell-backdoors",
       "scan-malware-tools",
       "round-start-wizard",
+      "blacklist-kernel-modules",
+      "enforce-apparmor-profiles",
+      "enable-unattended-upgrades",
+      "audit-mail-services",
+      "audit-database-bind",
+      "audit-php-hardening",
+      "audit-snap-flatpak",
+      "disable-ctrl-alt-del",
+      "audit-ipv6-privacy",
+      "audit-log-persistence",
+      "audit-browser-policy",
+      "harden-usb-storage",
+      "audit-time-timezone",
+      "export-coach-packet",
     ]) {
       assert.ok(existsSync(path.join(root, "engines/linux", `${id}.sh`)), id);
     }
@@ -75,6 +89,7 @@ describe("engine scripts on disk", () => {
       "config/allowed-admins.txt",
       "config/windows/cp-baseline.inf",
       "config/windows/optional-features.txt",
+      "config/kernel-module-blacklist.txt",
       "config/examples/users.txt",
       "config/examples/admins.txt",
     ]) {

@@ -5,7 +5,7 @@ Every op is **defensive, authorized-image hardening** for CyberPatriot.
 See [SAFETY.md](./SAFETY.md) before running anything with `mode: "live"`.
 How-to explainers for every op: [howto/](./howto/).
 
-- **Count:** 114
+- **Count:** 138
 - **Default run mode:** demo (Mac-safe fixtures, no host mutation)
 - **Mutations:** live mode requires `confirm: true` in `POST /ops/:id/run`
 
@@ -134,6 +134,30 @@ exportable redacted evidence — like Sabbath coffee: creative, not cheating.
 | `hunt-shell-backdoors` | Hunt shell aliases and profile backdoors | files | both | read |
 | `scan-malware-tools` | ClamAV / chkrootkit scan report | packages | linux | mutate |
 | `round-start-wizard` | Round-start wizard | evidence | both | read |
+| `harden-print-spooler` | Harden Print Spooler / disable remote print | windows | windows | mutate |
+| `audit-lsa-protection` | Audit LSA protection / RunAsPPL | windows | windows | read |
+| `audit-credential-guard` | Audit Credential Guard / Device Guard | windows | windows | read |
+| `audit-secure-boot` | Audit Secure Boot / UEFI | windows | windows | read |
+| `audit-wifi-profiles` | Audit leftover Wi-Fi profiles | windows | windows | read |
+| `harden-powershell-constrained` | Harden PowerShell logging / Constrained Language | windows | windows | mutate |
+| `disable-smb-client-v1` | Disable SMBv1 client leftovers | windows | windows | mutate |
+| `audit-dns-client` | Audit DNS client / DoH | network | windows | read |
+| `audit-windows-roles` | Audit Windows Server roles | windows | windows | read |
+| `harden-null-session` | Harden anonymous enumeration / null sessions | auth | windows | mutate |
+| `blacklist-kernel-modules` | Blacklist uncommon kernel modules | kernel | linux | mutate |
+| `enforce-apparmor-profiles` | Enforce AppArmor profiles for common apps | kernel | linux | mutate |
+| `enable-unattended-upgrades` | Enable unattended-upgrades | updates | linux | mutate |
+| `audit-mail-services` | Audit Postfix/Exim/Dovecot relay | services | linux | read |
+| `audit-database-bind` | Audit database bind-address / anonymous | services | linux | read |
+| `audit-php-hardening` | Audit PHP expose_php / dangerous functions | services | linux | read |
+| `audit-snap-flatpak` | Audit Snap/Flatpak unnecessary apps | packages | linux | read |
+| `disable-ctrl-alt-del` | Disable Ctrl+Alt+Del and extra TTYs | kernel | linux | mutate |
+| `audit-ipv6-privacy` | Audit IPv6 privacy / optional disable | kernel | linux | read |
+| `audit-log-persistence` | Audit rsyslog/journald persistence | logging | linux | read |
+| `audit-browser-policy` | Audit browser homepage / proxy / extensions | files | both | read |
+| `harden-usb-storage` | Harden USB autorun / storage policy | kernel | both | mutate |
+| `audit-time-timezone` | Audit time sync and timezone | network | both | read |
+| `export-coach-packet` | Export redacted coach packet ZIP | evidence | both | read |
 
 ## Details
 
@@ -451,6 +475,16 @@ Turn off LightDM/GDM guest sessions and autologin (allow-guest=false, autologin-
 
 Install fail2ban if the distro package is available, then enable and start the service on the authorized image. If apt/dnf cannot provide it, report unavailable — do not fetch random GitHub installers. Live requires confirm:true. dryRun reports presence only. Local SSH brute-force defense, not a remote attack.
 
+#### `harden-null-session`
+
+- **Title:** Harden anonymous enumeration / null sessions
+- **Platforms:** windows
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates the four LSA restrict values set to the hardened baseline
+
+Set RestrictAnonymous=1, RestrictAnonymousSAM=1, EveryoneIncludesAnonymous=0, RestrictNullSessAccess=1. Deepens the read-only audit-null-session. Does not dump SAM, pipes, or hashes. Live requires confirm:true.
+
 ### services
 
 #### `list-services`
@@ -562,6 +596,36 @@ Read-only Apache/httpd/nginx checklist: directory listings, ServerTokens/server_
 - **Demo fixture:** snmpd running, rocommunity public, rwcommunity private, UDP/161 open
 
 Detect snmpd/SNMP service and default community strings (public/private), rwcommunity, and related insecure mgmt listeners (chargen, discard, ident). Reports community *names* that look default; never uses them to walk other hosts.
+
+#### `audit-mail-services`
+
+- **Title:** Audit Postfix/Exim/Dovecot relay
+- **Platforms:** linux
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** postfix inet_interfaces=all, mynetworks includes 0.0.0.0/0, disable_vrfy_command=no
+
+If postfix/exim/dovecot is installed, audit inet_interfaces, mynetworks, smtpd relay restrictions, disable_vrfy, and plaintext auth. Flags open relay and VRFY. Local config only — does not send mail or probe other MX hosts.
+
+#### `audit-database-bind`
+
+- **Title:** Audit database bind-address / anonymous
+- **Platforms:** linux
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** mysqld bind-address=0.0.0.0; skip-grant-tables in systemd override; pg_hba host all all 0.0.0.0/0 trust
+
+If MySQL/MariaDB/Postgres is installed, read bind-address / listen_addresses and pg_hba trust/ident. Flags 0.0.0.0 bind and skip-grant-tables. Does not connect with credentials, dump user tables, or print passwords.
+
+#### `audit-php-hardening`
+
+- **Title:** Audit PHP expose_php / dangerous functions
+- **Platforms:** linux
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** expose_php=On, allow_url_include=On, disable_functions empty; /var/www/html/info.php present
+
+If PHP/LAMP is present, read php.ini: expose_php, display_errors, allow_url_include, allow_url_fopen, disable_functions. Inventory info.php by name under web roots (contents not dumped). Local files only.
 
 ### ports
 
@@ -676,6 +740,26 @@ Remove hosts-file lines that sinkhole Windows Update, AV, or well-known names to
 - **Demo fixture:** Simulates writing order hosts,bind / multi on / nospoof on
 
 Write /etc/host.conf with `order hosts,bind`, `multi on`, and `nospoof on` to mitigate IP spoofing / name tricks on the local resolver. Live requires confirm:true. Complements harden-sysctl rp_filter.
+
+#### `audit-dns-client`
+
+- **Title:** Audit DNS client / DoH
+- **Platforms:** windows
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** DNS 10.13.37.1 (unexpected); DoH unset; NRPT empty; hosts poisoning is a separate op
+
+Read DNS client servers, DoH (DnsClientDoh), and NRPT on the local image. Complements audit-hosts-file (poisoning) without contacting those names. Flags 127.0.0.1-only, empty DoH, and obviously bogus servers. Local config only.
+
+#### `audit-time-timezone`
+
+- **Title:** Audit time sync and timezone
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** timesyncd inactive; NTP 10.13.37.1; timezone Etc/GMT+12 (suspicious); RTC not NTP-synced
+
+Deepen check-ntp: timedatectl/w32time plus timezone sanity (UTC vs America/*, fake NTP 10.x, NTP disabled). Wrong clocks break logs. Local config only — not an NTP amplification test and not a CCS query.
 
 ### firewall
 
@@ -881,6 +965,16 @@ Check enterprise Firefox policies/user.js and IE/Edge SmartScreen, form-fill, an
 
 Scan /etc/profile, bashrc, profile.d, user rc files, and Windows PowerShell profiles for alias hijacks (sudo/ls/passwd), wget|sh, nc -e, LD_PRELOAD, HISTFILE unset, and /tmp plants. Read-only. Bend-parallel file sweep on Linux when available. Does not execute the rc files.
 
+#### `audit-browser-policy`
+
+- **Title:** Audit browser homepage / proxy / extensions
+- **Platforms:** both
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** Firefox homepage http://10.13.37.1/pwn; system proxy 10.13.37.1:8080; one unpacked Chrome extension id
+
+Deepen audit-browser-baseline: Firefox/Chrome/Edge/IE homepage, proxy/PAC, and extension *ids* (no source dump, no cookies, no saved passwords). Flags unexpected homepages, system proxy to a contest box, and leftover unpacked extensions.
+
 ### packages
 
 #### `list-installed-packages`
@@ -943,6 +1037,16 @@ Remove games and vendor sample/content packages listed in config/games-samples.t
 
 Inventory clamav and chkrootkit. dryRun (or live without install) reports whether they are present. With confirm:true, may apt/dnf install the distro packages then run a local scan (home/tmp/opt only). Never downloads unofficial installers, never scans other hosts. If packages are unavailable, report that — do not fail the round on a missing universe repo.
 
+#### `audit-snap-flatpak`
+
+- **Title:** Audit Snap/Flatpak unnecessary apps
+- **Platforms:** linux
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** snap: steam, discord; flatpak: org.videolan.VLC, com.anydesk.Anydesk; core snaps ignored
+
+List snap and flatpak apps and flag games, remote-desktop, and typical prohibited leftovers (steam, discord, skype, wine). Discovery for authorized removal — this op does not uninstall.
+
 ### logging
 
 #### `audit-logging`
@@ -975,6 +1079,16 @@ Check auditd/auditctl presence, enabled flag, and a few expected rules (identity
 
 Turn on Success and Failure auditing for Account Logon, Account Management, Logon/Logoff, Policy Change, Privilege Use, and System via auditpol. Local security log only — not a remote audit. Live requires confirm:true.
 
+#### `audit-log-persistence`
+
+- **Title:** Audit rsyslog/journald persistence
+- **Platforms:** linux
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** journald Storage=volatile; /var/log/journal missing; rsyslog inactive
+
+Check journald Storage=persistent (or /var/log/journal present) and rsyslog file modules. Disabled/volatile logging loses forensics evidence. Complements audit-logging. Does not ship logs off-image.
+
 ### updates
 
 #### `check-pending-updates`
@@ -1006,6 +1120,16 @@ Apply local security updates (apt-get upgrade, dnf update --security, or Start-W
 - **Demo fixture:** 20auto-upgrades Unattended-Upgrade 0; wuauserv disabled; AUOptions=1 (never check)
 
 Check that unattended-upgrades (APT Periodic) or Windows Update (WUAU/AUOptions, wuauserv) is enabled and not blocked by policy/hosts. Complements check-pending-updates: this is the *channel* sanity check, not a patch install. Local config only.
+
+#### `enable-unattended-upgrades`
+
+- **Title:** Enable unattended-upgrades
+- **Platforms:** linux
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates writing 20auto-upgrades Unattended-Upgrade 1 and enabling the package
+
+Install distro unattended-upgrades if missing and write APT Periodic 20auto-upgrades (Update-Package-Lists 1, Unattended-Upgrade 1). Complements audit-auto-updates. Does not fetch unofficial installers. Live requires confirm:true.
 
 ### scheduled
 
@@ -1100,6 +1224,56 @@ List systemd enabled units, rc.local, Windows Run keys, and Startup folder entri
 - **Demo fixture:** SELinux Permissive; AppArmor loaded but complain-mode profiles present
 
 Report AppArmor (aa-status) and SELinux (getenforce/sestatus) mode. Permissive or disabled MAC is a finding on images that shipped with a profile. Suggests enforce; this op does not flip the mode (setenforce is a separate admin action after a README check).
+
+#### `blacklist-kernel-modules`
+
+- **Title:** Blacklist uncommon kernel modules
+- **Platforms:** linux
+- **Risk:** mutate
+- **Params:** `usbStorage` (boolean), `dryRun` (boolean)
+- **Demo fixture:** Simulates blacklisting dccp/sctp/cramfs/hfs; usb-storage left loaded unless usbStorage=true
+
+Write /etc/modprobe.d/cp-blacklist.conf for uncommon protocols/filesystems (dccp, sctp, cramfs, hfs, firewire, …) from config/kernel-module-blacklist.txt. usb-storage is included only when usbStorage=true (default false). Live requires confirm:true.
+
+#### `enforce-apparmor-profiles`
+
+- **Title:** Enforce AppArmor profiles for common apps
+- **Platforms:** linux
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates aa-enforce apache2 mysqld ntpd ping; 3 complain profiles remain unnamed
+
+Move loaded AppArmor profiles for common daemons (apache2, mysqld, ntpd, named, dhcpd, ping, tcpdump, …) from complain to enforce when aa-enforce exists. Complements audit-mac-enforcement (read). Does not setenforce SELinux. Live requires confirm:true.
+
+#### `disable-ctrl-alt-del`
+
+- **Title:** Disable Ctrl+Alt+Del and extra TTYs
+- **Platforms:** linux
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates systemctl mask ctrl-alt-del.target and disable serial-getty@ttyS0
+
+Mask ctrl-alt-del.target and disable rare extra gettys (serial-getty@ttyS0, extra tty8+) so a console CAD reboot is not a cheap plant. Does not disable tty1–tty6 needed for local login. Live requires confirm:true.
+
+#### `audit-ipv6-privacy`
+
+- **Title:** Audit IPv6 privacy / optional disable
+- **Platforms:** linux
+- **Risk:** read
+- **Params:** `disableIPv6` (boolean), `dryRun` (boolean)
+- **Demo fixture:** use_tempaddr=0, accept_ra=1, forwarding=1; disableIPv6 not applied in the demo
+
+Read IPv6 privacy extensions, accept_ra, and forwarding. Default is audit-only. disableIPv6=true writes sysctl to disable IPv6 — that path requires confirm:true (or dryRun). Do not disable if the README requires IPv6.
+
+#### `harden-usb-storage`
+
+- **Title:** Harden USB autorun / storage policy
+- **Platforms:** both
+- **Risk:** mutate
+- **Params:** `disableUsbStorage` (boolean), `dryRun` (boolean)
+- **Demo fixture:** Simulates autorun off + Deny_Execute on removable; USBSTOR left enabled unless disableUsbStorage
+
+Disable USB autorun/autoplay and deny execute from removable storage (Windows NoDriveTypeAutoRun + RemovableStorageDevices; Linux udisks/udev automount off). Optional disableUsbStorage=true blacklists usb-storage / USBSTOR — default false so keyboards stay. Live requires confirm:true.
 
 ### windows
 
@@ -1213,6 +1387,86 @@ Bulk-disable optional features listed in config/windows/optional-features.txt (T
 
 Run sfc /verifyonly on the local Windows image and report integrity results. Read-only (does not repair). Does not dump WinSxS payloads. Pair with apply-security-updates if component store repair is needed later.
 
+#### `harden-print-spooler`
+
+- **Title:** Harden Print Spooler / disable remote print
+- **Platforms:** windows
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates PointAndPrint restrict + remote RPC endpoint disabled; Spooler left running for local print
+
+Close PrintNightmare-class remote driver install: RestrictDriverInstallationToAdministrators, PointAndPrint no-warning elevation off, RegisterSpoolerRemoteRpcEndPoint disabled, RPC auth privacy on. Does not stop the local spooler unless the README says printing is unused. Live requires confirm:true. Authorized-image hardening only: never used against other teams, scoring endpoints, or off-image hosts.
+
+#### `audit-lsa-protection`
+
+- **Title:** Audit LSA protection / RunAsPPL
+- **Platforms:** windows
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** RunAsPPL=0, RunAsPPLBoot unset — LSA not protected
+
+Read RunAsPPL / RunAsPPLBoot (LSA as Protected Process Light). Unprotected LSA is a credential-theft finding on Windows CP images. Classification only — never dumps LSASS, hashes, or tickets.
+
+#### `audit-credential-guard`
+
+- **Title:** Audit Credential Guard / Device Guard
+- **Platforms:** windows
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** Credential Guard not running; ConfigurableTCB off; no secret material in the result
+
+Read Win32_DeviceGuard / Device Guard and Credential Guard security services running. Informational: some images score VBS/CG, others only want the state known. Does not dump isolated secrets or recovery keys.
+
+#### `audit-secure-boot`
+
+- **Title:** Audit Secure Boot / UEFI
+- **Platforms:** windows
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** SecureBoot=false, SetupMode=true on the demo fixture
+
+Report Secure Boot and SetupMode via Confirm-SecureBootUEFI. Off or Setup Mode is a firmware finding. Read-only; does not enroll keys or dump PK/KEK material.
+
+#### `audit-wifi-profiles`
+
+- **Title:** Audit leftover Wi-Fi profiles
+- **Platforms:** windows
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** Open SSID 'CP-GUEST'; leftover WPA2 'HomeRouter' (key omitted); one enterprise profile ok
+
+Inventory saved WLAN profiles (SSID + auth type only). Flags Open networks and leftover contest/home SSIDs. Never prints PSKs, EAP passwords, or `key=clear` material.
+
+#### `harden-powershell-constrained`
+
+- **Title:** Harden PowerShell logging / Constrained Language
+- **Platforms:** windows
+- **Risk:** mutate
+- **Params:** `constrainedLanguage` (boolean), `dryRun` (boolean)
+- **Demo fixture:** Simulates ScriptBlockLogging+ModuleLogging+Transcription on; LanguageMode FullLanguage unless constrainedLanguage
+
+Enable Script Block Logging, Module Logging, and local Transcription (deepens audit-powershell-logging). Optional constrainedLanguage=true sets Constrained Language Mode. Transcription path is local only — never a remote share. Live requires confirm:true.
+
+#### `disable-smb-client-v1`
+
+- **Title:** Disable SMBv1 client leftovers
+- **Platforms:** windows
+- **Risk:** mutate
+- **Params:** `dryRun` (boolean)
+- **Demo fixture:** Simulates Set-SmbClientConfiguration EnableSMB1Protocol=false and mrxsmb10 disabled
+
+Turn off leftover SMBv1 *client* knobs (EnableSMB1Protocol on the workstation, mrxsmb10, SMB1Protocol feature) after disable-smbv1 covers the server/optional-feature path. Live requires confirm:true. Does not scan other hosts.
+
+#### `audit-windows-roles`
+
+- **Title:** Audit Windows Server roles
+- **Platforms:** windows
+- **Risk:** read
+- **Params:** none
+- **Demo fixture:** AD-Domain-Services Installed (unexpected); DNS Installed; DHCP Installed; IIS present
+
+Inventory Windows Server roles/features (DNS, DHCP, AD-DS/AD-LDS, IIS extras) when ServerManager is present. Read-only harden suggestions: unexpected directory/DNS/DHCP roles on a workstation image. Does not promote/demote a domain or attack other DCs.
+
 ### evidence
 
 #### `export-evidence-bundle`
@@ -1304,4 +1558,14 @@ Keyword-skim local README/forensics/question text files (Desktop, homes, /root, 
 - **Demo fixture:** 6 sequenced steps; forensics/users/firewall/prohibited fail on the unhardened demo image; CCS not contacted
 
 One-click sequenced guide for the first minutes of a round: forensics skim → user sync → password policy → firewall → updates → prohibited software. Read-only — it does not run the mutate ops. Each row points at the existing catalog op to open next. Not a CCS scrape and not a substitute for the README.
+
+#### `export-coach-packet`
+
+- **Title:** Export redacted coach packet ZIP
+- **Platforms:** both
+- **Risk:** read
+- **Params:** `outputDir` (string)
+- **Demo fixture:** ZIP listing SUMMARY.md + findings.json + inventories; redacted=true; ccsContacted=false; no secrets
+
+Assemble a redacted handoff ZIP for a coach: SUMMARY.md, findings.json, user/service/port inventories (no hashes), checklist snapshot. Never includes shadow/SAM, private keys, Wi-Fi PSKs, cookies, or CCS URLs. Distinct from export-evidence-bundle: this is the coach-facing packet, still on-image only. Authorized-image hardening only: never used against other teams, scoring endpoints, or off-image hosts.
 

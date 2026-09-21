@@ -184,6 +184,51 @@ describe("demo runner output shape", () => {
     assert.ok((bulk.data.extra?.targets as string[] | undefined)?.includes("alice"));
   });
 
+  it("cp-10 depth ops return specialized demo findings", async () => {
+    const spooler = await runOp({ opId: "harden-print-spooler", mode: "demo" });
+    const lsa = await runOp({ opId: "audit-lsa-protection", mode: "demo" });
+    const wifi = await runOp({ opId: "audit-wifi-profiles", mode: "demo" });
+    const mail = await runOp({ opId: "audit-mail-services", mode: "demo" });
+    const db = await runOp({ opId: "audit-database-bind", mode: "demo" });
+    const php = await runOp({ opId: "audit-php-hardening", mode: "demo" });
+    const browser = await runOp({ opId: "audit-browser-policy", mode: "demo" });
+    const time = await runOp({ opId: "audit-time-timezone", mode: "demo" });
+    const coach = await runOp({ opId: "export-coach-packet", mode: "demo" });
+    const ipv6 = await runOp({ opId: "audit-ipv6-privacy", mode: "demo" });
+    assert.ok(spooler.findings.some((f) => /PointAndPrint|PrintNightmare/i.test(f.title + (f.detail ?? ""))));
+    assert.ok(lsa.findings.some((f) => /RunAsPPL/i.test(f.title)));
+    assert.equal(wifi.data.extra?.keysOmitted, true);
+    assert.ok(mail.findings.some((f) => /mynetworks|relay/i.test(f.title)));
+    assert.ok(db.findings.some((f) => /bind-address|skip-grant|trust/i.test(f.title)));
+    assert.ok(php.findings.some((f) => /expose_php|allow_url_include|info\.php/i.test(f.title)));
+    assert.ok(browser.findings.some((f) => /homepage|proxy/i.test(f.title)));
+    assert.ok(time.findings.some((f) => /10\.13\.37|timezone/i.test(f.title + (f.detail ?? ""))));
+    assert.equal(coach.data.extra?.ccsContacted, false);
+    assert.equal(coach.data.extra?.hashesIncluded, false);
+    assert.equal(coach.data.extra?.wifiKeysIncluded, false);
+    assert.ok(ipv6.findings.some((f) => /tempaddr|accept_ra/i.test(f.title)));
+  });
+
+  it("cp-10 mutate ops are blocked live without confirm", async () => {
+    for (const id of [
+      "harden-print-spooler",
+      "harden-powershell-constrained",
+      "disable-smb-client-v1",
+      "harden-null-session",
+      "blacklist-kernel-modules",
+      "enforce-apparmor-profiles",
+      "enable-unattended-upgrades",
+      "disable-ctrl-alt-del",
+      "harden-usb-storage",
+    ]) {
+      const blocked = await runOp({ opId: id, mode: "live" });
+      assert.equal(blocked.ok, false, id);
+      assert.match(blocked.blocked?.reason ?? "", /confirm/);
+      const dry = await runOp({ opId: id, mode: "live", params: { dryRun: true } });
+      assert.equal(dry.blocked, undefined, id);
+    }
+  });
+
   it("cp-09 mutate ops are blocked live without confirm", async () => {
     for (const id of [
       "sync-authorized-users",
