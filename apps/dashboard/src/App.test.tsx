@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import userEvent, { type UserEvent } from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import App from './App'
 import { STORAGE_KEY } from './state/persist'
@@ -8,6 +8,20 @@ beforeEach(() => {
   localStorage.removeItem(STORAGE_KEY)
   localStorage.removeItem('cp-ops.workspace.v1')
 })
+
+function activePane() {
+  const panes = screen.getAllByTestId('pane')
+  return panes.find((pane) => pane.getAttribute('data-active') === 'true') ?? panes[0]!
+}
+
+async function splitPane(user: UserEvent, pane: HTMLElement, axis: 'h' | 'v') {
+  const id = pane.getAttribute('data-pane-id')
+  await user.click(within(pane).getByTestId(`split-${axis}-${id}`))
+}
+
+async function splitActive(user: UserEvent, axis: 'h' | 'v') {
+  await splitPane(user, activePane(), axis)
+}
 
 describe('dashboard shell', () => {
   it('filters the operations catalog', async () => {
@@ -25,17 +39,22 @@ describe('dashboard shell', () => {
     expect(shown).not.toBe(total)
   })
 
-  it('opens three panes from the catalog', async () => {
+  it('replaces the focused pane instead of opening another', async () => {
     const user = userEvent.setup()
     render(<App />)
     expect(screen.getAllByTestId('pane')).toHaveLength(1)
     await user.click(screen.getByTestId('catalog-item-list-users'))
+    expect(screen.getByTestId('pane')).toHaveAttribute('data-op-id', 'list-users')
     await user.click(screen.getByTestId('catalog-item-flag-suspicious-users'))
+    expect(screen.getAllByTestId('pane')).toHaveLength(1)
+    expect(screen.getByTestId('pane')).toHaveAttribute('data-op-id', 'flag-suspicious-users')
+    expect(screen.getByTestId('pane-count')).toHaveTextContent('1 pane')
+    await splitActive(user, 'h')
+    expect(screen.getAllByTestId('pane')).toHaveLength(2)
     await user.click(screen.getByTestId('catalog-item-ssh-hardening-audit'))
-    await waitFor(() => {
-      expect(screen.getAllByTestId('pane')).toHaveLength(3)
-    })
-    expect(screen.getByTestId('pane-count')).toHaveTextContent('3 panes')
+    expect(screen.getAllByTestId('pane')).toHaveLength(2)
+    expect(activePane()).toHaveAttribute('data-op-id', 'ssh-hardening-audit')
+    expect(screen.getByTestId('pane-count')).toHaveTextContent('2 panes')
   })
 
   it('runs a wired demo op and updates pane status', async () => {
@@ -72,6 +91,7 @@ describe('dashboard shell', () => {
     const user = userEvent.setup()
     render(<App />)
     await user.click(screen.getByTestId('catalog-item-list-users'))
+    await splitActive(user, 'h')
     await user.click(screen.getByTestId('catalog-item-ssh-hardening-audit'))
     const panes = screen.getAllByTestId('pane')
     expect(panes).toHaveLength(2)
@@ -116,15 +136,20 @@ describe('dashboard shell', () => {
     const user = userEvent.setup()
     render(<App />)
     await user.click(screen.getByTestId('catalog-item-list-users'))
-    await user.click(screen.getByTestId('catalog-item-flag-suspicious-users'))
-    expect(screen.getByTestId('mosaic')).toHaveAttribute('data-mosaic-mode', 'mosaic')
+    await splitActive(user, 'h')
     await user.click(screen.getByTestId('catalog-item-ssh-hardening-audit'))
+    expect(screen.getByTestId('mosaic')).toHaveAttribute('data-mosaic-mode', 'mosaic')
+    const users = screen.getAllByTestId('pane').find((pane) => pane.getAttribute('data-op-id') === 'list-users')!
+    await splitPane(user, users, 'v')
+    await user.click(screen.getByTestId('catalog-item-apply-default-deny-inbound'))
     await waitFor(() => {
       expect(screen.getAllByTestId('pane')).toHaveLength(3)
     })
     expect(screen.getByTestId('mosaic')).toHaveAttribute('data-mosaic-mode', 'mosaic')
     expect(screen.queryByTestId('pane-tabs')).not.toBeInTheDocument()
-    await user.click(screen.getByTestId('catalog-item-apply-default-deny-inbound'))
+    const ssh = screen.getAllByTestId('pane').find((pane) => pane.getAttribute('data-op-id') === 'ssh-hardening-audit')!
+    await splitPane(user, ssh, 'v')
+    await user.click(screen.getByTestId('catalog-item-flag-suspicious-users'))
     await waitFor(() => {
       expect(screen.getAllByTestId('pane')).toHaveLength(4)
     })
@@ -132,6 +157,10 @@ describe('dashboard shell', () => {
     expect(screen.getByTestId('mosaic')).toHaveAttribute('data-mosaic-mode', 'mosaic')
     expect(screen.queryByTestId('pane-tabs')).not.toBeInTheDocument()
     expect(screen.getByTestId('pane-count')).toHaveTextContent('4 panes')
+    await user.click(screen.getByTestId('catalog-item-enable-firewall'))
+    expect(screen.getAllByTestId('pane')).toHaveLength(4)
+    expect(activePane()).toHaveAttribute('data-op-id', 'enable-firewall')
+    expect(screen.queryByTestId('pane-tabs')).not.toBeInTheDocument()
   })
 
   it('hides advanced checks in beginner mode until Show advanced', async () => {
@@ -227,10 +256,18 @@ describe('dashboard shell', () => {
     const user = userEvent.setup()
     render(<App />)
     await user.click(screen.getByTestId('catalog-item-list-users'))
-    await user.click(screen.getByTestId('catalog-item-flag-suspicious-users'))
+    await splitActive(user, 'h')
     await user.click(screen.getByTestId('catalog-item-ssh-hardening-audit'))
+    const users = screen.getAllByTestId('pane').find((pane) => pane.getAttribute('data-op-id') === 'list-users')!
+    await splitPane(user, users, 'v')
     await user.click(screen.getByTestId('catalog-item-apply-default-deny-inbound'))
+    const ssh = screen.getAllByTestId('pane').find((pane) => pane.getAttribute('data-op-id') === 'ssh-hardening-audit')!
+    await splitPane(user, ssh, 'v')
+    await user.click(screen.getByTestId('catalog-item-flag-suspicious-users'))
+    expect(screen.getAllByTestId('pane')).toHaveLength(4)
     await user.click(screen.getByTestId('catalog-item-enable-firewall'))
+    expect(screen.getAllByTestId('pane')).toHaveLength(4)
+    await splitActive(user, 'h')
     await waitFor(() => {
       expect(screen.getAllByTestId('pane')).toHaveLength(5)
     })

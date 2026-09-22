@@ -1,4 +1,4 @@
-import { expect, test, type Locator } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.clear())
@@ -11,6 +11,14 @@ function clusterCount(values: number[], slop = 48) {
     if (!clusters.some((c) => Math.abs(c - value) < slop)) clusters.push(value)
   }
   return clusters.length
+}
+
+async function split(page: Page, axis: 'h' | 'v', opId?: string) {
+  const pane = opId
+    ? page.locator(`[data-testid="pane"][data-op-id="${opId}"]`)
+    : page.locator('[data-testid="pane"][data-active="true"]')
+  const id = await pane.getAttribute('data-pane-id')
+  await page.getByTestId(`split-${axis}-${id}`).click()
 }
 
 async function paneBoxes(panes: Locator) {
@@ -49,16 +57,19 @@ test('empty state, user table, and 2×2 four-pane workspace', async ({ page }) =
   expect(usersBox?.height ?? 0).toBeGreaterThan(280)
   await page.screenshot({ path: 'test-results/users.png' })
 
+  await split(page, 'h')
   await page.getByTestId('catalog-item-ssh-hardening-audit').click()
   await expect(page.getByTestId('pane')).toHaveCount(2)
   await expect(page.getByTestId('mosaic')).toHaveAttribute('data-mosaic-mode', 'mosaic')
   await expect(page.getByTestId('pane-tabs')).toHaveCount(0)
   await page.screenshot({ path: 'test-results/two-up.png' })
 
+  await split(page, 'v', 'list-users')
   await page.getByTestId('catalog-item-apply-default-deny-inbound').click()
   await expect(page.getByTestId('pane')).toHaveCount(3)
   await expect(page.getByTestId('mosaic')).toHaveAttribute('data-mosaic-mode', 'mosaic')
 
+  await split(page, 'v', 'ssh-hardening-audit')
   await page.getByTestId('catalog-item-flag-suspicious-users').click()
   await expect(page.getByTestId('pane')).toHaveCount(4)
   await expect(page.getByTestId('mosaic')).toHaveAttribute('data-mosaic-grid', '2x2')
@@ -89,6 +100,7 @@ test('narrow mosaic stacks two panes into tabs', async ({ page }) => {
   await page.setViewportSize({ width: 720, height: 900 })
   await page.goto('/')
   await page.getByTestId('catalog-item-list-users').click()
+  await split(page, 'h')
   await page.getByTestId('catalog-item-ssh-hardening-audit').click()
   await expect(page.getByTestId('pane')).toHaveCount(2)
   await expect(page.getByTestId('mosaic')).toHaveAttribute('data-mosaic-mode', 'tabs')

@@ -28,8 +28,8 @@ export function EmptyPane({ paneId }: { paneId: string }) {
       </div>
       <p className="coach-tip mt-3 max-w-md text-[15px] leading-7 text-mute">
         {ws.beginnerMode
-          ? 'Not sure what to click? Pick a playlist. Each step is an existing check with a short tip and a how-to. Live changes still ask first.'
-          : 'Pick something from the list on the left — like Scan users — or drag it into this space. Press / to search.'}
+          ? 'Not sure what to click? Pick a playlist. A click fills this pane. Split the pane if you want two checks at once. Live changes still ask first.'
+          : 'Click a check to put it in this pane. Split, or drop on an edge, when you want another pane beside it. Press / to search.'}
       </p>
       <div className="mt-6 flex max-w-lg flex-wrap justify-center gap-2" data-testid="empty-playlists">
         {suggestions.map((p) => (

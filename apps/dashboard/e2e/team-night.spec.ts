@@ -124,3 +124,45 @@ test('how-to search still finds a guide from the header', async ({ page }) => {
   await page.getByTestId('howto-close').click()
   await expect(page.getByTestId('howto-drawer')).toHaveCount(0)
 })
+
+test('playlist run next then run all stays on one pane', async ({ page }) => {
+  await page.goto('/')
+  const next = page.getByTestId('playlist-run-next')
+  await next.click()
+  await expect(page.getByTestId('playlist-step-skim-forensics-readme')).toHaveAttribute('data-status', 'done', {
+    timeout: 15_000,
+  })
+  await expect(next).toBeEnabled()
+  await next.click()
+  await expect(page.getByTestId('playlist-step-list-users')).toHaveAttribute('data-status', 'done', {
+    timeout: 15_000,
+  })
+  await expect(page.getByTestId('playlist-progress')).toHaveText('2/13')
+  await expect(page.getByTestId('pane')).toHaveCount(1)
+  await expect(page.getByTestId('confirm-dialog')).toHaveCount(0)
+
+  await page.getByTestId('playlist-run-all').click()
+  await expect(page.getByTestId('playlist-progress')).toHaveText('13/13', { timeout: 20_000 })
+  await expect(page.getByTestId('playlist-step-enable-firewall')).toHaveAttribute('data-status', 'done')
+  await expect(page.getByTestId('playlist-step-scoreboard-preflight')).toHaveAttribute('data-status', 'done')
+  await expect(page.getByTestId('pane')).toHaveCount(1)
+  await expect(page.getByTestId('confirm-dialog')).toHaveCount(0)
+  await expect(page.getByTestId('pane')).toHaveAttribute('data-op-id', 'scoreboard-preflight')
+})
+
+test('live mutation asks to confirm and cancel leaves the pane idle', async ({ page }) => {
+  await page.goto('/')
+  await page.getByTestId('demo-toggle').click()
+  await expect(page.getByTestId('mode-label')).toHaveText(/this computer/i)
+  await page.getByTestId('catalog-item-enable-firewall').click()
+  await expect(page.getByTestId('pane')).toHaveCount(1)
+  await page.getByTestId('run-op').click()
+  const dialog = page.getByTestId('confirm-dialog')
+  await expect(dialog).toBeVisible()
+  await expect(dialog).toContainText(/Change this computer/i)
+  await dialog.getByRole('button', { name: 'Cancel' }).click()
+  await expect(dialog).toHaveCount(0)
+  const pane = page.locator('[data-testid="pane"][data-op-id="enable-firewall"]')
+  await expect(pane.getByTestId('run-status')).toHaveAttribute('data-status', 'idle')
+  await expect(page.getByTestId('pane')).toHaveCount(1)
+})
