@@ -15,7 +15,9 @@ Leave **Practice data** on (Mac-safe fixtures — this computer is not changed).
 
 **Beginner** is on by default: larger coach tips, starter checks first, and an empty-pane playlist suggestion. **Round playlists** run existing catalog ops in order (**Run next** / **Run all**); live mutations still confirm. **Edit allowlists** stores README user/admin lists in this browser and can download/upload `allowed-users.txt` / `allowed-admins.txt`.
 
-**Read [SAFETY.md](../../docs/SAFETY.md) before live mode.**
+Clicking a check **replaces the focused pane**. Use **Split right / Split down**, or drop a check on a pane edge, to keep more than one open. A 2×2 stays a mosaic; the fifth pane becomes tabs.
+
+Round-night steps: [TEAM-NIGHT.md](../../docs/TEAM-NIGHT.md). **Read [SAFETY.md](../../docs/SAFETY.md) before live mode.**
 
 The Vite dev server mounts the local API (`GET /health`, `GET /ops`, `POST /ops/:id/run`) so **Run** hits practice or live engines on the same origin. If the API is unreachable, practice data still falls back to in-browser fixtures. Live mode will not.
 

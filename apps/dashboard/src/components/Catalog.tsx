@@ -49,6 +49,9 @@ export function Catalog() {
             className="w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-faint"
           />
         </label>
+        <p className="mt-2 px-0.5 text-[12px] leading-5 text-faint">
+          Click replaces the focused pane. Split, or drop on an edge, to open another.
+        </p>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto py-2">
