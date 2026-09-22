@@ -10,7 +10,7 @@ Public repo: https://github.com/JohnDoeLexora/cyberpatriot-ops-suite
 
 ## Share with the team
 
-Send this repo link. Teammates need [Node 20+](https://nodejs.org/). Clone, `npm install`, `npm run dev`, and leave **Practice data** on. Switch to **This computer** only on the competition image, and confirm before anything that changes the box.
+Send this repo link. The 60-second version is [docs/TEAM-NIGHT.md](docs/TEAM-NIGHT.md). Teammates need [Node 20+](https://nodejs.org/). Clone, `npm install`, `npm run dev`, and leave **Practice data** on. Switch to **This computer** only on the competition image, and confirm before anything that changes the box.
 
 ## Quick start
 
@@ -40,7 +40,7 @@ Open the URL Vite prints (http://localhost:5173).
 - **How-to** (or `?`) explains what the check is and why it scores.
 - On account panes, hover a row for Flag / Turn off / Turn on / Expire password. Extra columns tuck away on a narrow pane.
 
-More: [docs/SAFETY.md](docs/SAFETY.md) · [docs/OPS.md](docs/OPS.md) (every check) · [docs/howto/](docs/howto/) · [CONTRIBUTING.md](CONTRIBUTING.md)
+More: [docs/TEAM-NIGHT.md](docs/TEAM-NIGHT.md) · [docs/SAFETY.md](docs/SAFETY.md) · [docs/OPS.md](docs/OPS.md) (every check) · [docs/howto/](docs/howto/) · [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## What’s in this repo
 
