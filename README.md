@@ -10,7 +10,7 @@ Public repo: https://github.com/JohnDoeLexora/cyberpatriot-ops-suite
 
 ## Share with the team
 
-Send this repo link. Teammates need [Node 20+](https://nodejs.org/). Clone, `npm install`, `npm run dev`, and leave **Practice data** on. Switch to **This computer** only on the competition image, and confirm before anything that changes the box.
+Send this repo link. The 60-second version is [docs/TEAM-NIGHT.md](docs/TEAM-NIGHT.md). Teammates need [Node 20+](https://nodejs.org/). Clone, `npm install`, `npm run dev`, and leave **Practice data** on. Switch to **This computer** only on the competition image, and confirm before anything that changes the box.
 
 ## Quick start
 
@@ -36,7 +36,7 @@ Open the URL Vite prints (http://localhost:5173).
 - **Round playlists** (Linux starter, Windows starter, Linux deep, Windows deep, Forensics first): pick one, **Run next** or **Run all**. Each step is an existing check with a coach tip and a how-to. Live mutations still ask you to confirm. Nothing talks to CCS.
 - **Beginner** (on by default): larger tips, starter checks first, **Show advanced** for the rest. Empty panes suggest a playlist. Turn it off for the full catalog.
 - **Edit allowlists**: paste the README user/admin lists (saved in this browser). Download/upload `allowed-users.txt` / `allowed-admins.txt` in the same format as `config/`.
-- Open a check in a pane, then **Run**. Two across, then two below (a 2×2). Tabs from the fifth pane.
+- Click a check to **replace the focused pane** (an empty pane just fills). **Split** or drop on an edge to open another. Two across, then two below (a 2×2). Tabs from the fifth pane.
 - **How-to** (or `?`) explains what the check is and why it scores.
 - On account panes, hover a row for Flag / Turn off / Turn on / Expire password. Extra columns tuck away on a narrow pane.
 

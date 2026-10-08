@@ -18,7 +18,6 @@ import { uid } from '../lib/id'
 import { executeOp, fetchHealth, type EngineSource } from '../lib/run-client'
 import { liveUsers, upsertUsers, type UiUser } from '../lib/users'
 import {
-  addLeafPreferGrid,
   insertLeafAtEdge,
   leafCount,
   moveLeaf,
@@ -283,39 +282,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const openOp = useCallback(
     (opId: string, targetPaneId?: string) => {
       const s = stateRef.current
-      const target = targetPaneId ?? s.focusedId
-      const targetPane = s.panes[target]
-      if (targetPane && !targetPane.opId) {
-        assignOp(target, opId)
-        return
-      }
-      const emptyId = walkLeaves(s.tree).find((id) => !s.panes[id]?.opId)
-      if (emptyId) {
-        assignOp(emptyId, opId)
-        return
-      }
-      if (leafCount(s.tree) >= MAX_PANES) {
-        assignOp(target, opId)
-        toast({ tone: 'warn', title: 'Pane cap', detail: `Replaced the focused pane (max ${MAX_PANES}).` })
-        return
-      }
-      const newId = uid('pane')
-      setState((cur) => {
-        const splitFrom = cur.panes[target] ? target : walkLeaves(cur.tree)[0]
-        return {
-          ...cur,
-          tree: addLeafPreferGrid(cur.tree, splitFrom, newId),
-          focusedId: newId,
-          panes: {
-            ...cur.panes,
-            [newId]: { ...emptyPane(newId), opId },
-          },
-        }
-      })
-      const op = OPS_BY_ID[opId]
-      log('layout', `Split and opened ${op?.title ?? opId}`)
+      const requested = targetPaneId && s.panes[targetPaneId] ? targetPaneId : s.focusedId
+      const paneId = s.panes[requested] ? requested : walkLeaves(s.tree)[0]
+      if (!paneId) return
+      assignOp(paneId, opId)
     },
-    [assignOp, log, toast],
+    [assignOp],
   )
 
   const splitPane = useCallback(

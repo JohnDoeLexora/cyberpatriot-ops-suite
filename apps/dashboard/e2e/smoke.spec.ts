@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -6,7 +6,15 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
-test('catalog search, three panes, and wired run', async ({ page }) => {
+async function split(page: Page, axis: 'h' | 'v', opId?: string) {
+  const pane = opId
+    ? page.locator(`[data-testid="pane"][data-op-id="${opId}"]`)
+    : page.locator('[data-testid="pane"][data-active="true"]')
+  const id = await pane.getAttribute('data-pane-id')
+  await page.getByTestId(`split-${axis}-${id}`).click()
+}
+
+test('catalog search replaces the focused pane, and a split keeps the previous check', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByTestId('app-shell')).toBeVisible()
   await expect(page.getByTestId('app-shell')).toHaveAttribute('data-theme', 'paper')
@@ -22,8 +30,11 @@ test('catalog search, three panes, and wired run', async ({ page }) => {
   await search.fill('')
   await page.getByTestId('catalog-item-list-users').click()
   await page.getByTestId('catalog-item-flag-suspicious-users').click()
-  await page.getByTestId('catalog-item-apply-default-deny-inbound').click()
-  await expect(page.getByTestId('pane')).toHaveCount(3)
+  await expect(page.getByTestId('pane')).toHaveCount(1)
+  await expect(page.getByTestId('pane')).toHaveAttribute('data-op-id', 'flag-suspicious-users')
+  await split(page, 'h')
+  await page.getByTestId('catalog-item-list-users').click()
+  await expect(page.getByTestId('pane')).toHaveCount(2)
   await expect(page.getByTestId('mosaic')).toHaveAttribute('data-mosaic-mode', 'mosaic')
 
   const usersPane = page.locator('[data-testid="pane"][data-op-id="list-users"]')
@@ -81,4 +92,31 @@ test('playlist, beginner mode, and allowlist editor', async ({ page }) => {
   await expect(page.getByTestId('allowlist-users')).toHaveValue('# README\nalice\nbob\n')
 
   await page.screenshot({ path: 'test-results/playlist-beginner.png', fullPage: true })
+})
+
+test('a fifth catalog click on a 2×2 does not open a tab', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+  await page.getByTestId('catalog-item-list-users').click()
+  await split(page, 'h')
+  await page.getByTestId('catalog-item-ssh-hardening-audit').click()
+  await split(page, 'v', 'list-users')
+  await page.getByTestId('catalog-item-apply-default-deny-inbound').click()
+  await split(page, 'v', 'ssh-hardening-audit')
+  await page.getByTestId('catalog-item-flag-suspicious-users').click()
+  await expect(page.getByTestId('pane')).toHaveCount(4)
+  await expect(page.getByTestId('mosaic')).toHaveAttribute('data-mosaic-grid', '2x2')
+  await expect(page.getByTestId('mosaic')).toHaveAttribute('data-mosaic-mode', 'mosaic')
+  await expect(page.getByTestId('pane-tabs')).toHaveCount(0)
+
+  await page.getByTestId('catalog-item-enable-firewall').click()
+  await expect(page.getByTestId('pane')).toHaveCount(4)
+  await expect(page.locator('[data-testid="pane"][data-active="true"]')).toHaveAttribute(
+    'data-op-id',
+    'enable-firewall',
+  )
+  await expect(page.locator('[data-testid="pane"][data-op-id="list-users"]')).toHaveCount(1)
+  await expect(page.locator('[data-testid="pane"][data-op-id="ssh-hardening-audit"]')).toHaveCount(1)
+  await expect(page.getByTestId('mosaic')).toHaveAttribute('data-mosaic-mode', 'mosaic')
+  await expect(page.getByTestId('pane-tabs')).toHaveCount(0)
 })
