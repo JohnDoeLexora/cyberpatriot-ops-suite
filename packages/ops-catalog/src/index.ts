@@ -2,6 +2,8 @@ export type {
   CatalogFilter,
   Category,
   OpDefinition,
+  OpExplain,
+  OpSeed,
   ParamField,
   ParamsSchema,
   ParamType,

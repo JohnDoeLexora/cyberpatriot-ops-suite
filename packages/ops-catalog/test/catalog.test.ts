@@ -169,6 +169,24 @@ describe("ops catalog integrity", () => {
     assert.match(getOp("export-coach-packet")?.description ?? "", /CCS/i);
   });
 
+  it("every op has a plain-language explainer", () => {
+    const exemptRead = new Set(["audit-ipv6-privacy", "export-coach-packet"]);
+    for (const op of catalog) {
+      assert.ok(op.whatItDoes.trim().length > 20, op.id);
+      assert.ok(op.whyItScores.trim().length > 20, op.id);
+      assert.ok(op.whatItChanges.trim().length > 10, op.id);
+      assert.ok(op.howToUndo.trim().length > 10, op.id);
+      if (op.risk === "read" && !exemptRead.has(op.id)) {
+        assert.equal(op.whatItChanges, "Nothing - read-only audit", op.id);
+        assert.equal(op.howToUndo, "Nothing to undo", op.id);
+      }
+      if (op.risk === "mutate") {
+        assert.match(op.howToUndo, /backup was made/i, op.id);
+        assert.doesNotMatch(op.whatItChanges, /^Nothing - read-only audit$/, op.id);
+      }
+    }
+  });
+
   it("mutate ops mention confirm in the description", () => {
     const missing = catalog.filter(
       (o) => o.risk === "mutate" && !/confirm/i.test(o.description),

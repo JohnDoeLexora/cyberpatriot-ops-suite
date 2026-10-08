@@ -1,4 +1,5 @@
-import type { OpDefinition } from "./types.js";
+import type { OpDefinition, OpSeed } from "./types.js";
+import { EXPLAINERS } from "./explainers.js";
 import {
   allowlistParams,
   coachPacketParams,
@@ -23,7 +24,7 @@ import {
 const KOSHER =
   " Authorized-image hardening only: never used against other teams, scoring endpoints, or off-image hosts.";
 
-export const catalog: readonly OpDefinition[] = Object.freeze([
+const seeds: readonly OpSeed[] = Object.freeze([
   op(
     "list-users",
     "List local users",
@@ -1345,7 +1346,22 @@ export const catalog: readonly OpDefinition[] = Object.freeze([
   ),
 ]);
 
-export const CATALOG_VERSION = "0.5.0";
+function attachExplainers(rows: readonly OpSeed[]): OpDefinition[] {
+  const missing = rows.filter((row) => !EXPLAINERS[row.id]).map((row) => row.id);
+  if (missing.length) {
+    throw new Error(`Missing explainer for: ${missing.join(", ")}`);
+  }
+  const ids = new Set(rows.map((row) => row.id));
+  const extra = Object.keys(EXPLAINERS).filter((id) => !ids.has(id));
+  if (extra.length) {
+    throw new Error(`Explainer for unknown op: ${extra.join(", ")}`);
+  }
+  return rows.map((row) => ({ ...row, ...EXPLAINERS[row.id]! }));
+}
+
+export const catalog: readonly OpDefinition[] = Object.freeze(attachExplainers(seeds));
+
+export const CATALOG_VERSION = "0.6.0";
 
 const byId = new Map(catalog.map((item) => [item.id, item]));
 
@@ -1362,7 +1378,7 @@ export function listOps(filter: import("./types.js").CatalogFilter = {}): OpDefi
       if (item.platforms !== "both" && item.platforms !== filter.platform) return false;
     }
     if (q) {
-      const blob = `${item.id} ${item.title} ${item.category} ${item.description}`.toLowerCase();
+      const blob = `${item.id} ${item.title} ${item.category} ${item.description} ${item.whatItDoes} ${item.whyItScores} ${item.whatItChanges} ${item.howToUndo}`.toLowerCase();
       if (!blob.includes(q)) return false;
     }
     return true;
@@ -1386,6 +1402,23 @@ export function assertCatalogIntegrity(ops: readonly OpDefinition[] = catalog): 
     if (!item.title.trim()) throw new Error(`Missing title: ${item.id}`);
     if (!item.description.trim()) throw new Error(`Missing description: ${item.id}`);
     if (!item.demoFixtureHint.trim()) throw new Error(`Missing demoFixtureHint: ${item.id}`);
+    for (const key of ["whatItDoes", "whyItScores", "whatItChanges", "howToUndo"] as const) {
+      const value = item[key];
+      if (typeof value !== "string" || !value.trim()) {
+        throw new Error(`Missing ${key}: ${item.id}`);
+      }
+    }
+    if (item.risk === "mutate") {
+      if (!/backup was made/i.test(item.howToUndo)) {
+        throw new Error(`Mutate howToUndo must mention a backup restore: ${item.id}`);
+      }
+      if (item.platforms !== "windows" && !item.howToUndo.includes("/var/backups/cyberpatriot-ops/")) {
+        throw new Error(`Linux howToUndo must name /var/backups/cyberpatriot-ops/: ${item.id}`);
+      }
+      if (item.platforms !== "linux" && !item.howToUndo.includes("CyberPatriotOps\\backups\\")) {
+        throw new Error(`Windows howToUndo must name CyberPatriotOps\\backups\\: ${item.id}`);
+      }
+    }
     if (item.paramsSchema.type !== "object") {
       throw new Error(`paramsSchema must be an object: ${item.id}`);
     }
