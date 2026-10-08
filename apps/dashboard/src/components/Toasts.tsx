@@ -30,7 +30,7 @@ export function Toasts() {
               <div className="text-[14px] font-semibold text-ink">{t.title}</div>
               {t.detail && <div className="mt-0.5 text-[13.5px] leading-5 text-mute">{t.detail}</div>}
             </div>
-            <button type="button" className="text-mute hover:text-ink" onClick={() => dismissToast(t.id)}>
+            <button type="button" className="text-mute hover:text-ink" aria-label={`Dismiss ${t.title}`} onClick={() => dismissToast(t.id)}>
               <X size={13} />
             </button>
           </div>

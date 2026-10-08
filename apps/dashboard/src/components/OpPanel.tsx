@@ -3,13 +3,16 @@ import { CircleHelp, Play, SquareSplitHorizontal, SquareSplitVertical, X } from 
 import type { ReactNode } from 'react'
 import { getEngineOp, OPS_BY_ID } from '../catalog/ops'
 import type { RunStatus } from '../catalog/types'
+import { walkLeaves } from '../layout/tree'
 import { cn } from '../lib/cn'
 import { isSuspicious } from '../lib/users'
 import { collectFindings, useWorkspace } from '../state/workspace'
 import { PREFLIGHT_ITEMS } from '../state/persist'
 import { EmptyPane } from './EmptyPane'
 import { OpExplainer } from './OpExplainer'
+import { ErrorCard, IdleHint, RunningState } from './PaneStates'
 import { OutputView } from './OutputView'
+import { ResultSummary } from './ResultSummary'
 import { UserTable } from './UserTable'
 
 export function OpPanel({ paneId }: { paneId: string }) {
@@ -17,6 +20,7 @@ export function OpPanel({ paneId }: { paneId: string }) {
   const pane = ws.panes[paneId]
   const focused = ws.focusedId === paneId
   const op = pane?.opId ? OPS_BY_ID[pane.opId] : null
+  const index = walkLeaves(ws.tree).indexOf(paneId)
 
   return (
     <section
@@ -24,8 +28,12 @@ export function OpPanel({ paneId }: { paneId: string }) {
       data-pane-id={paneId}
       data-op-id={pane?.opId ?? ''}
       data-active={focused ? 'true' : 'false'}
+      aria-current={focused ? 'true' : undefined}
+      aria-label={op ? op.title : 'Empty pane'}
+      aria-busy={pane?.status === 'running' ? true : undefined}
+      tabIndex={-1}
       onMouseDown={() => ws.focusPane(paneId)}
-      className="pane-cq flex h-full min-h-0 flex-col bg-panel"
+      className="pane-cq flex h-full min-h-0 flex-col bg-panel outline-none"
     >
       <header
         draggable={Boolean(op)}
@@ -34,15 +42,26 @@ export function OpPanel({ paneId }: { paneId: string }) {
           e.dataTransfer.setData('text/plain', `pane:${paneId}`)
           e.dataTransfer.effectAllowed = 'move'
         }}
-        className="flex h-12 shrink-0 items-center gap-2 border-b border-line px-3"
+        className="flex h-12 shrink-0 items-center gap-1.5 border-b border-line px-2.5"
       >
+        {index >= 0 && index < 4 && (
+          <kbd
+            className="shrink-0 rounded-md border border-line-strong bg-sidebar px-1.5 py-0.5 font-mono text-[12px] text-mute"
+            title={`Press ${index + 1} to focus this pane`}
+          >
+            {index + 1}
+          </kbd>
+        )}
         <StatusDot status={pane?.status ?? 'idle'} />
-        <span className="min-w-0 flex-1 truncate text-[15px] font-medium tracking-tight">
+        <span className="min-w-0 flex-1 truncate text-[15px] font-medium tracking-tight" title={op ? op.title : 'Empty pane'}>
           {op ? op.title : 'Empty pane'}
         </span>
-        {op && (
-          <span className="hidden text-[12px] capitalize text-faint sm:inline">
-            {pane.status === 'idle' ? '' : pane.status}
+        {focused && (
+          <span
+            data-testid="focus-badge"
+            className="focus-badge shrink-0 rounded-full px-2 py-0.5 text-[11.5px] font-semibold"
+          >
+            Next op opens here
           </span>
         )}
         <Icon
@@ -89,7 +108,10 @@ export function OpPanel({ paneId }: { paneId: string }) {
               <CircleHelp size={14} />
               How to
             </button>
-            <span className="op-blurb hide-narrow min-w-0 flex-1 line-clamp-2 text-[13.5px] leading-5 text-mute">
+            <span
+              className="op-blurb hide-narrow min-w-0 flex-1 line-clamp-2 text-[13.5px] leading-5 text-mute"
+              title={op.description}
+            >
               {op.description}
             </span>
             {op.risk === 'mutate' && !ws.demoMode && (
@@ -181,22 +203,13 @@ function PaneBody({ paneId }: { paneId: string }) {
   if (op.view === 'users') {
     return (
       <>
-        <UserTable
-          paneId={paneId}
-          highlight={
-            op.id === 'audit-uid-zero' || op.id === 'audit-duplicate-uids'
-              ? (u) => u.uid === 0 && u.name !== 'root'
-              : op.id === 'flag-suspicious-users'
-                ? isSuspicious
-                : op.id === 'disable-guest-account'
-                  ? (u) => u.name.toLowerCase() === 'guest'
-                  : op.id === 'check-empty-passwords'
-                    ? (u) => u.emptyPassword
-                    : undefined
-          }
-        />
-        {pane.output && <OutputView output={pane.output} />}
-        {pane.error && <p className="p-4 text-[15px] text-crit">{pane.error}</p>}
+        {pane.status === 'running' && (
+          <RunningState compact startedAt={pane.startedAt} onCancel={() => ws.cancelRun(paneId)} />
+        )}
+        {pane.error && <ErrorCard message={pane.error} />}
+        {pane.output && <div className="p-3 pb-0"><ResultSummary output={pane.output} /></div>}
+        <UserTable paneId={paneId} highlight={userHighlight(op.id)} />
+        {pane.output && <OutputView output={pane.output} paneId={paneId} showSummary={false} />}
       </>
     )
   }
@@ -224,7 +237,11 @@ function PaneBody({ paneId }: { paneId: string }) {
             </tbody>
           </table>
         </div>
-        {pane.output && <OutputView output={pane.output} />}
+        {pane.status === 'running' && (
+          <RunningState compact startedAt={pane.startedAt} onCancel={() => ws.cancelRun(paneId)} />
+        )}
+        {pane.error && <ErrorCard message={pane.error} />}
+        {pane.output && <OutputView output={pane.output} paneId={paneId} />}
       </>
     )
   }
@@ -238,7 +255,11 @@ function PaneBody({ paneId }: { paneId: string }) {
           onChange={(e) => ws.setNotes(e.target.value)}
           className="min-h-[200px] flex-1 resize-none rounded-xl border border-line bg-elev p-4 font-mono text-[14px] leading-7 text-ink outline-none focus:border-accent"
         />
-        {pane.output && <OutputView output={pane.output} />}
+        {pane.status === 'running' && (
+          <RunningState compact startedAt={pane.startedAt} onCancel={() => ws.cancelRun(paneId)} />
+        )}
+        {pane.error && <ErrorCard message={pane.error} />}
+        {pane.output && <OutputView output={pane.output} paneId={paneId} />}
       </div>
     )
   }
@@ -322,7 +343,11 @@ function PaneBody({ paneId }: { paneId: string }) {
             </li>
           ))}
         </ul>
-        {pane.output && <OutputView output={pane.output} />}
+        {pane.status === 'running' && (
+          <RunningState compact startedAt={pane.startedAt} onCancel={() => ws.cancelRun(paneId)} />
+        )}
+        {pane.error && <ErrorCard message={pane.error} />}
+        {pane.output && <OutputView output={pane.output} paneId={paneId} />}
       </div>
     )
   }
@@ -350,8 +375,12 @@ function PaneBody({ paneId }: { paneId: string }) {
             Download CSV
           </button>
         </div>
-        {pane.output && <OutputView output={pane.output} />}
-        {!pane.output && <IdleHint status={pane.status} demo={ws.demoMode} />}
+        {pane.status === 'running' && (
+          <RunningState startedAt={pane.startedAt} onCancel={() => ws.cancelRun(paneId)} />
+        )}
+        {pane.error && <ErrorCard message={pane.error} />}
+        {pane.output && <OutputView output={pane.output} paneId={paneId} />}
+        {!pane.output && pane.status !== 'running' && !pane.error && <IdleHint demo={ws.demoMode} />}
       </div>
     )
   }
@@ -367,27 +396,45 @@ function PaneBody({ paneId }: { paneId: string }) {
             className="flex-1 rounded-lg border border-line-strong bg-elev px-2.5 py-1.5 font-mono text-[13px]"
           />
         </label>
-        {pane.output ? <OutputView output={pane.output} /> : <IdleHint status={pane.status} demo={ws.demoMode} />}
+        {pane.status === 'running' ? (
+          <RunningState startedAt={pane.startedAt} onCancel={() => ws.cancelRun(paneId)} />
+        ) : pane.error && !pane.output ? (
+          <ErrorCard message={pane.error} />
+        ) : pane.output ? (
+          <>
+            {pane.error && <ErrorCard message={pane.error} />}
+            <OutputView output={pane.output} paneId={paneId} />
+          </>
+        ) : (
+          <IdleHint demo={ws.demoMode} />
+        )}
       </div>
     )
   }
 
-  if (pane.output) return <OutputView output={pane.output} />
-  if (pane.error) return <p className="p-5 text-[15px] text-crit">{pane.error}</p>
-  return <IdleHint status={pane.status} demo={ws.demoMode} />
+  if (pane.status === 'running') {
+    return <RunningState startedAt={pane.startedAt} onCancel={() => ws.cancelRun(paneId)} />
+  }
+  if (pane.error && !pane.output) return <ErrorCard message={pane.error} />
+  if (pane.output) {
+    return (
+      <>
+        {pane.error && <ErrorCard message={pane.error} />}
+        <OutputView output={pane.output} paneId={paneId} />
+      </>
+    )
+  }
+  return <IdleHint demo={ws.demoMode} />
 }
 
-function IdleHint({ status, demo }: { status: RunStatus; demo: boolean }) {
-  if (status === 'running') {
-    return <p className="p-6 text-[15px] text-mute">Running…</p>
+function userHighlight(opId: string) {
+  if (opId === 'audit-uid-zero' || opId === 'audit-duplicate-uids') {
+    return (user: { uid?: number; name: string }) => user.uid === 0 && user.name !== 'root'
   }
-  return (
-    <div className="flex h-full min-h-[10rem] items-center justify-center p-8 text-center">
-      <p className="max-w-sm text-[15px] leading-7 text-mute">
-        Press the button above to {demo ? 'run this check on practice data.' : 'run this check on this computer.'}
-      </p>
-    </div>
-  )
+  if (opId === 'flag-suspicious-users') return isSuspicious
+  if (opId === 'disable-guest-account') return (user: { name: string }) => user.name.toLowerCase() === 'guest'
+  if (opId === 'check-empty-passwords') return (user: { emptyPassword: boolean }) => user.emptyPassword
+  return undefined
 }
 
 function StatusDot({ status }: { status: RunStatus }) {
@@ -417,6 +464,7 @@ function Icon({
     <button
       type="button"
       title={title}
+      aria-label={title}
       data-testid={testId}
       onClick={(e) => {
         e.stopPropagation()

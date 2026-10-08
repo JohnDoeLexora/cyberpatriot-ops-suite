@@ -22,6 +22,8 @@ export type PaneState = {
   status: RunStatus
   output: OpResult | null
   error: string | null
+  /** Set while status is running so the pane can show elapsed time. */
+  startedAt?: number | null
   selectedUserIds: string[]
   params: Record<string, string>
 }
@@ -93,6 +95,7 @@ export function emptyPane(id = uid('pane')): PaneState {
     status: 'idle',
     output: null,
     error: null,
+    startedAt: null,
     selectedUserIds: [],
     params: {},
   }
@@ -132,6 +135,7 @@ function migratePane(id: string, pane: Partial<PaneState>): PaneState {
     id,
     opId: migrateOpId(pane.opId ?? null),
     status: pane.status === 'running' ? 'idle' : (pane.status ?? 'idle'),
+    startedAt: null,
     params: pane.params ?? {},
     selectedUserIds: pane.selectedUserIds ?? [],
   }

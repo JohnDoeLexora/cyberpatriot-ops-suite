@@ -27,7 +27,7 @@ export function StatusBar() {
     : 0
 
   return (
-    <footer className="flex h-9 shrink-0 items-center gap-3 border-t border-line bg-sidebar px-5 text-[13px] text-mute">
+    <footer aria-label="Status" className="flex h-9 shrink-0 items-center gap-3 border-t border-line bg-sidebar px-5 text-[13px] text-mute">
       <span className="text-accent">{engineLabel}</span>
       <span className="text-faint">·</span>
       <span>

@@ -18,6 +18,7 @@ export function PlaylistPanel() {
       className="flex max-h-[48%] min-h-0 flex-col overflow-hidden border-b border-line bg-sidebar"
       data-testid="playlist-panel"
       data-playlist-id={pl.id}
+      aria-label="Round playlist"
     >
       <div className="flex items-center gap-2 px-4 pb-1 pt-3">
         <ListOrdered size={14} className="text-accent" />
@@ -144,6 +145,7 @@ export function PlaylistPanel() {
                 <button
                   type="button"
                   title="How-to"
+                  aria-label={`How to for ${op?.title ?? s.opId}`}
                   data-testid={`playlist-howto-${s.opId}`}
                   onClick={() => ws.openHowto(s.opId)}
                   className="mt-0.5 rounded-md p-1 text-faint hover:bg-hover hover:text-accent"

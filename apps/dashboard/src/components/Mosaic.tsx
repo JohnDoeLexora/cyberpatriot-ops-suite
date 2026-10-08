@@ -17,10 +17,11 @@ export function Mosaic() {
   const mode = mosaicMode(leaves.length, width)
 
   return (
-    <div
+    <main
       ref={hostRef}
       className="relative flex h-full min-h-0 flex-col bg-app px-3 pb-3 pt-2"
       data-testid="mosaic"
+      aria-label="Workspace"
       data-mosaic-mode={mode}
       data-mosaic-grid={isTwoByTwo(tree) ? '2x2' : 'off'}
     >
@@ -75,7 +76,7 @@ export function Mosaic() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   )
 }
 

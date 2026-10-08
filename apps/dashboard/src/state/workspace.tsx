@@ -61,6 +61,11 @@ export type ConfirmState = {
   confirmLabel: string
   danger?: boolean
   extraHome?: boolean
+  /**
+   * cp-13 dry-run preview. Rendered in the confirm dialog before Yes, apply.
+   * Leave this unset when there is nothing to preview.
+   */
+  preview?: ReactNode
   onConfirm: (opts: { removeHome: boolean }) => void
   onCancel?: () => void
 }
@@ -95,6 +100,8 @@ type WorkspaceApi = PersistedWorkspace & {
   setHowtoQuery: (q: string) => void
   searchRef: RefObject<HTMLInputElement | null>
   focusSearch: () => void
+  shortcutsOpen: boolean
+  setShortcutsOpen: (open: boolean) => void
   toast: (t: Omit<Toast, 'id'>) => void
   journal: JournalEntry[]
   log: (kind: JournalEntry['kind'], text: string) => void
@@ -122,7 +129,11 @@ type WorkspaceApi = PersistedWorkspace & {
   closePane: (paneId: string) => void
   dropOnPane: (targetPaneId: string, edge: DropEdge, payload: DragPayload) => void
   setRatio: (splitId: string, ratio: number) => void
-  runPane: (paneId: string, opts?: { confirm?: boolean; opId?: string }) => Promise<RunOutcome>
+  runPane: (
+    paneId: string,
+    opts?: { confirm?: boolean; opId?: string; params?: Record<string, unknown> },
+  ) => Promise<RunOutcome>
+  cancelRun: (paneId: string) => void
   resetDemo: () => void
   resetLayout: () => void
   mutateUser: (userId: string, patch: Partial<UiUser>, label: string) => void
@@ -158,6 +169,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [howtoQuery, setHowtoQuery] = useState('')
   const [playlistBusy, setPlaylistBusy] = useState(false)
   const [allowlistOpen, setAllowlistOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [allowlistUsers, setAllowlistUsersState] = useState(() =>
     typeof window === 'undefined' ? '' : loadAllowlist('users'),
   )
@@ -176,8 +188,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   allowlistAdminsRef.current = allowlistAdmins
   const runPaneRef = useRef<(
     paneId: string,
-    opts?: { confirm?: boolean; opId?: string },
+    opts?: { confirm?: boolean; opId?: string; params?: Record<string, unknown> },
   ) => Promise<RunOutcome>>(async () => 'empty')
+  const runSerial = useRef<Record<string, number>>({})
 
   useEffect(() => {
     const t = window.setTimeout(() => saveWorkspace(state), 120)
@@ -268,6 +281,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
               status: 'idle',
               output: same ? s.panes[paneId]?.output ?? null : null,
               error: null,
+              startedAt: null,
               selectedUserIds: same ? (s.panes[paneId]?.selectedUserIds ?? []) : [],
               params: same ? (s.panes[paneId]?.params ?? {}) : {},
             },
@@ -410,8 +424,34 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const cancelRun = useCallback(
+    (paneId: string) => {
+      runSerial.current[paneId] = (runSerial.current[paneId] ?? 0) + 1
+      setState((s) => {
+        const pane = s.panes[paneId]
+        if (!pane || pane.status !== 'running') return s
+        return {
+          ...s,
+          panes: {
+            ...s.panes,
+            [paneId]: { ...pane, status: 'idle', startedAt: null },
+          },
+        }
+      })
+      toast({
+        tone: 'info',
+        title: 'Stopped waiting',
+        detail: 'This pane is idle. A script already sent to this computer may still finish.',
+      })
+    },
+    [toast],
+  )
+
   const runPane = useCallback(
-    async (paneId: string, opts?: { confirm?: boolean; opId?: string }): Promise<RunOutcome> => {
+    async (
+      paneId: string,
+      opts?: { confirm?: boolean; opId?: string; params?: Record<string, unknown> },
+    ): Promise<RunOutcome> => {
       const snapshot = stateRef.current
       const pane = snapshot.panes[paneId]
       const opId = opts?.opId ?? pane?.opId
@@ -454,22 +494,26 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             confirmLabel: 'Yes, apply',
             danger: true,
             onConfirm: () => {
-              void runPaneRef.current(paneId, { confirm: true, opId }).then(resolve)
+              void runPaneRef.current(paneId, { confirm: true, opId, params: opts?.params }).then(resolve)
             },
             onCancel: () => resolve('cancelled'),
           })
         })
       }
 
+      const serial = (runSerial.current[paneId] ?? 0) + 1
+      runSerial.current[paneId] = serial
+
       setState((s) => ({
         ...s,
         panes: {
           ...s.panes,
-          [paneId]: { ...s.panes[paneId], opId, status: 'running', error: null },
+          [paneId]: { ...s.panes[paneId], opId, status: 'running', error: null, startedAt: Date.now() },
         },
       }))
 
       const params: Record<string, unknown> = pane.opId === opId ? { ...pane.params } : {}
+      if (opts?.params) Object.assign(params, opts.params)
       if (params.dryRun === 'true') params.dryRun = true
       if (opId === 'find-media-files' && snapshot.mediaExtensions) {
         params.extensions = snapshot.mediaExtensions
@@ -491,6 +535,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           params,
           confirm: opts?.confirm === true,
         })
+        if (runSerial.current[paneId] !== serial) return 'cancelled'
         setEngineSource(source)
         const output = adaptRunResult(result)
         const replaceUsers = opId === 'list-users'
@@ -546,6 +591,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                 status: result.ok ? 'done' : 'error',
                 output,
                 error: result.ok ? null : result.summary,
+                startedAt: null,
               },
             },
             journal: [
@@ -572,12 +618,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         toast({ tone: 'crit', title: 'Run failed', detail: result.summary })
         return 'error'
       } catch (err) {
+        if (runSerial.current[paneId] !== serial) return 'cancelled'
         const message = err instanceof Error ? err.message : 'Run failed'
         setState((s) => ({
           ...s,
           panes: {
             ...s.panes,
-            [paneId]: { ...s.panes[paneId], opId, status: 'error', error: message },
+            [paneId]: { ...s.panes[paneId], opId, status: 'error', error: message, startedAt: null },
           },
         }))
         toast({ tone: 'crit', title: 'Run failed', detail: message })
@@ -738,7 +785,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       panes: Object.fromEntries(
         Object.entries(keepPanes).map(([id, p]) => [
           id,
-          { ...p, status: 'idle' as const, output: null, error: null, selectedUserIds: [] },
+          { ...p, status: 'idle' as const, output: null, error: null, startedAt: null, selectedUserIds: [] },
         ]),
       ),
       focusedId: stateRef.current.focusedId,
@@ -854,6 +901,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setHowtoQuery,
       searchRef,
       focusSearch,
+      shortcutsOpen,
+      setShortcutsOpen,
       toast,
       log,
       setDemoMode,
@@ -881,6 +930,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       dropOnPane,
       setRatio,
       runPane,
+      cancelRun,
       resetDemo,
       resetLayout,
       mutateUser,
@@ -909,6 +959,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       closeHowto,
       setHowtoOpId,
       focusSearch,
+      shortcutsOpen,
       toast,
       log,
       setDemoMode,
@@ -936,6 +987,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       dropOnPane,
       setRatio,
       runPane,
+      cancelRun,
       resetDemo,
       resetLayout,
       mutateUser,

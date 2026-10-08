@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { cn } from '../lib/cn'
 import { liveUsers, type UiUser } from '../lib/users'
 import { useWorkspace } from '../state/workspace'
+import { fixCopy, RowActions, type RowFix } from './RowActions'
 
 export function UserTable({ paneId, highlight }: { paneId: string; highlight?: (u: UiUser) => boolean }) {
   const ws = useWorkspace()
@@ -47,7 +48,7 @@ export function UserTable({ paneId, highlight }: { paneId: string; highlight?: (
           Turn off selected ({selected.size})
         </button>
       </div>
-      <div className="overflow-auto">
+      <div className="overflow-x-hidden overflow-y-auto">
         <table className="w-full text-left text-[14px]" data-testid="user-table">
           <thead className="sticky top-0 z-10 bg-panel text-[12.5px] font-medium text-faint">
             <tr>
@@ -82,6 +83,7 @@ export function UserTable({ paneId, highlight }: { paneId: string; highlight?: (
                   <td className="px-3 py-2.5">
                     <input
                       type="checkbox"
+                      aria-label={`Select ${u.name}`}
                       checked={selected.has(u.id)}
                       disabled={u.name === 'root'}
                       onChange={() => ws.toggleUserSelected(paneId, u.id)}
@@ -119,8 +121,8 @@ export function UserTable({ paneId, highlight }: { paneId: string; highlight?: (
                   <td className="hide-narrow px-3 py-2.5 font-mono text-[13px] text-mute">{u.shell ?? '—'}</td>
                   <td className="hide-narrow px-3 py-2.5 text-mute">{formatLogin(u.lastLogin)}</td>
                   <td className="hide-narrow px-3 py-2.5 font-mono text-[13px] text-mute">{u.home ?? '—'}</td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex flex-nowrap justify-end gap-0.5 text-ink">
+                  <td className="px-2 py-2">
+                    <div className="user-actions flex flex-wrap justify-end gap-0.5 text-ink">
                       <IconBtn
                         title="Flag"
                         testId={`action-flag-${u.name.toLowerCase()}`}
@@ -199,6 +201,13 @@ export function UserTable({ paneId, highlight }: { paneId: string; highlight?: (
                       >
                         <Trash2 size={14} />
                       </IconBtn>
+                      <RowActions
+                        paneId={paneId}
+                        label={u.name}
+                        copyValue={u.name}
+                        howtoOpId={u.name.toLowerCase() === 'guest' ? 'disable-guest-account' : 'disable-user'}
+                        fix={userFix(u, ws.demoMode)}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -229,6 +238,23 @@ function StatusChip({ status }: { status: UiUser['status'] }) {
   return <span className={cn('text-[13.5px]', map[status])}>{label[status]}</span>
 }
 
+function userFix(user: UiUser, demo: boolean): RowFix | undefined {
+  if (user.name === 'root') return undefined
+  if (user.name.toLowerCase() === 'guest') {
+    return {
+      opId: 'disable-guest-account',
+      title: 'Turn off Guest?',
+      body: fixCopy(demo, 'turning off the Guest account'),
+    }
+  }
+  return {
+    opId: 'disable-user',
+    params: { username: user.name },
+    title: `Turn off ${user.name}?`,
+    body: fixCopy(demo, `turning off ${user.name}`),
+  }
+}
+
 function IconBtn({
   children,
   onClick,
@@ -246,10 +272,11 @@ function IconBtn({
     <button
       type="button"
       title={title}
+      aria-label={title}
       data-testid={testId}
       onClick={onClick}
       className={cn(
-        'rounded-lg p-1.5 hover:bg-hover',
+        'inline-flex h-8 w-8 items-center justify-center rounded-lg hover:bg-hover',
         danger ? 'text-crit hover:bg-crit-dim' : 'text-mute hover:text-ink',
       )}
     >

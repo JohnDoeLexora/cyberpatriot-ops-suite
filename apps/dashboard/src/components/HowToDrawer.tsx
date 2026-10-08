@@ -1,19 +1,14 @@
 import { CircleHelp, Search, X } from 'lucide-react'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo } from 'react'
 import { GUIDES, getGuide, searchHowto, type HowToGuide } from '@cyberpatriot/ops-docs'
 import { OpExplainer } from './OpExplainer'
 import { cn } from '../lib/cn'
 import { useWorkspace } from '../state/workspace'
+import { useFocusTrap } from './focus-trap'
 
 export function HowToDrawer() {
   const ws = useWorkspace()
-  const searchRef = useRef<HTMLInputElement | null>(null)
-
-  useEffect(() => {
-    if (!ws.howtoOpen) return
-    const t = window.setTimeout(() => searchRef.current?.focus(), 0)
-    return () => window.clearTimeout(t)
-  }, [ws.howtoOpen])
+  const trapRef = useFocusTrap(ws.howtoOpen)
 
   const hits = useMemo(() => searchHowto(ws.howtoQuery, GUIDES), [ws.howtoQuery])
   const selected =
@@ -40,8 +35,10 @@ export function HowToDrawer() {
         onClick={ws.closeHowto}
       />
       <aside
+        ref={trapRef}
         role="dialog"
-        aria-label="How-to guides"
+        aria-modal="true"
+        aria-labelledby="howto-title"
         className="relative flex h-full w-full max-w-3xl flex-col border-l border-line bg-panel shadow-[0_16px_48px_rgba(28,27,25,0.12)]"
       >
         <header className="flex shrink-0 items-center gap-3 border-b border-line px-5 py-4">
@@ -49,7 +46,7 @@ export function HowToDrawer() {
             <CircleHelp size={18} />
           </span>
           <div className="min-w-0 flex-1 leading-tight">
-            <div className="font-display text-[18px] font-semibold tracking-tight text-ink">How-to guides</div>
+            <h2 id="howto-title" className="font-display text-[18px] font-semibold tracking-tight text-ink">How-to guides</h2>
             <div className="mt-0.5 text-[13px] text-faint">
               {GUIDES.length} explainers · authorized image only
             </div>
@@ -58,6 +55,7 @@ export function HowToDrawer() {
             type="button"
             data-testid="howto-close"
             title="Close"
+            aria-label="Close how-to"
             onClick={ws.closeHowto}
             className="rounded-lg p-1.5 text-mute hover:bg-hover hover:text-ink"
           >
@@ -68,8 +66,9 @@ export function HowToDrawer() {
         <label className="mx-5 mt-4 flex shrink-0 items-center gap-2 rounded-xl border border-line-strong bg-elev px-3 py-2.5 shadow-sm focus-within:border-accent">
           <Search size={16} className="text-faint" />
           <input
-            ref={searchRef}
             data-testid="howto-search"
+            data-dialog-initial
+            aria-label="Search how-to guides"
             value={ws.howtoQuery}
             onChange={(e) => ws.setHowtoQuery(e.target.value)}
             placeholder="Search titles and body…"

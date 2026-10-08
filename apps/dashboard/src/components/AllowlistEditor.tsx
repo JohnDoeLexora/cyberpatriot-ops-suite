@@ -8,11 +8,13 @@ import {
   readTextFile,
 } from '../lib/allowlist'
 import { useWorkspace } from '../state/workspace'
+import { useFocusTrap } from './focus-trap'
 
 export function AllowlistEditor() {
   const ws = useWorkspace()
   const usersFile = useRef<HTMLInputElement | null>(null)
   const adminsFile = useRef<HTMLInputElement | null>(null)
+  const trapRef = useFocusTrap(ws.allowlistOpen)
   if (!ws.allowlistOpen) return null
 
   const userCount = parseNameList(ws.allowlistUsers).length
@@ -21,14 +23,16 @@ export function AllowlistEditor() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25" onClick={() => ws.setAllowlistOpen(false)}>
       <div
+        ref={trapRef}
         className="flex max-h-[min(720px,calc(100vh-2rem))] w-[min(720px,calc(100vw-2rem))] flex-col rounded-2xl border border-line-strong bg-panel shadow-[0_18px_50px_rgba(43,38,31,0.16)]"
         onClick={(e) => e.stopPropagation()}
         data-testid="allowlist-editor"
         role="dialog"
-        aria-label="Allowlist editor"
+        aria-modal="true"
+        aria-labelledby="allowlist-title"
       >
         <header className="shrink-0 border-b border-line px-6 py-4">
-          <div className="font-display text-[22px] font-semibold tracking-tight">Allowlists</div>
+          <h2 id="allowlist-title" className="font-display text-[22px] font-semibold tracking-tight">Allowlists</h2>
           <p className="coach-tip mt-1 text-[14px] leading-6 text-mute">
             Paste the README user and admin lists. Saved in this browser. Download{' '}
             <code className="font-mono text-[13px]">allowed-users.txt</code> /{' '}
@@ -104,6 +108,8 @@ function ListEditor({
       </div>
       <textarea
         data-testid={testId}
+        data-dialog-initial={kind === 'users' ? '' : undefined}
+        aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         spellCheck={false}
