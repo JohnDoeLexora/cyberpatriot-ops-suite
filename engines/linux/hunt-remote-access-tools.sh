@@ -3,11 +3,14 @@ set -Eeuo pipefail
 # shellcheck source=_lib.sh
 . "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 HERE="$(cd "$(dirname "$0")" && pwd)"
+ZERO="No remote-access tools under /opt, /usr/local, /usr/bin, /home, /tmp"
+NOUN="remote-access tools"
+SCOPE="/opt, /usr/local, /usr/bin, /home, /tmp"
 if [[ -z "${CP_SKIP_BEND:-}" && -z "${CP_SCAN_ROOT:-}" && -x "$HERE/../bend/run.sh" ]]; then
-  "$HERE/../bend/run.sh" files-rats
-  exit 0
+  "$HERE/../bend/run.sh" files-rats | cp_annotate_scan "$ZERO" "$NOUN" "$SCOPE"
+  exit $?
 fi
-python3 - <<'PY'
+python3 - <<'PY' | cp_annotate_scan "$ZERO" "$NOUN" "$SCOPE"
 import json, os
 needles = ("teamviewer", "anydesk", "vnc", "rustdesk", "splashtop")
 hits = []

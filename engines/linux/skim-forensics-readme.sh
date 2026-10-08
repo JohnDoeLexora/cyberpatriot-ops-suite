@@ -5,7 +5,12 @@ set -Eeuo pipefail
 . "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 if [[ -z "${CP_SKIP_BEND:-}" && -z "${CP_SCAN_ROOT:-}" && -x "$HERE/../bend/run.sh" ]]; then
-  "$HERE/../bend/run.sh" files-readme && exit 0 || true
+  if "$HERE/../bend/run.sh" files-readme | cp_annotate_scan \
+    "No README or forensics files under /home, /root, /opt, /tmp, /usr/local/share" \
+    "README or forensics files" \
+    "/home, /root, /opt, /tmp, /usr/local/share"; then
+    exit 0
+  fi
 fi
 ROOT="$(cd "$HERE/../.." && pwd)"
 python3 - "$ROOT" <<'PY'
@@ -48,5 +53,24 @@ for p in files:
             break
     if len(hits) >= 40:
         break
-print(json.dumps({"ok": True, "extra": {"hits": hits, "ccsContacted": False}}))
+n = len(hits)
+if n == 0:
+    summary = "No README keyword hits under /home, /root, /opt, /tmp. CCS was not contacted."
+    tone = "empty"
+elif n == 1:
+    summary = "1 README keyword hit. CCS was not contacted."
+    tone = "info"
+else:
+    summary = f"{n} README keyword hits. CCS was not contacted."
+    tone = "info"
+print(json.dumps({
+    "ok": True,
+    "summary": summary,
+    "extra": {"hits": hits, "ccsContacted": False},
+    "report": {"tone": tone, "facts": [
+        {"label": "Checked", "value": "/home, /root, /opt, /tmp"},
+        {"label": "Found", "value": str(n)},
+        {"label": "CCS contacted", "value": "no"},
+    ]},
+}))
 PY

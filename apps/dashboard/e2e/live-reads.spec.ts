@@ -30,6 +30,7 @@ type LiveBody = {
     packages?: { name: string }[]
     checklist?: { title: string; detail: string }[]
     policy?: Record<string, string | number | boolean | null>
+    report?: { tone?: string; facts?: { label: string; value: string }[] }
     extra?: {
       script?: string
       ufw?: unknown
@@ -148,34 +149,24 @@ function extraLines(value: unknown): string {
   return value.filter((line): line is string => typeof line === 'string').join('\n')
 }
 
-function firewallText(body: LiveBody): { ufw: string; iptables: string } {
-  return {
-    ufw: extraLines(body.data?.extra?.ufw),
-    iptables: extraLines(body.data?.extra?.iptables),
-  }
-}
-
-/** Absent: the script's skip line. Present: ufw status and/or iptables rules from the same run. */
-function assertFirewallBody(body: LiveBody): 'absent' | 'present' {
+/** Absent: the locked skip line. Present: a real on/off headline. Unreadable: the tool failed. */
+function assertFirewallBody(body: LiveBody): 'absent' | 'present' | 'unreadable' {
   if (/Skipped: ufw is not installed/.test(body.summary)) {
     expect(body.ok).toBe(false)
     expect(body.summary).toMatch(/Skipped: ufw is not installed/)
     expect(body.summary).not.toContain('Firewall inactive')
     return 'absent'
   }
+  if (/could not be read|Permission denied|Operation not permitted/i.test(body.summary)) {
+    expect(body.ok).toBe(false)
+    expect(body.summary).not.toContain('Host firewall is off; demo rules')
+    return 'unreadable'
+  }
   expect(body.ok).toBe(true)
-  const { ufw, iptables } = firewallText(body)
-  const blob = `${ufw}\n${iptables}`
-  const status = /Status:\s*(active|inactive)/i.exec(ufw)
-  const rules = /^(?:-P |-A |-N |Chain )/m.test(iptables) || /\b(?:ALLOW|DENY|REJECT|LIMIT)\b/.test(ufw)
-  const toolError = /Permission denied|Operation not permitted|non-zero exit status/i.test(blob)
-  expect(
-    Boolean(status) || rules || toolError,
-    `expected Status active/inactive, firewall rules, or a tool error\n${blob.slice(0, 400)}`,
-  ).toBe(true)
-  if (status) expect(['active', 'inactive']).toContain(status[1].toLowerCase())
-  expect(blob).not.toContain('Host firewall is off; demo rules')
-  expect(blob).not.toContain('allow 23/tcp')
+  expect(body.summary).toMatch(/^Firewall is on|^Firewall is off/)
+  expect((body.data?.report?.facts ?? []).length).toBeGreaterThan(0)
+  expect(body.summary).not.toContain('Host firewall is off; demo rules')
+  expect(body.summary).not.toContain('allow 23/tcp')
   return 'present'
 }
 
@@ -200,7 +191,8 @@ function assertNtpBody(body: LiveBody): 'absent' | 'present' {
     return 'absent'
   }
   expect(body.ok).toBe(true)
-  expect(body.summary).toBe('Time sync status.')
+  expect(body.summary).toMatch(/^NTP /)
+  expect((body.data?.report?.facts ?? []).length).toBeGreaterThan(0)
   const timed = extraLines(body.data?.extra?.timedatectl)
   expect(timed).toMatch(/Time zone|Local time|Universal time|System clock|NTP service/)
   expect(body.summary).not.toContain('10.0.0.1')
@@ -249,16 +241,14 @@ function assertFirewallRulesBody(body: LiveBody): void {
     expect(body.summary).toMatch(/Skipped: neither ufw nor iptables is installed/)
     return
   }
+  if (/could not be read|Permission denied|Operation not permitted/i.test(body.summary)) {
+    expect(body.ok).toBe(false)
+    return
+  }
   expect(body.ok).toBe(true)
-  expect(body.summary).toBe('Firewall rules.')
-  const { ufw, iptables } = firewallText(body)
-  const blob = `${ufw}\n${iptables}`
-  const recognized =
-    /Status:\s*(active|inactive)/i.test(ufw) ||
-    /^(?:-P |-A |-N |Chain )/m.test(iptables) ||
-    /\b(?:ALLOW|DENY|REJECT|LIMIT)\b/.test(ufw) ||
-    /Permission denied|Operation not permitted|non-zero exit status/i.test(blob)
-  expect(recognized, `expected firewall rules or a tool error\n${blob.slice(0, 400)}`).toBe(true)
+  expect(body.summary).toMatch(/^Firewall is on|^Firewall is off/)
+  expect((body.data?.report?.facts ?? []).length).toBeGreaterThan(0)
+  expect(body.summary).not.toContain('allow 23/tcp')
 }
 
 function assertFirewallDryRun(body: LiveBody): void {
@@ -419,7 +409,8 @@ test('dashboard live reads show this computer, not practice fixtures', async ({ 
   const sshPath = '/etc/ssh/sshd_config'
   if (canRead(sshPath)) {
     expect(ssh.body.ok).toBe(true)
-    expect(ssh.body.summary).toBe('Parsed sshd_config.')
+    expect(ssh.body.summary).toMatch(/^SSH root login is /)
+    expect(ssh.body.summary).toMatch(/password auth is /)
     await expectSettled(ssh.pane, 'done')
   } else if (!fs.existsSync(sshPath)) {
     expect(ssh.body.ok).toBe(true)
@@ -433,7 +424,8 @@ test('dashboard live reads show this computer, not practice fixtures', async ({ 
   if (ssh.body.ok) {
     const permit = sshValue('PermitRootLogin')
     expect(ssh.body.data?.checklist?.find((item) => item.title === 'PermitRootLogin')?.detail).toBe(permit)
-    await expect(ssh.pane.getByTestId('result-headline')).toContainText(/checks/)
+    await expect(ssh.pane.getByTestId('result-headline')).toHaveText(ssh.body.summary)
+    await expect(ssh.pane.getByTestId('result-details')).toBeVisible()
     await expect(sshOutput).toContainText('PermitRootLogin')
     await expect(sshOutput).toContainText(permit)
     await expect(sshOutput).toContainText(ssh.body.summary)
@@ -452,17 +444,18 @@ test('dashboard live reads show this computer, not practice fixtures', async ({ 
 
   const files = await runRead(page, 'find-world-writable')
   expect(files.body.ok).toBe(true)
-  expect(files.body.summary).toMatch(/\d+ world-writable files \(capped\)\.|\d+ files\.|Check finished\./)
+  expect(files.body.summary).toMatch(/world-writable files/)
   expect(files.body.summary).not.toContain('demo image')
   await expectSettled(files.pane, 'done')
   const found = (files.body.data?.files ?? []).map((file) => file.path ?? '').filter(Boolean)
   const filesOutput = files.pane.getByTestId('op-output')
-  await expect(files.pane.getByTestId('result-headline')).toContainText(/file|Nothing found|finding/i)
+  await expect(files.pane.getByTestId('result-headline')).toContainText(/world-writable files/)
+  await expect(files.pane.getByTestId('result-details')).toBeVisible()
   if (found.length > 0) {
     expect(found[0].startsWith('/')).toBe(true)
     await expect(filesOutput).toContainText(found[0])
   } else {
-    await expect(filesOutput).toContainText(/world-writable|Check finished|Nothing found/)
+    await expect(filesOutput).toContainText(/No world-writable files under/)
   }
   if (!fs.existsSync('/tmp/suid_bash')) expect(found).not.toContain('/tmp/suid_bash')
   if (!fs.existsSync('/etc/cron.d/hack')) expect(found).not.toContain('/etc/cron.d/hack')
@@ -474,15 +467,16 @@ test('dashboard live reads cover ports, cron, policy, and real skips', async ({ 
 
   const fw = await runRead(page, 'audit-firewall')
   const firewallKind = assertFirewallBody(fw.body)
-  await expectSettled(fw.pane, firewallKind === 'absent' ? 'error' : 'done')
+  await expectSettled(fw.pane, firewallKind === 'present' ? 'done' : 'error')
   const firewallOutput = fw.pane.getByTestId('op-output')
   if (firewallKind === 'absent') {
     await expect(firewallOutput).toContainText('Skipped: ufw is not installed')
     await expect(firewallOutput).not.toContainText('Firewall inactive')
+  } else if (firewallKind === 'unreadable') {
+    await expect(firewallOutput).toContainText(/could not be read|Permission denied|Operation not permitted/)
   } else {
-    // The script stores Status: active/inactive and the rules in data.extra.
-    // The pane shows that run's summary (Check finished. until the script adds one).
-    await expect(firewallOutput).toContainText(fw.body.summary.trim().split('\n')[0])
+    await expect(fw.pane.getByTestId('result-headline')).toHaveText(fw.body.summary.trim().split('\n')[0])
+    await expect(fw.pane.getByTestId('result-details')).toBeVisible()
     await expect(firewallOutput).not.toContainText('Firewall inactive')
     await expect(firewallOutput).not.toContainText('Host firewall is off')
   }
@@ -544,10 +538,14 @@ test('dashboard live reads cover ports, cron, policy, and real skips', async ({ 
     await expect(policyOutput).toContainText('login.defs')
   } else {
     expect(policy.body.ok).toBe(true)
-    expect(policy.body.summary).toBe('Read login.defs (no hashes).')
+    expect(policy.body.summary).toContain('login.defs (no hashes)')
+    const minLen = loginPolicy().PASS_MIN_LEN
+    if (minLen) expect(policy.body.summary).toContain(minLen)
     expect(policy.body.data?.policy ?? {}).toEqual(loginPolicy())
     await expectSettled(policy.pane, 'done')
-    await expect(policyOutput).toContainText('Read login.defs (no hashes).')
+    await expect(policy.pane.getByTestId('result-headline')).toHaveText(policy.body.summary)
+    await expect(policy.pane.getByTestId('result-details')).toBeVisible()
+    await expect(policyOutput).toContainText('login.defs (no hashes)')
     for (const finding of policy.body.findings ?? []) {
       await expect(policyOutput).toContainText(finding.title)
     }
@@ -579,9 +577,57 @@ test('dashboard live reads cover ports, cron, policy, and real skips', async ({ 
     await expect(ntpOutput).toContainText('Skipped: timedatectl is not installed')
     await expect(ntpOutput).not.toContainText('10.0.0.1')
   } else {
-    await expect(ntpOutput).toContainText('Time sync status.')
-    const headline = (await ntp.pane.getByTestId('result-headline').innerText()).trim()
-    expect(headline === 'Nothing found' || headline.includes('Time sync')).toBe(true)
+    await expect(ntp.pane.getByTestId('result-headline')).toHaveText(ntp.body.summary)
+    await expect(ntp.pane.getByTestId('result-details')).toBeVisible()
+    await expect(ntpOutput).toContainText(ntp.body.summary)
+  }
+})
+
+const LIVE_STATUS: Array<[string, RegExp]> = [
+  ['audit-sysctl', /^(Sysctl:|Skipped: sysctl)/],
+  ['audit-ipv6-privacy', /^IPv6 /],
+  ['audit-time-timezone', /^Timezone is /],
+  ['audit-mac-enforcement', /SELinux|AppArmor/],
+  ['audit-idle-lock', /idle lock/],
+  ['audit-auto-updates', /Unattended upgrades/],
+  ['audit-pam', /^(PAM |Skipped:)/],
+  ['check-auditd', /^(auditd is |Skipped:)/],
+  ['audit-logging', /auditd is|rsyslog is|Skipped:/],
+  ['audit-startup-items', /units enabled|rc\.local|Startup items/],
+  ['audit-at-jobs', /at job|Skipped:/],
+  ['audit-log-persistence', /^Journald storage/],
+  ['audit-mail-services', /^(Mail |No postfix)/],
+  ['audit-database-bind', /^(Database |No MySQL|No remote database)/],
+  ['audit-php-hardening', /^PHP |^No PHP /],
+  ['audit-browser-baseline', /Firefox /],
+  ['audit-browser-policy', /^(Browser |No browser)/],
+  ['audit-snap-flatpak', /snap or flatpak/],
+  ['audit-anonymous-ftp', /^(Anonymous FTP|No vsftpd)/],
+  ['audit-snmp', /^SNMP |^No SNMP /],
+  ['audit-web-server', /^(Web server|No Apache)/],
+  ['check-sensitive-file-perms', /sensitive files/],
+  ['check-password-aging', /password aging|Skipped:/],
+]
+
+test('API live status audits report what they checked', async ({ request }) => {
+  test.setTimeout(180_000)
+  for (const [id, pattern] of LIVE_STATUS) {
+    const res = await request.post(`/ops/${id}/run`, {
+      data: { mode: 'live', confirm: false },
+      timeout: 40_000,
+    })
+    expect(res.ok(), id).toBeTruthy()
+    const body = (await res.json()) as LiveBody
+    expect(body.mode, id).toBe('live')
+    expect(['linux', 'bend'], id).toContain(body.engine)
+    expect(body.summary, id).toMatch(pattern)
+    expect(String(body.data?.extra?.script ?? ''), id).toContain(`engines/linux/${id}.sh`)
+    const blob = JSON.stringify(body)
+    expect(blob, id).not.toMatch(/\$[156]\$[A-Za-z0-9./]{8,}/)
+    expect(blob, id).not.toMatch(/psk\s*=\s*\S+/i)
+    if (body.ok && !body.summary.startsWith('Skipped:')) {
+      expect((body.data?.report?.facts ?? []).length, id).toBeGreaterThan(0)
+    }
   }
 })
 

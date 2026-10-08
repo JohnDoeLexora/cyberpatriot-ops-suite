@@ -21,5 +21,27 @@ for line in run(["flatpak","list","--columns=application"]).splitlines():
     if name:
         apps.append({"kind":"flatpak","name":name,"suspicious":bool(flag.search(name))})
 findings = [{"id":f"{a['kind']}:{a['name']}","severity":"medium","title":f"{a['kind']} {a['name']}"} for a in apps if a["suspicious"]]
-print(json.dumps({"ok": True, "findings": findings, "extra": {"apps": apps}}))
+n, bad = len(apps), len(findings)
+if n == 0:
+    summary = "No snap or flatpak apps found"
+    tone = "empty"
+elif bad == 1:
+    summary = "1 suspicious snap or flatpak app"
+    tone = "watch"
+elif bad:
+    summary = f"{bad} suspicious snap or flatpak apps"
+    tone = "watch"
+else:
+    summary = f"{n} snap or flatpak apps; none look suspicious"
+    tone = "clear"
+print(json.dumps({
+    "ok": True,
+    "summary": summary,
+    "findings": findings,
+    "extra": {"apps": apps},
+    "report": {"tone": tone, "facts": [
+        {"label": "Apps", "value": str(n)},
+        {"label": "Suspicious", "value": str(bad)},
+    ]},
+}))
 PY

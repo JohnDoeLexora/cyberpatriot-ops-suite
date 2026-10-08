@@ -31,5 +31,24 @@ for f in files:
     m = pat.search(text)
     if m:
         hits.append({"path": f, "note": m.group(0)[:160]})
-print(json.dumps({"ok": True, "files": hits, "note": "Read-only. rc files were not executed."}, indent=2))
+n = len(hits)
+if n == 0:
+    summary = "No shell backdoors in rc or profile files"
+    tone = "empty"
+elif n == 1:
+    summary = "1 shell backdoor in rc or profile files."
+    tone = "watch"
+else:
+    summary = f"{n} shell backdoors in rc or profile files."
+    tone = "watch"
+print(json.dumps({
+    "ok": True,
+    "summary": summary,
+    "files": hits,
+    "note": "Read-only. rc files were not executed.",
+    "report": {"tone": tone, "facts": [
+        {"label": "Checked", "value": "/etc/profile, /etc/bash.bashrc, /root, /home"},
+        {"label": "Found", "value": str(n)},
+    ]},
+}, indent=2))
 PY

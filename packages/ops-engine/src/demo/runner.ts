@@ -116,6 +116,29 @@ function pack(
   };
 }
 
+function statusCard(
+  tone: "clear" | "watch" | "urgent" | "info" | "empty",
+  facts: ReadonlyArray<readonly [string, string]>,
+  table?: {
+    title: string;
+    columns: Array<{ key: string; label: string; mono?: boolean }>;
+    rows: Array<Record<string, string>>;
+  },
+) {
+  return {
+    tone,
+    facts: facts.map(([label, value]) => ({ label, value })),
+    ...(table ? { table } : {}),
+  };
+}
+
+const DEMO_FIREWALL_RULES = [
+  { to: "22/tcp", action: "ALLOW IN", from: "Anywhere", family: "v4" },
+  { to: "22/tcp", action: "ALLOW IN", from: "Anywhere (v6)", family: "v6" },
+  { to: "80/tcp", action: "ALLOW IN", from: "Anywhere", family: "v4" },
+  { to: "80/tcp", action: "ALLOW IN", from: "Anywhere (v6)", family: "v6" },
+];
+
 function mutateNote(ctx: EngineContext, action: string): string {
   const dry = asBoolean(ctx.params.dryRun, false);
   const target = asString(ctx.params.username) ?? asString(ctx.params.service) ?? asString(ctx.params.package);
@@ -411,11 +434,18 @@ export function runDemo(ctx: EngineContext): RunResult {
         users: users.filter((u) => u.name.toLowerCase() === "guest").map((u) => ({ ...u, enabled: false, locked: true })),
       });
     case "audit-password-policy":
-    case "check-password-aging":
       return pack(
         ctx,
-        "Password policy is weaker than a typical CP baseline.",
-        { policy: demoPolicy, users: users.filter((u) => u.interactive) },
+        "Password policy from login.defs (no hashes): minimum length 8, maximum age 99999 days.",
+        {
+          policy: demoPolicy,
+          report: statusCard("urgent", [
+            ["Minimum length", "8"],
+            ["Maximum age", "99999 days"],
+            ["Minimum age", "0 days"],
+            ["Warning", "7 days"],
+          ]),
+        },
         [
           {
             id: "minlen",
@@ -433,12 +463,39 @@ export function runDemo(ctx: EngineContext): RunResult {
           },
         ],
       );
+    case "check-password-aging":
+      return pack(
+        ctx,
+        "3 unlocked accounts have password aging disabled (hashes omitted).",
+        {
+          users: users.filter((u) => u.passwordNeverExpires && !u.locked),
+          extra: { neverExpires: ["bob", "games", "Guest"] },
+          report: statusCard("watch", [
+            ["Unlocked without aging", "3"],
+            ["Accounts", "bob, games, Guest"],
+          ]),
+        },
+        [
+          {
+            id: "aging",
+            severity: "medium",
+            title: "Password aging disabled for bob, games, Guest",
+            detail: "Hashes omitted.",
+            remediationOpId: "enforce-password-policy",
+          },
+        ],
+      );
     case "enforce-password-policy":
     case "enable-account-lockout":
       return pack(ctx, mutateNote(ctx, id.replace(/-/g, " ")), { policy: { ...demoPolicy, PASS_MIN_LEN: 14, PASS_MAX_DAYS: 90 } });
     case "audit-pam":
-      return pack(ctx, "PAM still allows nullok and has no faillock.", {
+      return pack(ctx, "PAM allows empty passwords in 2 files", {
         extra: { nullok: true, faillock: false, pwquality: false },
+        report: statusCard("urgent", [
+          ["Files", "2"],
+          ["nullok", "present"],
+          ["faillock", "missing"],
+        ]),
       }, [
         { id: "nullok", severity: "high", title: "pam_unix nullok is set", detail: "Empty passwords can authenticate.", remediationOpId: "enforce-password-policy" },
         { id: "faillock", severity: "medium", title: "No pam_faillock", detail: "Enable account lockout.", remediationOpId: "enable-account-lockout" },
@@ -452,6 +509,11 @@ export function runDemo(ctx: EngineContext): RunResult {
       return pack(ctx, "NOPASSWD sudoers plant and world-writable sudoers.d.", {
         files: demoFiles.filter((f) => f.path.includes("sudoers")),
         extra: { nopasswd: ["nologin_admin ALL=(ALL) NOPASSWD: ALL"] },
+        report: statusCard("urgent", [
+          ["Files", "2"],
+          ["NOPASSWD", "present"],
+          ["Unreadable", "none"],
+        ]),
       }, [
         { id: "nopasswd", severity: "critical", title: "NOPASSWD: ALL for nologin_admin", detail: "Unexpected sudoers rule.", resource: "nologin_admin", remediationOpId: "remove-user-from-admins" },
       ]);
@@ -532,13 +594,20 @@ export function runDemo(ctx: EngineContext): RunResult {
       );
     }
     case "ssh-hardening-audit":
-      return pack(ctx, "sshd_config is the stock insecure demo.", {
+      return pack(ctx, "SSH root login is enabled; password auth is on", {
         policy: {
           PermitRootLogin: String(demoPolicy.PermitRootLogin),
           PermitEmptyPasswords: String(demoPolicy.PermitEmptyPasswords),
           X11Forwarding: String(demoPolicy.X11Forwarding),
+          PasswordAuthentication: String(demoPolicy.PasswordAuthentication),
           Protocol: String(demoPolicy.Protocol),
         },
+        report: statusCard("urgent", [
+          ["PermitRootLogin", String(demoPolicy.PermitRootLogin)],
+          ["PasswordAuthentication", String(demoPolicy.PasswordAuthentication)],
+          ["PermitEmptyPasswords", String(demoPolicy.PermitEmptyPasswords)],
+          ["X11Forwarding", String(demoPolicy.X11Forwarding)],
+        ]),
       }, [
         { id: "rootlogin", severity: "high", title: "PermitRootLogin yes", detail: "Disable root SSH.", remediationOpId: "disable-root-ssh" },
         { id: "empty", severity: "critical", title: "PermitEmptyPasswords yes", detail: "Empty passwords over SSH.", remediationOpId: "harden-sshd" },
@@ -558,23 +627,51 @@ export function runDemo(ctx: EngineContext): RunResult {
         { id: "wu", severity: "high", title: "windowsupdate.microsoft.com pinned to 127.0.0.1", detail: "Likely blocking patches." },
       ]);
     case "check-ntp":
-      return pack(ctx, "Time sync is inactive; config points at 10.0.0.1.", {
-        extra: { timesyncd: "inactive", ntpServer: "10.0.0.1" },
-      }, [{ id: "ntp", severity: "medium", title: "timesyncd inactive", detail: "Enable chrony or systemd-timesyncd." }]);
+      return pack(ctx, "NTP synced via systemd-timesyncd", {
+        extra: { timesyncd: "active", ntpServer: "time.cloudflare.com", backend: "systemd-timesyncd" },
+        report: statusCard("clear", [
+          ["Synchronized", "yes"],
+          ["NTP service", "active"],
+          ["Backend", "systemd-timesyncd"],
+          ["Time zone", "UTC"],
+        ]),
+      });
     case "audit-firewall":
     case "list-firewall-rules":
-      return pack(ctx, "Host firewall is off; demo rules allow 23 and 445.", {
-        policy: { firewallEnabled: false, ufwStatus: "inactive" },
-        extra: { rules: ["allow 23/tcp", "allow 445/tcp", "allow any from 0.0.0.0/0"] },
-      }, [
-        { id: "fw", severity: "high", title: "Firewall inactive", detail: "Enable ufw / Windows Firewall.", remediationOpId: "enable-firewall" },
-      ]);
+      return pack(ctx, "Firewall is on: default deny incoming, allow outgoing, 4 rules", {
+        policy: { firewallEnabled: true, ufwStatus: "active", backend: "ufw", incoming: "deny", outgoing: "allow", routed: "disabled" },
+        extra: { backend: "ufw", ruleCount: DEMO_FIREWALL_RULES.length },
+        report: statusCard(
+          "clear",
+          [
+            ["Backend", "ufw"],
+            ["Status", "active"],
+            ["Incoming", "deny"],
+            ["Outgoing", "allow"],
+            ["Routed", "disabled"],
+          ],
+          {
+            title: "Rules",
+            columns: [
+              { key: "to", label: "To", mono: true },
+              { key: "action", label: "Action" },
+              { key: "from", label: "From", mono: true },
+              { key: "family", label: "Family" },
+            ],
+            rows: DEMO_FIREWALL_RULES,
+          },
+        ),
+      });
     case "enable-firewall":
     case "apply-default-deny-inbound":
       return pack(ctx, mutateNote(ctx, id.replace(/-/g, " ")), { policy: { firewallEnabled: true, ufwStatus: "active" } });
     case "find-world-writable":
-      return pack(ctx, "World-writable PATH, cron, and sudoers in the demo image.", {
+      return pack(ctx, "5 world-writable files under /home, /etc, /opt, /tmp, /var, /usr/local", {
         files: demoFiles.filter((f) => f.worldWritable),
+        report: statusCard("watch", [
+          ["Checked", "/home, /etc, /opt, /tmp, /var, /usr/local"],
+          ["Found", "5"],
+        ]),
       }, demoFiles.filter((f) => f.worldWritable).map((f) => ({
         id: `ww:${f.path}`,
         severity: f.path.includes("sudoers") || f.path.includes("cron") ? "critical" as const : "high" as const,
@@ -583,8 +680,12 @@ export function runDemo(ctx: EngineContext): RunResult {
         resource: f.path,
       })));
     case "find-suid-sgid":
-      return pack(ctx, "Unexpected SUID binaries under /tmp and /home.", {
+      return pack(ctx, "2 SUID/SGID files.", {
         files: demoFiles.filter((f) => f.suid || f.sgid),
+        report: statusCard("watch", [
+          ["Checked", "/"],
+          ["Found", "2"],
+        ]),
       }, demoFiles.filter((f) => f.suid && (f.path.startsWith("/tmp") || f.path.startsWith("/home"))).map((f) => ({
         id: `suid:${f.path}`,
         severity: "critical" as const,
@@ -594,7 +695,13 @@ export function runDemo(ctx: EngineContext): RunResult {
       })));
     case "find-media-files": {
       const media = demoFiles.filter((f) => /\.(mp3|mp4|wav|flac|ogg|avi|mkv|mov)$/i.test(f.path));
-      return pack(ctx, `${media.length} prohibited media files.`, { files: media }, media.map((f) => ({
+      return pack(ctx, `${media.length} prohibited media files.`, {
+        files: media,
+        report: statusCard(media.length ? "watch" : "empty", [
+          ["Checked", "/home, /tmp, /var/tmp, /opt, /usr/local/share"],
+          ["Found", String(media.length)],
+        ]),
+      }, media.map((f) => ({
         id: `media:${f.path}`,
         severity: "medium" as const,
         title: `Media file ${f.path}`,
@@ -603,9 +710,18 @@ export function runDemo(ctx: EngineContext): RunResult {
       })));
     }
     case "audit-home-permissions":
-    case "check-sensitive-file-perms":
       return pack(ctx, "Sensitive files and homes have unsafe modes.", {
         files: demoFiles.filter((f) => f.path.startsWith("/etc") || f.path.startsWith("/home") || f.path === "/root/.ssh/authorized_keys"),
+      }, [
+        { id: "shadow", severity: "critical", title: "/etc/shadow is 0644", detail: "Should be 000 or 640 root:shadow.", resource: "/etc/shadow" },
+      ]);
+    case "check-sensitive-file-perms":
+      return pack(ctx, "Checked 3 sensitive files; 2 are world-writable", {
+        files: demoFiles.filter((f) => ["/etc/shadow", "/etc/sudoers", "/etc/sudoers.d/hack"].includes(f.path)),
+        report: statusCard("urgent", [
+          ["Checked", "3"],
+          ["World-writable", "2"],
+        ]),
       }, [
         { id: "shadow", severity: "critical", title: "/etc/shadow is 0644", detail: "Should be 000 or 640 root:shadow.", resource: "/etc/shadow" },
       ]);
@@ -617,10 +733,22 @@ export function runDemo(ctx: EngineContext): RunResult {
         { id: "key", severity: "high", title: "Unexpected authorized key on root", detail: "comment=hacker@evil (public key fingerprint only, no private keys)." },
       ]);
     case "find-hidden-executables":
+      return pack(ctx, "3 hidden executables.", {
+        files: demoFiles.filter((f) => f.hidden),
+        report: statusCard("watch", [
+          ["Checked", "/tmp, /var/tmp, /home, /opt"],
+          ["Found", "3"],
+        ]),
+      }, [
+        { id: "hidden", severity: "critical", title: "Hidden SUID shell", detail: "/home/flag/.hidden_shell", resource: "/home/flag/.hidden_shell" },
+      ]);
     case "find-backdoor-binaries":
-      return pack(ctx, "Hidden shells and netcat-like binaries in temp/home.", {
-        files: demoFiles.filter((f) => f.hidden || /nc|ncat|hidden_shell|kworker/i.test(f.path)),
-        ports: demoPorts.filter((p) => p.port === 31337 || p.port === 4444),
+      return pack(ctx, "2 suspicious binaries.", {
+        files: demoFiles.filter((f) => /\/nc$|\/ncat$|netcat|socat/i.test(f.path)),
+        report: statusCard("watch", [
+          ["Checked", "/tmp, /home, /opt, /usr/local"],
+          ["Found", "2"],
+        ]),
       }, [
         { id: "hidden", severity: "critical", title: "Hidden SUID shell", detail: "/home/flag/.hidden_shell", resource: "/home/flag/.hidden_shell" },
       ]);
@@ -640,12 +768,22 @@ export function runDemo(ctx: EngineContext): RunResult {
     case "remove-package":
       return pack(ctx, mutateNote(ctx, `remove package`), { packages: demoPackages.filter((p) => !pkg || p.name === pkg) });
     case "audit-logging":
+      return pack(ctx, "auditd is running; rsyslog is running", {
+        extra: { rsyslog: "active", auditd: "active" },
+        report: statusCard("clear", [
+          ["auditd", "active"],
+          ["rsyslog", "active"],
+        ]),
+      });
     case "check-auditd":
-      return pack(ctx, "rsyslog/auditd are not enforcing in the demo image.", {
-        extra: { rsyslog: "inactive", auditd: "inactive", watches: [] },
-      }, [
-        { id: "auditd", severity: "medium", title: "auditd inactive", detail: "Enable auditd for identity-file watches." },
-      ]);
+      return pack(ctx, "auditd is running with 12 rules", {
+        extra: { auditd: "active", enabled: "enabled", rules: 12 },
+        report: statusCard("clear", [
+          ["Status", "active"],
+          ["Boot", "enabled"],
+          ["Rules", "12"],
+        ]),
+      });
     case "check-pending-updates":
       return pack(ctx, "12 pending security updates; unattended-upgrades off.", {
         policy: { pendingSecurityUpdates: 12, unattendedUpgrades: false },
@@ -655,11 +793,24 @@ export function runDemo(ctx: EngineContext): RunResult {
     case "apply-security-updates":
       return pack(ctx, mutateNote(ctx, "apply security updates"), { extra: { wouldInstall: 12 } });
     case "audit-cron":
-    case "audit-at-jobs":
       return pack(ctx, "Cron contains wget|sh and a /tmp payload.", {
-        extra: { cron: demoCron, at: [{ user: "zygote", command: "python3 -c 'import socket,...'", suspicious: true }] },
+        extra: { cron: demoCron },
+        report: statusCard("urgent", [
+          ["Cron entries", String(demoCron.length)],
+          ["Suspicious", String(demoCron.filter((row) => row.suspicious).length)],
+        ]),
       }, [
         { id: "wgetsh", severity: "critical", title: "root cron pipes wget to sh", detail: demoCron[0]?.command ?? "", remediationOpId: "audit-cron" },
+      ]);
+    case "audit-at-jobs":
+      return pack(ctx, "1 at job is queued", {
+        extra: { at: [{ user: "zygote", command: "python3 -c 'import socket,...'", suspicious: true }] },
+        report: statusCard("info", [
+          ["Queued", "1"],
+          ["User", "zygote"],
+        ]),
+      }, [
+        { id: "at", severity: "high", title: "at job for zygote", detail: "python3 socket payload. The command was not run.", remediationOpId: "restrict-cron-at" },
       ]);
     case "list-scheduled-tasks":
       return pack(ctx, "Non-Microsoft task runs %TEMP%\\svc.exe.", {
@@ -669,7 +820,13 @@ export function runDemo(ctx: EngineContext): RunResult {
         { id: "task", severity: "high", title: "Scheduled task Updater", detail: "Payload under TEMP." },
       ]);
     case "audit-sysctl":
-      return pack(ctx, "IP forwarding on, syncookies off.", { extra: { sysctl: demoSysctl } }, [
+      return pack(ctx, "Sysctl: forwarding on, syncookies off", {
+        extra: { sysctl: demoSysctl },
+        report: statusCard("urgent", [
+          ["IP forwarding", "1"],
+          ["TCP syncookies", "0"],
+        ]),
+      }, [
         { id: "forward", severity: "high", title: "net.ipv4.ip_forward=1", detail: "Workstations should not forward.", remediationOpId: "harden-sysctl" },
       ]);
     case "harden-sysctl":
@@ -677,9 +834,13 @@ export function runDemo(ctx: EngineContext): RunResult {
         extra: { sysctl: { "net.ipv4.ip_forward": "0", "net.ipv4.tcp_syncookies": "1" } },
       });
     case "audit-startup-items":
-      return pack(ctx, "rc.local and a hidden Startup payload.", {
+      return pack(ctx, "Startup items include a suspicious rc.local", {
         files: demoFiles.filter((f) => f.path.includes("kworker") || f.path.includes("Startup")),
         extra: { rcLocal: "/tmp/.kworker", runKey: "HKCU\\...\\Run\\update" },
+        report: statusCard("urgent", [
+          ["rc.local", "/tmp/.kworker"],
+          ["Enabled units", "1"],
+        ]),
       }, [
         { id: "rclocal", severity: "high", title: "rc.local launches /tmp/.kworker", detail: "Remove the plant." },
       ]);
@@ -787,6 +948,10 @@ export function runDemo(ctx: EngineContext): RunResult {
       return pack(ctx, `${demoRemoteTools.length} remote-access tools and ${demoBrowserExtensions.length} browser extension dirs.`, {
         extra: { tools: demoRemoteTools, extensions: demoBrowserExtensions },
         packages: demoRemoteTools.map((t) => ({ name: t.name, prohibited: true })),
+        report: statusCard("watch", [
+          ["Remote-access tools", String(demoRemoteTools.length)],
+          ["Extension dirs", String(demoBrowserExtensions.length)],
+        ]),
       }, [
         ...demoRemoteTools.map((t) => ({
           id: `rat:${t.name}`,
@@ -837,6 +1002,10 @@ export function runDemo(ctx: EngineContext): RunResult {
       return pack(ctx, "Critical permission drift on shadow, sudoers, host key, and SAM ACL.", {
         files: demoFiles.filter((f) => /shadow|sudoers|authorized_keys/.test(f.path)),
         extra: { drift: demoPermDrift, note: "SAM contents not dumped; ACL classification only." },
+        report: statusCard("urgent", [
+          ["Checked", "/etc/passwd, /etc/shadow, /etc/sudoers, ssh host key"],
+          ["Drift", String(demoPermDrift.filter((p) => p.drift).length)],
+        ]),
       }, demoPermDrift.filter((p) => p.drift).map((p) => ({
         id: `drift:${p.path}`,
         severity: p.path.includes("shadow") || p.path.includes("SAM") ? "critical" as const : "high" as const,
@@ -905,7 +1074,13 @@ export function runDemo(ctx: EngineContext): RunResult {
       return pack(
         ctx,
         `${bad.length} temp paths missing sticky bit (1777 expected on /tmp).`,
-        { files: demoTmpDirs },
+        {
+          files: demoTmpDirs,
+          report: statusCard(bad.length ? "urgent" : "empty", [
+            ["Checked", "/tmp, /var/tmp, /dev/shm"],
+            ["Found", String(bad.length)],
+          ]),
+        },
         bad.map((f) => ({
           id: `sticky:${f.path}`,
           severity: f.path === "/tmp" ? "critical" as const : "high" as const,
@@ -917,18 +1092,27 @@ export function runDemo(ctx: EngineContext): RunResult {
       );
     }
     case "audit-anonymous-ftp":
-      return pack(ctx, "vsftpd allows anonymous write in the demo image.", {
+      return pack(ctx, "Anonymous FTP is on", {
         services: demoServices.filter((s) => /ftp|vsftp/i.test(s.name)),
         ports: demoPorts.filter((p) => p.port === 21),
         extra: { vsftpd: demoFtpConfig },
+        report: statusCard("urgent", [
+          ["anonymous_enable", String(demoFtpConfig.anonymous_enable)],
+          ["anon_upload_enable", String(demoFtpConfig.anon_upload_enable)],
+          ["Config files", "1"],
+        ]),
       }, [
         { id: "anon", severity: "high", title: "anonymous_enable=YES", detail: "/etc/vsftpd.conf", remediationOpId: "harden-vsftpd" },
         { id: "anonup", severity: "critical", title: "anon_upload_enable=YES", detail: "Anonymous can write.", remediationOpId: "harden-vsftpd" },
       ]);
     case "audit-web-server":
-      return pack(ctx, "Apache/nginx demo config fails the quick harden checklist.", {
+      return pack(ctx, `Web server config has ${demoWebChecklist.filter((item) => item.status === "fail").length} issues`, {
         checklist: demoWebChecklist,
         services: demoServices.filter((s) => /apache|nginx|httpd/i.test(s.name)),
+        report: statusCard("watch", [
+          ["Config files", "2"],
+          ["Issues", String(demoWebChecklist.filter((i) => i.status === "fail").length)],
+        ]),
       }, demoWebChecklist.filter((i) => i.status === "fail").map((i) => ({
         id: i.id,
         severity: "medium" as const,
@@ -944,16 +1128,24 @@ export function runDemo(ctx: EngineContext): RunResult {
         { id: "sam", severity: "critical", title: "RestrictAnonymousSAM=0", detail: "Anonymous SAM access allowed. SAM not dumped.", remediationOpId: "audit-null-session" },
       ]);
     case "audit-idle-lock":
-      return pack(ctx, "Idle/screensaver lock is not enforced.", {
+      return pack(ctx, "Shell idle lock is not set", {
         extra: demoIdleLock,
+        report: statusCard("watch", [
+          ["TMOUT", "unset"],
+          ["IdleAction", String(demoIdleLock.IdleAction)],
+        ]),
       }, [
         { id: "tmout", severity: "medium", title: "No TMOUT in profile", detail: "Shell idle timeout unset." },
         { id: "ss", severity: "high", title: "Screensaver is not secure", detail: "ScreenSaverIsSecure=0, timeout 9999." },
       ]);
     case "hunt-sysprep-leftovers":
-      return pack(ctx, "Unattend/sysprep leftovers present (password values omitted).", {
+      return pack(ctx, `${demoSysprepFiles.length} sysprep leftovers.`, {
         files: demoSysprepFiles,
         extra: { note: "AutoLogon/Password keys flagged by name only." },
+        report: statusCard("watch", [
+          ["Checked", "/home, /root, /tmp, /opt, /var/tmp"],
+          ["Found", String(demoSysprepFiles.length)],
+        ]),
       }, demoSysprepFiles.map((f) => ({
         id: `sysprep:${f.path}`,
         severity: "high" as const,
@@ -962,23 +1154,36 @@ export function runDemo(ctx: EngineContext): RunResult {
         resource: f.path,
       })));
     case "audit-snmp":
-      return pack(ctx, "SNMP is running with default public/private communities.", {
+      return pack(ctx, "SNMP uses a default community", {
         services: demoServices.filter((s) => /snmp/i.test(s.name)),
         extra: demoSnmp,
+        report: statusCard("urgent", [
+          ["Communities", String(demoSnmp.communities.length)],
+          ["Default names", "public, private"],
+        ]),
       }, [
         { id: "public", severity: "high", title: "SNMP community public", detail: "Default read community.", remediationOpId: "disable-service" },
         { id: "private", severity: "critical", title: "SNMP community private", detail: "Default write community.", remediationOpId: "disable-service" },
       ]);
     case "audit-mac-enforcement":
-      return pack(ctx, "SELinux is Permissive; AppArmor has complain-mode profiles.", {
+      return pack(ctx, "SELinux is permissive; AppArmor has 1 enforcing profile and 3 complain profiles", {
         extra: demoMac,
+        report: statusCard("watch", [
+          ["SELinux", "permissive"],
+          ["Enforcing profiles", String(demoMac.profilesEnforce)],
+          ["Complain profiles", String(demoMac.profilesComplain)],
+        ]),
       }, [
         { id: "selinux", severity: "high", title: "SELinux Permissive", detail: "Suggest enforcing after a README check." },
         { id: "aa", severity: "medium", title: "AppArmor complain profiles", detail: `${demoMac.profilesComplain} profiles not enforcing.` },
       ]);
     case "audit-browser-baseline":
-      return pack(ctx, "Firefox/IE/Edge baseline settings are weak.", {
-        extra: { checks: demoBrowserBaseline },
+      return pack(ctx, `${demoBrowserBaseline.length} Firefox baseline settings are weak (cookies not dumped)`, {
+        extra: { checks: demoBrowserBaseline, note: "cookies/history/passwords not dumped" },
+        report: statusCard("watch", [
+          ["Settings", String(demoBrowserBaseline.length)],
+          ["Cookies", "not dumped"],
+        ]),
       }, demoBrowserBaseline.map((c) => ({
         id: c.id,
         severity: "medium" as const,
@@ -986,9 +1191,12 @@ export function runDemo(ctx: EngineContext): RunResult {
         detail: c.detail,
       })));
     case "audit-auto-updates":
-      return pack(ctx, "Unattended-upgrades and Windows Update are not enforcing.", {
+      return pack(ctx, "Unattended upgrades are off", {
         extra: demoAutoUpdates,
         policy: { unattendedUpgrades: false, pendingSecurityUpdates: 12 },
+        report: statusCard("watch", [
+          ["Unattended-Upgrade", "0"],
+        ]),
       }, [
         { id: "uu", severity: "medium", title: "unattended-upgrades off", detail: "APT::Periodic::Unattended-Upgrade 0", remediationOpId: "apply-security-updates" },
         { id: "wu", severity: "high", title: "wuauserv disabled / AUOptions=1", detail: "Windows Update never checks.", remediationOpId: "apply-security-updates" },
@@ -1002,8 +1210,13 @@ export function runDemo(ctx: EngineContext): RunResult {
         { id: "samples", severity: "medium", title: "IIS sample apps present", detail: "Remove sample content.", remediationOpId: "remove-games-samples" },
       ]);
     case "skim-forensics-readme":
-      return pack(ctx, `${demoReadmeHits.length} local README keyword hits. CCS not contacted.`, {
+      return pack(ctx, `${demoReadmeHits.length} README keyword hits. CCS was not contacted.`, {
         extra: { hits: demoReadmeHits, ccsContacted: false, note: "Local files only. Hash-looking lines omitted." },
+        report: statusCard("info", [
+          ["Checked", "/home, /root, /opt, /tmp"],
+          ["Found", String(demoReadmeHits.length)],
+          ["CCS contacted", "no"],
+        ]),
       }, demoReadmeHits.map((h) => ({
         id: `readme:${h.path}:${h.keyword}`,
         severity: "info" as const,
@@ -1198,8 +1411,15 @@ export function runDemo(ctx: EngineContext): RunResult {
     case "hunt-shell-backdoors":
       return pack(
         ctx,
-        `${demoShellBackdoors.length} suspicious shell/profile backdoors.`,
-        { files: demoShellBackdoors, extra: { scorer: "demo" } },
+        `${demoShellBackdoors.length} shell backdoors in rc or profile files.`,
+        {
+          files: demoShellBackdoors,
+          extra: { scorer: "demo" },
+          report: statusCard("watch", [
+            ["Checked", "/etc/profile, /etc/bash.bashrc, /root, /home"],
+            ["Found", String(demoShellBackdoors.length)],
+          ]),
+        },
         demoShellBackdoors.map((f) => ({
           id: `shell:${f.path}`,
           severity: /sudo|wget|DownloadString/i.test(f.note ?? "") ? "critical" as const : "high" as const,

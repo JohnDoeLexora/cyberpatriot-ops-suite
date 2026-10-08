@@ -23,5 +23,31 @@ if "nullok" in blob:
     findings.append({"id": "nullok", "severity": "high", "title": "PAM nullok present", "detail": "Empty passwords may authenticate."})
 if "pam_faillock" not in blob and "pam_tally2" not in blob:
     findings.append({"id": "faillock", "severity": "medium", "title": "No faillock/tally2", "detail": "Enable lockout.", "remediationOpId": "enable-account-lockout"})
-print(json.dumps({"ok": True, "status": "ok", "summary": f"Inspected {len(files)} PAM files.", "extra": {"files": files}, "findings": findings}, indent=2))
+nullok = any(item["id"] == "nullok" for item in findings)
+faillock = any(item["id"] == "faillock" for item in findings)
+files_word = "file" if len(files) == 1 else "files"
+if nullok:
+    summary = f"PAM allows empty passwords in {len(files)} {files_word}"
+    tone = "urgent"
+elif faillock:
+    summary = f"PAM has no faillock in {len(files)} {files_word}"
+    tone = "watch"
+else:
+    summary = f"PAM looks locked down in {len(files)} {files_word}"
+    tone = "clear"
+print(json.dumps({
+    "ok": True,
+    "status": "ok",
+    "summary": summary,
+    "extra": {"files": files},
+    "findings": findings,
+    "report": {
+        "tone": tone,
+        "facts": [
+            {"label": "Files", "value": ", ".join(files)},
+            {"label": "nullok", "value": "present" if nullok else "absent"},
+            {"label": "faillock", "value": "missing" if faillock else "present"},
+        ],
+    },
+}, indent=2))
 PY

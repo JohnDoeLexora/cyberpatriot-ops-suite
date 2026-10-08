@@ -35,6 +35,22 @@ export function OutputView({
   return (
     <div className="max-w-full space-y-3 overflow-x-hidden p-4" data-testid="op-output">
       {showSummary && <ResultSummary output={output} />}
+      {output.report && output.report.facts.length > 0 && (
+        <dl
+          data-testid="result-details"
+          aria-label="Check details"
+          className="grid grid-cols-1 gap-x-6 gap-y-2 rounded-xl border border-line bg-elev px-4 py-3 sm:grid-cols-2"
+        >
+          {output.report.facts.map((fact) => (
+            <div key={fact.label} className="min-w-0">
+              <dt className="text-[12.5px] font-medium uppercase tracking-wide text-mute">{fact.label}</dt>
+              <dd className="truncate text-[15px] leading-6 text-ink" title={fact.value}>
+                {fact.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
       {showEngineLine && (
         <p className="line-clamp-2 text-[14.5px] leading-6 text-mute" title={output.summary}>
           {output.summary}
@@ -77,7 +93,12 @@ export function OutputView({
         </div>
       )}
       {output.tables?.map((table) => (
-        <div key={table.title} className="max-w-full overflow-hidden rounded-xl border border-line">
+        <div
+          key={table.title}
+          data-testid="result-table"
+          data-title={table.title}
+          className="max-w-full overflow-hidden rounded-xl border border-line"
+        >
           <div className="border-b border-line bg-sidebar px-3 py-2 text-[13px] font-medium text-mute">{table.title}</div>
           <table className="w-full table-fixed text-left text-[14px]">
             <thead>

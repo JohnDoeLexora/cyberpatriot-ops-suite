@@ -11,5 +11,26 @@ jobs="$(atq 2>/dev/null || true)"
 python3 - "$jobs" <<'PY'
 import json, sys
 lines = [ln for ln in sys.argv[1].splitlines() if ln.strip()]
-print(json.dumps({"ok": True, "status": "ok", "summary": f"{len(lines)} at job(s).", "extra": {"atq": lines}}, indent=2))
+if not lines:
+    summary = "No at jobs are queued"
+    tone = "empty"
+elif len(lines) == 1:
+    summary = "1 at job is queued"
+    tone = "info"
+else:
+    summary = f"{len(lines)} at jobs are queued"
+    tone = "info"
+print(json.dumps({
+    "ok": True,
+    "status": "ok",
+    "summary": summary,
+    "extra": {"atq": lines},
+    "report": {
+        "tone": tone,
+        "facts": [
+            {"label": "Queued", "value": str(len(lines))},
+            {"label": "Jobs", "value": "; ".join(lines[:8]) if lines else "none"},
+        ],
+    },
+}, indent=2))
 PY

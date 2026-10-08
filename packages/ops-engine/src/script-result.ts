@@ -5,12 +5,16 @@ import type {
   Finding,
   FindingSeverity,
   PortRecord,
+  ReportTable,
+  ReportTone,
   RunData,
   ServiceRecord,
+  StatusReport,
   UserRecord,
 } from "./types.js";
 
 const SEVERITIES = new Set<FindingSeverity>(["info", "low", "medium", "high", "critical"]);
+const REPORT_TONES = new Set<ReportTone>(["clear", "watch", "urgent", "info", "empty"]);
 
 export interface MappedScript {
   ok: boolean;
@@ -228,6 +232,53 @@ function asPolicy(value: unknown): RunData["policy"] {
   return Object.keys(policy).length ? policy : undefined;
 }
 
+function asReport(value: unknown): StatusReport | undefined {
+  const rec = asRecord(value);
+  if (!rec) return undefined;
+  const tone = rec.tone;
+  if (typeof tone !== "string" || !REPORT_TONES.has(tone as ReportTone)) return undefined;
+  const facts: StatusReport["facts"] = [];
+  if (Array.isArray(rec.facts)) {
+    for (const item of rec.facts) {
+      const fact = asRecord(item);
+      if (!fact || typeof fact.label !== "string" || !fact.label.trim()) continue;
+      if (typeof fact.value !== "string" && typeof fact.value !== "number" && typeof fact.value !== "boolean") continue;
+      facts.push({ label: fact.label.trim(), value: String(fact.value) });
+    }
+  }
+  const table = asReportTable(rec.table);
+  return table ? { tone: tone as ReportTone, facts, table } : { tone: tone as ReportTone, facts };
+}
+
+function asReportTable(value: unknown): ReportTable | undefined {
+  const rec = asRecord(value);
+  if (!rec || typeof rec.title !== "string" || !rec.title.trim()) return undefined;
+  if (!Array.isArray(rec.columns) || !Array.isArray(rec.rows)) return undefined;
+  const columns: ReportTable["columns"] = [];
+  for (const item of rec.columns) {
+    const column = asRecord(item);
+    if (!column || typeof column.key !== "string" || typeof column.label !== "string") continue;
+    columns.push({
+      key: column.key,
+      label: column.label,
+      ...(column.mono === true ? { mono: true } : {}),
+    });
+  }
+  if (!columns.length) return undefined;
+  const rows: ReportTable["rows"] = [];
+  for (const item of rec.rows) {
+    const row = asRecord(item);
+    if (!row) continue;
+    const out: Record<string, string> = {};
+    for (const column of columns) {
+      const cell = row[column.key];
+      out[column.key] = typeof cell === "string" || typeof cell === "number" || typeof cell === "boolean" ? String(cell) : "";
+    }
+    rows.push(out);
+  }
+  return { title: rec.title.trim(), columns, rows };
+}
+
 function asShares(value: unknown): RunData["shares"] {
   if (!Array.isArray(value)) return undefined;
   const shares = [];
@@ -340,6 +391,7 @@ export function mapScriptPayload(
     checklist: asChecklist(parsed?.checklist),
     policy: asPolicy(parsed?.policy),
     shares: asShares(parsed?.shares),
+    report: asReport(parsed?.report),
     extra,
   };
   const filesExplicit = Array.isArray(parsed?.files) || kind === "files" || kind.startsWith("files");

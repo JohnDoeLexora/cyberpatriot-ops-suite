@@ -8,6 +8,7 @@ This is the reliability contract for every catalog op. A stressed operator shoul
 - **Dry-run.** Linux scripts take `--dry-run` (or `CP_DRY_RUN=1`). Windows scripts take `-DryRun`. The API accepts `params.dryRun: true` or a top-level `dryRun: true`. A preview changes nothing. Applying still requires `confirm: true` and the dashboard confirm dialog.
 - **Backup.** Config edits are copied to `/var/backups/cyberpatriot-ops/<timestamp>/` on Linux and `%ProgramData%\CyberPatriotOps\backups\<timestamp>\` on Windows. Registry edits export a `.reg` file first. `sshd -t` and `visudo -c` restore the backup when they fail.
 - **Exit codes.** `0` success or preview, `1` error, `2` refused (no confirm, empty allowlist, current user, or the scoring service), `3` skipped. The runner copies that into `ok`, `summary`, and `data.extra.exitCode`. The summary line comes first (`Changed 2 settings, 1 already OK` or `Preview: would change …`).
+- **Status card.** A successful read may include `report`: `tone` (`clear`, `watch`, `urgent`, `info`, `empty`), `facts` (label/value pairs), and an optional `table`. The dashboard uses the first summary line as the headline and that tone. `empty` means nothing matched, and the summary still names what was checked. Skips stay exit 3 and do not set `report`.
 - **Safety.** Hashes, shadow lines, and Wi-Fi keys are not printed. The scoring / CCS service is refused by exact name. An empty allowlist refuses allowlist-driven changes.
 
 ## Gaps (honest)

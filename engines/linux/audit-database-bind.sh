@@ -23,5 +23,27 @@ if re.search(r"skip-grant-tables", my):
     findings.append({"id":"skip","severity":"critical","title":"skip-grant-tables set"})
 if re.search(r"host\s+all\s+all\s+0\.0\.0\.0/0\s+trust", hba):
     findings.append({"id":"trust","severity":"critical","title":"pg_hba trust from anywhere"})
-print(json.dumps({"ok": True, "findings": findings, "extra": {"bind": bind, "note": "No SQL connections"}}))
+n = len(findings)
+if n:
+    summary = "Database bind checks found 1 issue" if n == 1 else f"Database bind checks found {n} issues"
+    tone = "urgent" if any(item["severity"] in {"critical", "high"} for item in findings) else "watch"
+elif bind is None and not pg and not hba:
+    summary = "No MySQL or Postgres config found"
+    tone = "empty"
+elif bind:
+    summary = f"Database bind-address is {bind}"
+    tone = "clear"
+else:
+    summary = "No remote database bind found"
+    tone = "clear"
+print(json.dumps({
+    "ok": True,
+    "summary": summary,
+    "findings": findings,
+    "extra": {"bind": bind, "note": "No SQL connections"},
+    "report": {"tone": tone, "facts": [
+        {"label": "bind-address", "value": bind or "unset"},
+        {"label": "Issues", "value": str(n)},
+    ]},
+}))
 PY

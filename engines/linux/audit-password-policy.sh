@@ -32,5 +32,24 @@ try:
         findings.append({"id": "minlen", "severity": "high", "title": f"PASS_MIN_LEN={policy.get('PASS_MIN_LEN')}", "detail": "Typical CP baseline is at least 14.", "remediationOpId": "enforce-password-policy"})
 except ValueError:
     pass
-print(json.dumps({"ok": True, "status": "ok", "summary": "Read login.defs (no hashes).", "policy": policy, "findings": findings}, indent=2))
+minlen = policy.get("PASS_MIN_LEN", "unset")
+maxdays = policy.get("PASS_MAX_DAYS", "unset")
+summary = f"Password policy from login.defs (no hashes): minimum length {minlen}, maximum age {maxdays} days."
+tone = "urgent" if any(item.get("severity") == "high" for item in findings) else "watch" if findings else "clear"
+print(json.dumps({
+    "ok": True,
+    "status": "ok",
+    "summary": summary,
+    "policy": policy,
+    "findings": findings,
+    "report": {
+        "tone": tone,
+        "facts": [
+            {"label": "Minimum length", "value": str(minlen)},
+            {"label": "Maximum age", "value": f"{maxdays} days"},
+            {"label": "Minimum age", "value": f"{policy.get('PASS_MIN_DAYS', 'unset')} days"},
+            {"label": "Warning", "value": f"{policy.get('PASS_WARN_AGE', 'unset')} days"},
+        ],
+    },
+}, indent=2))
 PY

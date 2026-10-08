@@ -88,6 +88,79 @@ cp_detail() { CP_DETAILS+=("$1"); }
 cp_preview() { CP_PREVIEWS+=("$1"); }
 cp_warn() { CP_WARNINGS+=("$1"); }
 
+# Add a status card to a scan JSON object on stdin.
+# Args: zero-hit sentence, plural noun, paths that were checked, optional tag filter.
+# When findings carry a tags field, the filter counts only matches (sticky, drift).
+# Findings without tags are all counted. A skipped or failed payload is passed through.
+cp_annotate_scan() {
+  # The program is an argument so the JSON on stdin stays available to Python.
+  python3 -c "$(cat <<'PY'
+import json, sys
+zero, noun, scope = sys.argv[1:4]
+need = sys.argv[4] if len(sys.argv) > 4 else ""
+raw = sys.stdin.read()
+start, end = raw.find("{"), raw.rfind("}")
+if start < 0 or end <= start:
+    sys.stderr.write(raw.strip() or "Scan returned no JSON.\n")
+    sys.exit(1)
+try:
+    obj = json.loads(raw[start:end + 1])
+except json.JSONDecodeError as exc:
+    sys.stderr.write(f"Scan JSON failed: {exc}\n")
+    sys.exit(1)
+if not isinstance(obj, dict):
+    sys.stderr.write("Scan JSON was not an object.\n")
+    sys.exit(1)
+status = obj.get("status")
+if obj.get("ok") is False or status in ("skipped", "error", "refused"):
+    json.dump(obj, sys.stdout, indent=2)
+    sys.stdout.write("\n")
+    code = obj.get("exitCode")
+    sys.exit(code if isinstance(code, int) else 1)
+
+def counted(items):
+    if not isinstance(items, list):
+        return None
+    if not need:
+        return len(items)
+    tagged = [item for item in items if isinstance(item, dict) and "tags" in item]
+    if not tagged:
+        return len(items)
+    return sum(1 for item in tagged if need in str(item.get("tags", "")))
+
+if isinstance(obj.get("findings"), list):
+    count = counted(obj["findings"])
+elif isinstance(obj.get("files"), list):
+    count = counted(obj["files"])
+else:
+    extra = obj.get("extra") if isinstance(obj.get("extra"), dict) else {}
+    hits = extra.get("hits") if isinstance(extra.get("hits"), list) else None
+    count = len(hits) if hits is not None else 0
+if count == 1 and noun.endswith("s"):
+    summary = f"1 {noun[:-1]}."
+elif count == 1:
+    summary = f"1 {noun}."
+elif count == 0:
+    summary = zero
+else:
+    summary = f"{count} {noun}."
+tone = "empty" if count == 0 else "watch"
+obj["ok"] = True
+obj["status"] = obj.get("status") or "ok"
+obj["summary"] = summary
+obj["report"] = {
+    "tone": tone,
+    "facts": [
+        {"label": "Checked", "value": scope},
+        {"label": "Found", "value": str(count)},
+    ],
+}
+json.dump(obj, sys.stdout, indent=2)
+sys.stdout.write("\n")
+PY
+)" "$@"
+}
+
 cp_note_ok() {
   CP_ALREADY=$((CP_ALREADY + 1))
   cp_detail "$1"

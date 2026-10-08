@@ -21,5 +21,25 @@ info = [os.path.join(r,n) for r in ("/var/www/html","/var/www") if os.path.isdir
         for n in os.listdir(r) if n.lower() in ("info.php","phpinfo.php")]
 for p in info:
     findings.append({"id":f"info:{p}","severity":"medium","title":"phpinfo helper present","resource":p})
-print(json.dumps({"ok": True, "findings": findings, "extra": {"infoPhp": info}}))
+n = len(findings)
+if not ini.strip() and not info:
+    summary = "No PHP config found"
+    tone = "empty"
+elif n:
+    summary = "PHP hardening found 1 issue" if n == 1 else f"PHP hardening found {n} issues"
+    tone = "urgent" if any(item["severity"] in {"critical", "high"} for item in findings) else "watch"
+else:
+    summary = "PHP config looks locked down"
+    tone = "clear"
+print(json.dumps({
+    "ok": True,
+    "summary": summary,
+    "findings": findings,
+    "extra": {"infoPhp": info},
+    "report": {"tone": tone, "facts": [
+        {"label": "expose_php", "value": kv("expose_php", "unset") or "unset"},
+        {"label": "allow_url_include", "value": kv("allow_url_include", "unset") or "unset"},
+        {"label": "info.php files", "value": str(len(info))},
+    ]},
+}))
 PY

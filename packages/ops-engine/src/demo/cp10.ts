@@ -24,6 +24,13 @@ import {
   demoWindowsRoles,
 } from "./fixtures.js";
 
+function statusCard(
+  tone: "clear" | "watch" | "urgent" | "info" | "empty",
+  facts: ReadonlyArray<readonly [string, string]>,
+) {
+  return { tone, facts: facts.map(([label, value]) => ({ label, value })) };
+}
+
 function pack(
   ctx: EngineContext,
   summary: string,
@@ -262,7 +269,14 @@ export function runCp10Demo(ctx: EngineContext): RunResult | undefined {
         },
       );
     case "audit-mail-services":
-      return pack(ctx, "Postfix is an open relay; Dovecot allows plaintext auth.", { extra: demoMailServices }, [
+      return pack(ctx, "Mail checks found 2 issues", {
+        extra: demoMailServices,
+        report: statusCard("urgent", [
+          ["Postfix", "present"],
+          ["Dovecot", "present"],
+          ["Issues", "2"],
+        ]),
+      }, [
         {
           id: "relay",
           severity: "critical",
@@ -278,7 +292,13 @@ export function runCp10Demo(ctx: EngineContext): RunResult | undefined {
         },
       ]);
     case "audit-database-bind":
-      return pack(ctx, "MySQL/Postgres listen on all interfaces with trust/skip-grant-tables.", { extra: demoDatabaseBind }, [
+      return pack(ctx, "Database bind checks found 3 issues", {
+        extra: demoDatabaseBind,
+        report: statusCard("urgent", [
+          ["bind-address", "0.0.0.0"],
+          ["Issues", "3"],
+        ]),
+      }, [
         {
           id: "bind",
           severity: "high",
@@ -299,7 +319,14 @@ export function runCp10Demo(ctx: EngineContext): RunResult | undefined {
         },
       ]);
     case "audit-php-hardening":
-      return pack(ctx, "PHP expose_php and allow_url_include are on; info.php present.", { extra: demoPhpHardening }, [
+      return pack(ctx, "PHP hardening found 3 issues", {
+        extra: demoPhpHardening,
+        report: statusCard("urgent", [
+          ["expose_php", "On"],
+          ["allow_url_include", "On"],
+          ["info.php files", "1"],
+        ]),
+      }, [
         {
           id: "expose",
           severity: "medium",
@@ -324,8 +351,15 @@ export function runCp10Demo(ctx: EngineContext): RunResult | undefined {
       const bad = demoSnapFlatpak.filter((s) => s.suspicious);
       return pack(
         ctx,
-        `${bad.length} unnecessary snap/flatpak apps flagged.`,
-        { packages: bad.map((s) => ({ name: s.name, prohibited: true })), extra: { apps: demoSnapFlatpak } },
+        bad.length === 1 ? "1 suspicious snap or flatpak app" : `${bad.length} suspicious snap or flatpak apps`,
+        {
+          packages: bad.map((s) => ({ name: s.name, prohibited: true })),
+          extra: { apps: demoSnapFlatpak },
+          report: statusCard(bad.length ? "watch" : "empty", [
+            ["Apps", String(demoSnapFlatpak.length)],
+            ["Suspicious", String(bad.length)],
+          ]),
+        },
         bad.map((s) => ({
           id: `${s.kind}:${s.name}`,
           severity: /anydesk|steam/i.test(s.name) ? ("high" as const) : ("medium" as const),
@@ -348,8 +382,16 @@ export function runCp10Demo(ctx: EngineContext): RunResult | undefined {
         ctx,
         disable
           ? mutateNote(ctx, "disable IPv6 via sysctl (optional path)")
-          : "IPv6 privacy off; accept_ra and forwarding on (audit-only).",
-        { extra: { ...demoIpv6, disableRequested: disable, applied: false } },
+          : "IPv6 temporary addresses are off",
+        {
+          extra: { ...demoIpv6, disableRequested: disable, applied: false },
+          report: statusCard("urgent", [
+            ["Temporary addresses", "off"],
+            ["Accept router ads", "1"],
+            ["Forwarding", "1"],
+            ["Disabled", "0"],
+          ]),
+        },
         [
           {
             id: "privacy",
@@ -368,7 +410,13 @@ export function runCp10Demo(ctx: EngineContext): RunResult | undefined {
       );
     }
     case "audit-log-persistence":
-      return pack(ctx, "journald is volatile; rsyslog is inactive.", { extra: demoLogPersistence }, [
+      return pack(ctx, "Journald storage is volatile and may not persist", {
+        extra: demoLogPersistence,
+        report: statusCard("urgent", [
+          ["Storage", "volatile"],
+          ["Persistent directory", "missing"],
+        ]),
+      }, [
         {
           id: "volatile",
           severity: "high",
@@ -386,8 +434,14 @@ export function runCp10Demo(ctx: EngineContext): RunResult | undefined {
     case "audit-browser-policy":
       return pack(
         ctx,
-        "Browser homepage and system proxy point at 10.13.37.1; leftover extension ids listed.",
-        { extra: demoBrowserPolicy },
+        "Browser policy has 2 unexpected settings",
+        {
+          extra: demoBrowserPolicy,
+          report: statusCard("urgent", [
+            ["Issues", "2"],
+            ["Cookies", "not dumped"],
+          ]),
+        },
         [
           {
             id: "home",
@@ -417,7 +471,13 @@ export function runCp10Demo(ctx: EngineContext): RunResult | undefined {
       );
     }
     case "audit-time-timezone":
-      return pack(ctx, "Time sync is off; NTP 10.13.37.1; timezone Etc/GMT+12.", { extra: demoTimeTimezone }, [
+      return pack(ctx, "Timezone is Etc/GMT+12; 1 unexpected NTP server", {
+        extra: demoTimeTimezone,
+        report: statusCard("urgent", [
+          ["Timezone", "Etc/GMT+12"],
+          ["NTP servers", "10.13.37.1"],
+        ]),
+      }, [
         {
           id: "ntp",
           severity: "high",

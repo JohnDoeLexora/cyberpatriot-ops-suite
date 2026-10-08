@@ -1,5 +1,5 @@
 import type { Finding as EngineFinding, FindingSeverity, RunData, RunResult } from '@cyberpatriot/ops-engine/demo'
-import type { ChecklistItem, Finding, OpResult, ResultTable, Severity } from '../catalog/types'
+import type { ChecklistItem, Finding, OpResult, ResultTable, Severity, StatusReport } from '../catalog/types'
 
 function mapSev(s: FindingSeverity): Severity {
   if (s === 'critical' || s === 'high') return 'crit'
@@ -156,12 +156,39 @@ function checklistOf(data: RunData): ChecklistItem[] | undefined {
   }))
 }
 
+function reportOf(data: RunData): { report?: StatusReport; table?: ResultTable } {
+  const raw = data.report
+  if (!raw) return {}
+  const report: StatusReport = {
+    tone: raw.tone,
+    facts: raw.facts.map((fact) => ({ label: fact.label, value: fact.value })),
+  }
+  const table = raw.table
+  if (!table?.columns.length) return { report }
+  return {
+    report,
+    table: {
+      title: table.title,
+      columns: table.columns.map((column) => ({
+        key: column.key,
+        label: column.label,
+        ...(column.mono ? { mono: true } : {}),
+      })),
+      rows: table.rows.map((row) => ({ ...row })),
+    },
+  }
+}
+
 export function adaptRunResult(result: RunResult): OpResult {
+  const status = reportOf(result.data)
+  const tables = tablesFromData(result.data)
+  if (status.table) tables.push(status.table)
   return {
     summary: result.summary,
     findings: result.findings.map(findingOf),
-    tables: tablesFromData(result.data),
+    tables,
     checklist: checklistOf(result.data),
+    ...(status.report ? { report: status.report } : {}),
     meta: {
       mode: result.mode,
       engine: result.engine,
@@ -219,6 +246,18 @@ export function summarizeOpResult(output: OpResult): ResultSummary {
   const chips = chipsFromFindings(findings)
   const tables = output.tables ?? []
   const checklist = output.checklist
+
+  if (output.report) {
+    const line = output.summary
+      .split('\n')
+      .map((part) => part.trim())
+      .find(Boolean)
+    return {
+      headline: line || 'Check finished',
+      tone: output.report.tone,
+      chips,
+    }
+  }
 
   if (checklist?.length) {
     const fail = checklist.filter((item) => item.status === 'fail').length

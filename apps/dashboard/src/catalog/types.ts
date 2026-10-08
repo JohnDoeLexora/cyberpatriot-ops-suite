@@ -57,6 +57,19 @@ export type LogLine = {
   msg: string
 }
 
+/** Matches the engine report tone. clear = ok, watch = warning, urgent = high. */
+export type StatusTone = 'clear' | 'watch' | 'urgent' | 'info' | 'empty'
+
+export type StatusFact = {
+  label: string
+  value: string
+}
+
+export type StatusReport = {
+  tone: StatusTone
+  facts: StatusFact[]
+}
+
 export type OpResult = {
   summary: string
   findings: Finding[]
@@ -64,6 +77,8 @@ export type OpResult = {
   checklist?: ChecklistItem[]
   logs?: LogLine[]
   meta?: Record<string, string>
+  /** When set, the summary line is the headline and facts render under it. */
+  report?: StatusReport
 }
 
 export type RunStatus = 'idle' | 'running' | 'done' | 'error'
