@@ -16,7 +16,8 @@
     "preview": "npm run preview -w dashboard",
     "test": "npm run test --workspaces --if-present",
     "test:e2e": "npm run test:e2e -w dashboard",
-    "docs": "npm run docs -w @cyberpatriot/ops-catalog && npm run docs -w @cyberpatriot/ops-docs"
+    "docs": "npm run docs -w @cyberpatriot/ops-catalog && npm run docs -w @cyberpatriot/ops-docs",
+    "lint:engines": "bash engines/lint-engines.sh"
   },
   "engines": {
     "node": ">=20"

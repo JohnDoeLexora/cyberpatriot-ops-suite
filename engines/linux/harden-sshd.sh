@@ -1,18 +1,33 @@
 #!/usr/bin/env bash
-set -euo pipefail
+# Write an sshd drop-in and align sshd_config. Validates with sshd -t.
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
 . "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 cp_require_confirm "${1:-}"
-mkdir -p /etc/ssh/sshd_config.d
-cat > /etc/ssh/sshd_config.d/99-cp-hardening.conf <<'EOF'
+cfg="/etc/ssh/sshd_config"
+if [[ -f "$(cp_resolve "$cfg")" ]]; then
+  cp_ensure_kv "$cfg" PermitRootLogin no space
+  cp_ensure_kv "$cfg" PermitEmptyPasswords no space
+  cp_ensure_kv "$cfg" X11Forwarding no space
+  cp_ensure_kv "$cfg" MaxAuthTries 4 space
+  cp_ensure_kv "$cfg" LoginGraceTime 30 space
+  cp_ensure_kv "$cfg" ClientAliveInterval 300 space
+  cp_ensure_kv "$cfg" ClientAliveCountMax 2 space
+else
+  cp_warn "${cfg} is missing; only the drop-in will be written."
+fi
+cp_install_file /etc/ssh/sshd_config.d/99-cp-hardening.conf <<'EOF'
 # CyberPatriot authorized-image hardening (see docs/SAFETY.md)
 PermitRootLogin no
 PermitEmptyPasswords no
 X11Forwarding no
 MaxAuthTries 4
-Protocol 2
 LoginGraceTime 30
 ClientAliveInterval 300
 ClientAliveCountMax 2
 EOF
-systemctl reload ssh 2>/dev/null || systemctl reload sshd 2>/dev/null || true
-echo '{"ok":true,"detail":"wrote /etc/ssh/sshd_config.d/99-cp-hardening.conf"}'
+cp_validate_sshd
+if ! cp_is_dry && [[ -z "${CP_ROOT:-}" ]] && command -v systemctl >/dev/null 2>&1; then
+  systemctl reload ssh >/dev/null 2>&1 || systemctl reload sshd >/dev/null 2>&1 || cp_warn "sshd config was written but the service was not reloaded. Try: sudo systemctl reload ssh"
+fi
+cp_finish

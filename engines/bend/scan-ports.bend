@@ -148,7 +148,7 @@ def score_halves(halves: List<&2, String> & List<&2, String>) -> List<&2, Hit>:
 
 def par_score(+xs: List<&2, String>) -> List<&2, Hit>:
   +len = List.length(&2, String, xs)
-  score_halves(split_at((len / 2n), xs))
+  score_halves(split_at((len / 2n : Nat), xs))
 
 def keep_hit(h: Hit) -> Bool:
   Hit{port, address, process, score, keep} = h

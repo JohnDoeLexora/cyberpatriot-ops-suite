@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-set -euo pipefail
+# Stop and disable one systemd unit. Refuses the scoring service.
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
 . "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 cp_require_confirm "${1:-}"
 svc="${2:-${CP_SERVICE:-}}"
-if [[ -z "$svc" || ! "$svc" =~ ^[A-Za-z0-9:_.@+-]+$ ]]; then
-  echo '{"ok":false,"error":"service required"}' >&2
-  exit 1
+if [[ -z "$svc" ]]; then
+  cp_fail "service is required. Example: bash disable-service.sh --confirm telnet.socket"
 fi
-systemctl disable --now "$svc"
-echo "{\"ok\":true,\"detail\":\"disabled $svc\"}"
+cp_refuse_required_service "$svc"
+cp_disable_unit "$svc"
+cp_finish

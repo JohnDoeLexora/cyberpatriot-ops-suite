@@ -38,6 +38,7 @@ import {
   readText,
 } from "./collect.js";
 import { runCmd } from "./exec.js";
+import { runLinuxScript } from "./script-run.js";
 import { runCp09Linux } from "./cp09.js";
 import { runCp10Linux } from "./cp10.js";
 import {
@@ -133,6 +134,11 @@ export async function runLinux(ctx: EngineContext): Promise<RunResult> {
   const service = asString(ctx.params.service);
   const pkg = asString(ctx.params.package);
   const dryRun = asBoolean(ctx.params.dryRun, false);
+
+  // Mutating ops with an engines/linux script run that script (--dry-run or --confirm).
+  // Read ops stay on the collectors below. A missing script falls through to them too.
+  const scripted = await runLinuxScript(ctx, startedAt);
+  if (scripted) return scripted;
 
   const failParam = (msg: string): RunResult =>
     finish(ctx, startedAt, msg, {}, [], [msg], false);

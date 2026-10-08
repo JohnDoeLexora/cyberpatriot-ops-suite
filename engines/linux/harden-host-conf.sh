@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Write /etc/host.conf nospoof / order hosts,bind.
-set -euo pipefail
+# Write /etc/host.conf with nospoof on.
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
 . "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 cp_require_confirm "${1:-}"
-cat > /etc/host.conf <<'EOF'
+cp_install_file /etc/host.conf <<'EOF'
 order hosts,bind
 multi on
 nospoof on
 EOF
-echo '{"ok":true,"detail":"wrote /etc/host.conf nospoof on"}'
+cp_finish

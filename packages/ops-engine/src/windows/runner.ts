@@ -61,20 +61,44 @@ export async function runWindows(ctx: EngineContext): Promise<RunResult> {
   if (ctx.confirm) args.push("-ConfirmLive");
   const timeout = ctx.op.id === "run-sfc-scan" ? 180000 : 60000;
   const result = await runCmd("powershell.exe", args, timeout);
-  const ok = result.code === 0;
-  let data: RunResult["data"] = { extra: { script, stdout: result.stdout.slice(0, 8000) } };
+  let ok = result.code === 0;
+  let summary = ok ? `PowerShell ${ctx.op.id} completed` : `PowerShell ${ctx.op.id} failed (exit ${result.code}).`;
+  let data: RunResult["data"] = { extra: { script, stdout: result.stdout.slice(0, 8000), exitCode: result.code } };
+  const warnings: string[] = [];
   try {
-    const parsed = JSON.parse(result.stdout);
-    if (parsed && typeof parsed === "object") data = parsed as RunResult["data"];
+    const start = result.stdout.indexOf("{");
+    const end = result.stdout.lastIndexOf("}");
+    const parsed = start >= 0 && end > start ? JSON.parse(result.stdout.slice(start, end + 1)) : undefined;
+    if (parsed && typeof parsed === "object") {
+      data = parsed as RunResult["data"];
+      const rec = parsed as Record<string, unknown>;
+      // Honor the script's own ok/summary. A wrapper that exits 0 with ok:false is still a failure.
+      if (rec.ok === false) ok = false;
+      if (typeof rec.summary === "string" && rec.summary.trim()) summary = rec.summary.trim();
+      const preview = Array.isArray(rec.preview) ? rec.preview.filter((line): line is string => typeof line === "string") : [];
+      const extraLines = preview.filter((line) => !summary.includes(line));
+      if (extraLines.length) summary = `${summary}\n${extraLines.join("\n")}`;
+      if (Array.isArray(rec.warnings)) {
+        for (const warning of rec.warnings) {
+          if (typeof warning === "string" && warning.trim()) warnings.push(warning);
+        }
+      }
+    }
   } catch {
     // keep raw stdout
+  }
+  if (result.code !== 0) ok = false;
+  if (!ok) {
+    const err = result.stderr.trim();
+    if (err) warnings.push(err.slice(0, 2000));
+    if (!warnings.length) warnings.push(summary);
   }
   return {
     ...base,
     ok,
     finishedAt: new Date().toISOString(),
-    summary: ok ? `PowerShell ${ctx.op.id} completed` : `PowerShell ${ctx.op.id} failed`,
+    summary,
     data,
-    warnings: ok ? [] : [result.stderr.slice(0, 2000) || `exit ${result.code}`],
+    warnings,
   };
 }

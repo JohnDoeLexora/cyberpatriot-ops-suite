@@ -2,7 +2,7 @@
 # Read-only collector for the heuristic pack. Scoring is applied by
 # @cyberpatriot/ops-engine; this script emits the raw user inventory plus
 # lastlog so operators can run it standalone.
-set -euo pipefail
+set -Eeuo pipefail
 . "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 echo '{"note":"Run via the API for scored findings. Raw inventory follows."}' >&2
 cp_json_users

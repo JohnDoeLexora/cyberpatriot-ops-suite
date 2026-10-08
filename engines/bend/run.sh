@@ -2,7 +2,7 @@
 # Thin glue: collect local facts, score with Bend 2, fall back to Python.
 # Usage: run.sh <kind>
 # kinds: files-ww files-suid files-media files-hidden files-rats files-perms files-sticky files-sysprep files-readme files-shell users ports agg
-set -euo pipefail
+set -Eeuo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
@@ -41,4 +41,5 @@ if command -v bend >/dev/null 2>&1; then
   fi
 fi
 
+# Last resort. If this also fails, the non-zero status is the result (not a silent pass).
 python3 "$HERE/collect.py" "$KIND" --repo "$REPO" --score-fallback

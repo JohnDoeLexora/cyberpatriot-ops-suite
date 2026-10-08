@@ -53,11 +53,15 @@ export function createServer(): Express {
       mode?: unknown;
       params?: unknown;
       confirm?: unknown;
+      /** Top-level preview flag. Merged into params.dryRun. Does not apply the change. */
+      dryRun?: unknown;
     };
-    const params =
+    const params: Record<string, unknown> =
       body.params && typeof body.params === "object" && !Array.isArray(body.params)
-        ? (body.params as Record<string, unknown>)
+        ? { ...(body.params as Record<string, unknown>) }
         : {};
+    // cp-13: a live request with dryRun:true (body or params) returns the preview and changes nothing.
+    if (body.dryRun === true) params.dryRun = true;
     try {
       const result = await runOp({
         opId: op.id,

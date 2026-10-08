@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
+. "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
+if ! command -v ufw >/dev/null 2>&1 && ! command -v iptables >/dev/null 2>&1; then
+  cp_skip "Skipped: ufw is not installed. Install it with: sudo apt-get install ufw. iptables is also missing, so there is no ruleset to list."
+fi
 python3 - <<'PY'
 import json, shutil, subprocess
 def run(cmd):

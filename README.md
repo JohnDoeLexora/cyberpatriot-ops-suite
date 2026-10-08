@@ -40,7 +40,7 @@ Open the URL Vite prints (http://localhost:5173).
 - **How-to** (`h`) explains what the check does, why it scores, what it changes, and how to undo it. Press `?` for the shortcut list. Full write-ups: [docs/howto/](docs/howto/).
 - On account panes, hover a row for Flag / Turn off / Turn on / Expire password. Extra columns tuck away on a narrow pane.
 
-More: [docs/SAFETY.md](docs/SAFETY.md) · [docs/OPS.md](docs/OPS.md) (every check) · [docs/howto/](docs/howto/) · [CONTRIBUTING.md](CONTRIBUTING.md)
+More: [docs/SAFETY.md](docs/SAFETY.md) · [docs/QUALITY.md](docs/QUALITY.md) (preflight, dry-run, backups) · [docs/OPS.md](docs/OPS.md) (every check) · [docs/howto/](docs/howto/) · [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## What’s in this repo
 
@@ -71,6 +71,7 @@ From the repo root (Node 20+):
 | `npm test` | Unit tests |
 | `npm run test:e2e` | Playwright against the dashboard |
 | `npm run docs` | Regenerate [docs/OPS.md](docs/OPS.md) and [docs/howto/](docs/howto/) |
+| `npm run lint:engines` | shellcheck, PowerShell parse, and a Bend load check |
 | `npm run build` | Typecheck + production build |
 
 First-time e2e:

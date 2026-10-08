@@ -6,8 +6,10 @@ Runners live in `@cyberpatriot/ops-engine`. These directories are the
 | Dir | When it runs |
 | --- | --- |
 | `bend/*.bend` | Live Linux parallel scoring when `bend` 2.x is on PATH (file hunts, user/port heuristics, check aggregation). Python fallback if Bend is missing. |
-| `linux/*.sh` | Live mode on Linux/macOS (read-heavy; mutations need `--confirm`). File hunts prefer `bend/` then `find`. |
-| `windows/*.ps1` | Live mode on a Windows CP image (documented here; not executed on Linux). Bend is not used. |
+| `linux/*.sh` | Live mode on Linux. Mutating ops run the script: `--dry-run` previews, `--confirm` applies. Reads stay on the TypeScript collectors and these scripts can also be run by hand. |
+| `windows/*.ps1` | Live mode on a Windows CP image (`-DryRun` previews, `-ConfirmLive` applies). Not executed on this Linux builder. Bend is not used. |
+
+Reliability contract (preflight, dry-run, backups, exit codes): [docs/QUALITY.md](../docs/QUALITY.md). `npm run lint:engines` runs shellcheck, the PowerShell parser, and a Bend load check.
 
 Demo mode never calls these scripts. It uses in-process fixtures so macOS UI
 work does not touch the host.

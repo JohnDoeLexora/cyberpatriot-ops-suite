@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Read-only Apache/nginx harden checklist. Does not disable the web server.
-set -euo pipefail
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
+. "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 python3 - <<'PY'
 import json, os, re
 files = [p for p in [

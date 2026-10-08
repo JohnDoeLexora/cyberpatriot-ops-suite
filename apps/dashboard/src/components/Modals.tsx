@@ -1,9 +1,26 @@
 import { useEffect, useState } from 'react'
+import { catalog } from '@cyberpatriot/ops-catalog'
 import { liveUsers } from '../lib/users'
 import { cn } from '../lib/cn'
+import { fetchDryRunPreview } from '../lib/run-client'
 import { useWorkspace } from '../state/workspace'
 import { AllowlistEditor } from './AllowlistEditor'
 import { useFocusTrap } from './focus-trap'
+
+/**
+ * cp-13: the confirm body is "<title> will change the authorized CyberPatriot image...".
+ * Match the catalog title (longest exact title) so a playlist confirm previews the
+ * op that is about to run, not whatever pane was focused a moment earlier.
+ */
+function opIdFromConfirmBody(body: string): string | undefined {
+  const marker = ' will change the authorized CyberPatriot image'
+  const cut = body.indexOf(marker)
+  if (cut <= 0) return undefined
+  const head = body.slice(0, cut)
+  const byTitle = catalog.find((op) => op.title === head)
+  if (byTitle) return byTitle.id
+  return catalog.find((op) => op.id === head)?.id
+}
 
 export function OverlayLayer() {
   return (
@@ -158,12 +175,27 @@ function ContextMenu() {
 function ConfirmDialog() {
   const ws = useWorkspace()
   const [home, setHome] = useState(false)
+  // cp-13: dry-run text shown in the confirm slot before Yes, apply. Null in demo and in vitest.
+  const [preview, setPreview] = useState<string | null>(null)
   const ref = useFocusTrap(Boolean(ws.confirm))
   useEffect(() => {
     setHome(false)
-  }, [ws.confirm])
+    setPreview(null)
+    const pending = ws.confirm
+    if (!pending || pending.title !== 'Change this computer?' || ws.demoMode) return
+    const opId = opIdFromConfirmBody(pending.body)
+    if (!opId) return
+    const ac = new AbortController()
+    const pane = Object.values(ws.panes).find((item) => item.opId === opId)
+    const params: Record<string, unknown> = { ...(pane?.params ?? {}) }
+    void fetchDryRunPreview(opId, params, ac.signal).then((text) => {
+      if (!ac.signal.aborted && text) setPreview(text)
+    })
+    return () => ac.abort()
+  }, [ws.confirm, ws.demoMode, ws.panes])
   if (!ws.confirm) return null
   const c = ws.confirm
+  const shown = c.preview ?? preview
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25" onClick={() => ws.cancelConfirm()}>
       <div
@@ -177,12 +209,12 @@ function ConfirmDialog() {
       >
         <h2 id="confirm-title" className="font-display text-[22px] font-semibold tracking-tight">{c.title}</h2>
         <p className="mt-2 text-[15px] leading-7 text-mute">{c.body}</p>
-        {/* cp-13 dry-run preview slot. Hidden until confirm.preview is set. */}
+        {/* cp-14 slot. cp-13 fills it with the live dry-run preview. Hidden until that text exists. */}
         <div
           data-testid="confirm-dry-run"
-          className={c.preview ? 'mt-3 rounded-xl border border-line bg-sidebar px-3 py-2.5 text-[13.5px] leading-6 text-ink' : 'hidden'}
+          className={shown ? 'mt-3 max-h-40 overflow-auto whitespace-pre-wrap rounded-xl border border-line bg-sidebar px-3 py-2.5 text-[13.5px] leading-6 text-ink' : 'hidden'}
         >
-          {c.preview}
+          {shown}
         </div>
         {c.extraHome && (
           <label className="mt-3 flex items-center gap-2 text-[14px] text-ink">

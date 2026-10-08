@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Read-only postfix/exim/dovecot relay audit. Does not send mail.
-set -euo pipefail
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
+. "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 python3 - <<'PY'
 import json, os, re
 def read(p):

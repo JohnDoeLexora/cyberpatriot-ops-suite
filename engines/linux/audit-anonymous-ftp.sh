@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Read-only: vsftpd/proftpd anonymous knobs. Does not log in.
-set -euo pipefail
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
+. "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 python3 - <<'PY'
 import json, os, re
 files = [p for p in ["/etc/vsftpd.conf", "/etc/vsftpd/vsftpd.conf", "/etc/proftpd/proftpd.conf"] if os.path.isfile(p)]
