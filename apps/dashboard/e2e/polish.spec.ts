@@ -125,7 +125,10 @@ test('confirm dialog keeps a dry-run slot', async ({ page }) => {
   const dialog = page.getByTestId('confirm-dialog')
   await expect(dialog).toBeVisible()
   await expect(dialog).toContainText(/Change this computer/i)
-  await expect(page.getByTestId('confirm-dry-run')).toBeAttached()
+  // cp-13 fills cp-14's slot. Wait so the screenshot includes the preview, not a race with the empty slot.
+  const preview = page.getByTestId('confirm-dry-run')
+  await expect(preview).toBeVisible()
+  await expect(preview).not.toHaveText('')
   await expect(page.getByTestId('confirm-accept')).toHaveText('Yes, apply')
   await shot(page, 'confirm-dialog.png')
 })
