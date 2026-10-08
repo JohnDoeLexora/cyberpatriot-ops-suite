@@ -88,3 +88,47 @@ export async function executeOp(input: {
 
   return { result: demoResult(input.opId, params, confirm), source: 'demo-fallback' }
 }
+
+/**
+ * cp-13 reliability hook. Asks the API for a live dry-run preview.
+ * confirm stays false, so the host is not changed. Returns null when the
+ * preview cannot be loaded. Vitest never calls the network (MODE === 'test').
+ */
+export async function fetchDryRunPreview(
+  opId: string,
+  params: Record<string, unknown> = {},
+  signal?: AbortSignal,
+): Promise<string | null> {
+  if (import.meta.env.MODE === 'test') return null
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), 8000)
+  const onAbort = () => ctrl.abort()
+  signal?.addEventListener('abort', onAbort)
+  try {
+    const res = await fetch(`${apiBase()}/ops/${encodeURIComponent(opId)}/run`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'live',
+        confirm: false,
+        dryRun: true,
+        params: { ...params, dryRun: true },
+      }),
+      signal: ctrl.signal,
+    })
+    const body = (await res.json().catch(() => null)) as
+      | { summary?: unknown; data?: { extra?: { preview?: unknown } } }
+      | null
+    if (!body || typeof body.summary !== 'string' || !body.summary.trim()) return null
+    const summary = body.summary
+    const preview = body.data?.extra?.preview
+    const lines = Array.isArray(preview) ? preview.filter((line): line is string => typeof line === 'string') : []
+    const extra = lines.filter((line) => !summary.includes(line))
+    return extra.length ? `${summary}\n${extra.join('\n')}` : summary
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+    signal?.removeEventListener('abort', onAbort)
+  }
+}
