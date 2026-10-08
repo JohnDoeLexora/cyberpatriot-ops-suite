@@ -11,6 +11,7 @@ export const FILES: Record<string, HowToBody> = {
       "Run the op. Prioritize /etc, cron, sudoers, and directories on PATH.",
       "Fix modes on the image (chmod o-w, or delete planted scripts after you snapshot them for forensics).",
       "Re-run. Sticky /tmp is expected; 0777 /usr/local/bin is not.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No world-writable sudoers or cron files.",
     ],
     goodLooksLike: [
       "No world-writable sudoers or cron files.",
@@ -20,6 +21,7 @@ export const FILES: Record<string, HowToBody> = {
     risks: [
       "Read-only. chmod/delete is a separate action — snapshot first if a forensics question might need the file.",
       "Do not ‘test’ world-writable sudoers by writing to them.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["check-sensitive-file-perms", "audit-cron", "audit-sudoers", "audit-sticky-tmp"],
     keywords: ["world-writable", "0777", "chmod o-w", "cron.d"],
@@ -34,6 +36,7 @@ export const FILES: Record<string, HowToBody> = {
       "Run the op. Ignore the known-good set unless the path is wrong.",
       "Anything under /tmp, /home, /opt, /var: snapshot for notes, then remove the SUID bit or the file per team policy.",
       "Re-run until only expected system binaries remain.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Expected: passwd, sudo, su, ping, newgrp in /usr.",
     ],
     goodLooksLike: [
       "Expected: passwd, sudo, su, ping, newgrp in /usr.",
@@ -42,6 +45,7 @@ export const FILES: Record<string, HowToBody> = {
     risks: [
       "Read-only. This is not a guide to using SUID bash.",
       "Removing SUID from /usr/bin/passwd will break password changes — only touch unexpected paths.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["find-hidden-executables", "find-backdoor-binaries", "find-world-writable", "audit-cron"],
     keywords: ["SUID", "SGID", "suid_bash", "find -4000"],
@@ -55,6 +59,7 @@ export const FILES: Record<string, HowToBody> = {
       "Run the op. Read each path — is it obviously a song/video, or could it be a forensics exhibit?",
       "If the README forbids media and it is not needed for a question, delete on the image using OS tools.",
       "Re-run until the inventory is empty (or only authorized exceptions).",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No prohibited media under homes/Public.",
     ],
     goodLooksLike: [
       "No prohibited media under homes/Public.",
@@ -63,6 +68,7 @@ export const FILES: Record<string, HowToBody> = {
     risks: [
       "Read-only discovery. Blind recursive delete can destroy evidence.",
       "Do not search other teams’ shares.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["find-hidden-executables", "find-prohibited-software", "export-evidence-bundle"],
     keywords: ["mp3", "mp4", "prohibited media", "Movies"],
@@ -76,6 +82,7 @@ export const FILES: Record<string, HowToBody> = {
       "Run the op. Note 0777 homes, root-owned user homes, and homes in /tmp.",
       "Fix ownership/mode on the image (typically 750/700, user:user).",
       "Homes in /tmp for planted UID 0 users: disable the user rather than ‘fixing’ a /tmp home.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Each authorized user’s home is owned by that user, not world-writable.",
     ],
     goodLooksLike: [
       "Each authorized user’s home is owned by that user, not world-writable.",
@@ -84,6 +91,7 @@ export const FILES: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "chmod 700 on a required shared home could break a scored app — README first.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["check-sensitive-file-perms", "find-world-writable", "audit-ssh-authorized-keys", "disable-user"],
     keywords: ["home 0777", "chown", "750", "/tmp/toor"],
@@ -97,6 +105,7 @@ export const FILES: Record<string, HowToBody> = {
       "Run the op. Anything on shadow/sudoers/ssh keys that is world-readable or writable is urgent.",
       "Fix modes on the image (e.g. shadow 640, sudoers 440, host keys 600).",
       "Re-run. Pair with audit-sudoers if sudoers was writable.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: shadow not world-readable, sudoers not writable by others, ssh host keys 600.",
     ],
     goodLooksLike: [
       "shadow not world-readable, sudoers not writable by others, ssh host keys 600.",
@@ -105,6 +114,7 @@ export const FILES: Record<string, HowToBody> = {
     risks: [
       "Read-only. Never cat shadow into notes or tickets.",
       "Wrong chmod on ssh host keys can break sshd — keep sshd running if required.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-sudoers", "find-world-writable", "harden-sshd", "export-evidence-bundle"],
     keywords: ["/etc/shadow 0644", "sudoers 0666", "host key 0644"],
@@ -118,6 +128,7 @@ export const FILES: Record<string, HowToBody> = {
       "Run the op. Root should have no random keys unless the README says so.",
       "Remove unexpected public keys on the image (delete the line or the file). Snapshot comments into notes first.",
       "Investigate authorized_keys living in /var/tmp or /tmp — that is persistence.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Only keys you can justify from the README/coach.",
     ],
     goodLooksLike: [
       "Only keys you can justify from the README/coach.",
@@ -127,6 +138,7 @@ export const FILES: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Deleting the only authorized key can lock SSH if passwords are also off — have console.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["ssh-hardening-audit", "harden-sshd", "find-hidden-executables", "list-users"],
     keywords: ["authorized_keys", "hacker@evil", "fingerprint", "root keys"],
@@ -140,6 +152,7 @@ export const FILES: Record<string, HowToBody> = {
       "Run the op. Record paths for forensics notes.",
       "If not needed for a question, remove the executable (and the cron/startup that calls it).",
       "Re-run. Pair with audit-cron and audit-startup-items so it does not come back.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No hidden executables in /tmp, /var/tmp, homes, or Startup.",
     ],
     goodLooksLike: [
       "No hidden executables in /tmp, /var/tmp, homes, or Startup.",
@@ -148,6 +161,7 @@ export const FILES: Record<string, HowToBody> = {
     risks: [
       "Read-only inventory. Do not execute the hidden file ‘to see what it does.’",
       "Snapshot before delete if a forensics question may reference it.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["find-backdoor-binaries", "audit-cron", "audit-startup-items", "find-suid-sgid"],
     keywords: [".hidden_shell", ".kworker", "Startup", "dotfile executable"],
@@ -161,6 +175,7 @@ export const FILES: Record<string, HowToBody> = {
       "Run the op. Classify each share: required, guest, world-writable, administrative.",
       "If sharing is not required, disable the service.",
       "If it is required: remove guest, tighten ACLs, drop unexpected public shares.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Only README shares remain.",
     ],
     goodLooksLike: [
       "Only README shares remain.",
@@ -170,6 +185,7 @@ export const FILES: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Removing a required share costs points — README names matter.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-smb", "disable-smbv1", "disable-service", "find-world-writable", "audit-share-acls"],
     keywords: ["net share", "Everyone Full", "C$", "guest ok"],
@@ -194,6 +210,7 @@ export const FILES: Record<string, HowToBody> = {
     risks: [
       "Read-only. Does not modify ACLs or enumerate other machines.",
       "Removing a required share costs points — README names matter.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-shared-folders", "audit-smb", "disable-smbv1", "find-world-writable"],
     keywords: ["Everyone Full", "guest ok", "C$", "icacls", "smb.conf"],
@@ -208,6 +225,7 @@ export const FILES: Record<string, HowToBody> = {
       "Run the op. Treat 0644 shadow, 0666 sudoers, or Everyone:(R) on SAM as fire.",
       "Fix modes on the image (typically shadow 000/640 root:shadow, sudoers 440, host keys 600). This op does not mutate.",
       "Re-run. Pair with find-world-writable so a writable sudoers.d file does not sneak back.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: shadow/gshadow not world-readable.",
     ],
     goodLooksLike: [
       "shadow/gshadow not world-readable.",
@@ -217,6 +235,7 @@ export const FILES: Record<string, HowToBody> = {
     risks: [
       "Read-only. Never dump SAM, shadow hashes, or private keys into notes.",
       "chmod of /usr host keys is fine; do not chmod -R /etc blindly.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "check-sensitive-file-perms",

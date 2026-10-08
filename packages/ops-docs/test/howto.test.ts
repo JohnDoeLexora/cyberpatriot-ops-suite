@@ -67,10 +67,32 @@ describe("how-to search", () => {
     assert.ok(ww.some((g) => g.opId === "find-world-writable"));
   });
 
+  it("indexes catalog what-it-changes and how-to-undo text", () => {
+    const readOnly = searchHowto("Nothing - read-only audit");
+    assert.ok(readOnly.some((g) => g.opId === "list-users"));
+    const backup = searchHowto("cyberpatriot-ops");
+    assert.ok(backup.some((g) => g.opId === "harden-sshd"));
+    assert.ok(backup.every((g) => g.risk === "mutate" || g.opId === "audit-ipv6-privacy"));
+    const noroot = searchHowto("99-cp-noroot.conf");
+    assert.equal(noroot[0]?.opId, "disable-root-ssh");
+  });
+
   it("AND-matches tokens and returns nothing for nonsense", () => {
     const both = searchHowto("Guest blank password");
     assert.ok(both.some((g) => g.opId === "disable-guest-account"));
     assert.deepEqual(searchHowto("xyzzy-no-such-explainer-42"), []);
+  });
+});
+
+describe("guide depth", () => {
+  it("every guide has a verify step and a common mistake", () => {
+    const weak = GUIDES.filter((guide) => {
+      const steps = guide.steps.join("\n");
+      const hasVerify = /how to verify|re-run|verify/i.test(steps);
+      const hasMistake = guide.risks.some((risk) => /common mistake/i.test(risk));
+      return guide.steps.length < 4 || !hasVerify || !hasMistake;
+    }).map((guide) => guide.opId);
+    assert.deepEqual(weak, []);
   });
 });
 

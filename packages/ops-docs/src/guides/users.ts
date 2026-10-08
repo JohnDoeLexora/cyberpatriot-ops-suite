@@ -24,6 +24,7 @@ export const USERS: Record<string, HowToBody> = {
       "Read-only: this op does not disable or delete anyone.",
       "Service accounts (www-data, sshd, daemon) are supposed to exist — do not treat them as backdoors just because they are not in the README.",
       "Authorized-image inventory only. Never point this at another team’s host.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["flag-suspicious-users", "list-admin-users", "audit-uid-zero", "disable-user"],
     keywords: ["getent passwd", "net user", "lusrmgr", "inventory", "local accounts"],
@@ -41,6 +42,7 @@ export const USERS: Record<string, HowToBody> = {
       "Triage: UID 0 aliases and extra admins first, then throwaway names, then never-logged-in humans.",
       "For each hit, check the README once more — authorized coaches and service accounts can look odd.",
       "Hand the remaining names to disable-user, lock-user, or remove-user-from-admins. Do not delete homes; forensics questions may need them.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: README users (alice, bob, coach, …) score clean.",
     ],
     goodLooksLike: [
       "README users (alice, bob, coach, …) score clean.",
@@ -51,6 +53,7 @@ export const USERS: Record<string, HowToBody> = {
       "Heuristics are not the official CCS score. Do not chase a number instead of the README.",
       "Read-only. Acting on a false positive (locking a required user) is a mutate op with confirm:true.",
       "Never used to attack other teams or scoring endpoints.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "list-users",
@@ -85,6 +88,7 @@ export const USERS: Record<string, HowToBody> = {
       "Never disable root or a README-required admin unless the README says so.",
       "Do not userdel. Deleting homes can wipe forensics evidence.",
       "Authorized image only.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["lock-user", "flag-suspicious-users", "list-users", "disable-guest-account"],
     keywords: ["usermod", "Disable-LocalUser", "nologin", "unauthorized", "confirm"],
@@ -110,6 +114,7 @@ export const USERS: Record<string, HowToBody> = {
       "Mutation. Live requires confirm:true.",
       "Locking a required service account can break a scored service — check required-services and the README.",
       "This is not a password-cracking tool and never prints hashes.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["disable-user", "expire-user-password", "check-empty-passwords", "list-users"],
     keywords: ["passwd -l", "usermod -L", "lock password", "confirm"],
@@ -136,6 +141,7 @@ export const USERS: Record<string, HowToBody> = {
       "Mutation. Live requires confirm:true.",
       "Removing the last authorized admin can lock your team out of the image — keep one README admin.",
       "Do not confuse this with disable-user.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["list-admin-users", "audit-sudoers", "list-groups", "disable-user"],
     keywords: ["sudo", "wheel", "Administrators", "demote", "confirm"],
@@ -151,6 +157,7 @@ export const USERS: Record<string, HowToBody> = {
       "Circle names that are admin but not on the README as admins.",
       "Note UID 0 duplicates (toor) — those also belong in audit-uid-zero.",
       "Feed extras to remove-user-from-admins or disable-user.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Only README admins plus the OS built-in (root / Administrator).",
     ],
     goodLooksLike: [
       "Only README admins plus the OS built-in (root / Administrator).",
@@ -159,6 +166,7 @@ export const USERS: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Windows built-in Administrator and Linux root are expected; do not “fix” them by deletion.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["remove-user-from-admins", "audit-sudoers", "audit-uid-zero", "list-groups"],
     keywords: ["sudo", "Administrators", "UID 0", "wheel", "allowlist"],
@@ -183,6 +191,7 @@ export const USERS: Record<string, HowToBody> = {
       "Read-only. Disabling the extra account is a separate mutate op (confirm:true).",
       "Do not delete root. Do not experiment with usermod -u 0 on other users.",
       "This is an inventory, not a privilege-escalation recipe.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-duplicate-uids", "flag-suspicious-users", "disable-user", "list-admin-users"],
     keywords: ["UID 0", "toor", "duplicate root", "passwd"],
@@ -207,6 +216,7 @@ export const USERS: Record<string, HowToBody> = {
     risks: [
       "Read-only. This is not John/hashcat and must never become a cracker.",
       "Setting passwords is a manual/OS step; this op only detects emptiness.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["disable-guest-account", "expire-user-password", "audit-password-policy", "lock-user"],
     keywords: ["empty password", "nullok", "PasswordRequired", "Guest", "shadow"],
@@ -221,6 +231,7 @@ export const USERS: Record<string, HowToBody> = {
       "Run the op. Ignore nologin system UIDs.",
       "If a never-logged-in name is not on the README, disable or lock it.",
       "If it is on the README, it may still be fine — some authorized users simply have not logged in yet.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Remaining never-logged-in humans are README-authorized.",
     ],
     goodLooksLike: [
       "Remaining never-logged-in humans are README-authorized.",
@@ -229,6 +240,7 @@ export const USERS: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "A required user who has not logged in yet is not automatically a backdoor.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["flag-suspicious-users", "disable-user", "list-users", "check-user-shells"],
     keywords: ["lastlog", "LastLogon", "never logged in", "flag user"],
@@ -243,6 +255,7 @@ export const USERS: Record<string, HowToBody> = {
       "Run the op on the Linux image.",
       "For each weird shell: check the README, then disable the user or set a proper shell via the OS — this op itself is read-only.",
       "System accounts with bash: report and typically lock/nologin them if not required.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Authorized humans: /bin/bash or /bin/sh.",
     ],
     goodLooksLike: [
       "Authorized humans: /bin/bash or /bin/sh.",
@@ -252,6 +265,7 @@ export const USERS: Record<string, HowToBody> = {
     risks: [
       "Read-only. Changing shells is a separate system change; prefer disable-user if the account is unauthorized.",
       "csh/zsh is not automatically evil — but on a bash CP image it is unusual; check the README.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["flag-suspicious-users", "disable-user", "audit-uid-zero", "find-hidden-executables"],
     keywords: ["/etc/passwd", "nologin", "login shell", "python3 shell"],
@@ -266,6 +280,7 @@ export const USERS: Record<string, HowToBody> = {
       "Run the op and scan privileged groups first.",
       "Compare members to the README (admins vs standard vs none).",
       "Unexpected docker/RDP/Hyper-V members: demote with remove-user-from-admins or the OS group tool; this op is read-only.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Privileged groups match the README.",
     ],
     goodLooksLike: [
       "Privileged groups match the README.",
@@ -274,6 +289,7 @@ export const USERS: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Do not delete built-in groups. Changing membership is a mutate you should confirm against the README.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["list-admin-users", "remove-user-from-admins", "audit-rdp", "audit-sudoers"],
     keywords: ["/etc/group", "net localgroup", "docker", "Remote Desktop Users"],
@@ -288,6 +304,7 @@ export const USERS: Record<string, HowToBody> = {
       "Skim the README for the word Guest. If it is required (rare), stop.",
       "dryRun:true, then live with confirm:true. No username param — it targets Guest.",
       "Re-run list-users / check-empty-passwords; Guest should be disabled.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Guest exists but enabled=false / cannot log in.",
     ],
     goodLooksLike: [
       "Guest exists but enabled=false / cannot log in.",
@@ -296,6 +313,7 @@ export const USERS: Record<string, HowToBody> = {
     risks: [
       "Mutation. Live requires confirm:true.",
       "If a forensics question mentions Guest, disable still; do not delete the account.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["check-empty-passwords", "list-users", "disable-user", "audit-uac"],
     keywords: ["Guest", "guest account", "blank password", "confirm"],
@@ -310,11 +328,13 @@ export const USERS: Record<string, HowToBody> = {
       "Run the op. Treat any UID 0 collision as urgent.",
       "Disable the extra name (disable-user). Do not try to ‘merge’ the UIDs.",
       "Re-run until each UID maps to one username (plus expected system aliases if the distro documents them).",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No two human usernames share a UID.",
     ],
     goodLooksLike: ["No two human usernames share a UID.", "root is the only UID 0 name."],
     risks: [
       "Read-only.",
       "Some distros have aliases; still, CP images that plant toor are not ‘aliases’ — they are backdoors to disable.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-uid-zero", "disable-user", "list-users", "flag-suspicious-users"],
     keywords: ["duplicate UID", "toor", "passwd collision"],
@@ -330,6 +350,7 @@ export const USERS: Record<string, HowToBody> = {
       "Confirm the username is on the README.",
       "dryRun:true, then live confirm:true.",
       "Do not paste a new password into this tool; the user (or your team, locally) sets it at next login per team policy.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Account still enabled.",
     ],
     goodLooksLike: [
       "Account still enabled.",
@@ -340,6 +361,7 @@ export const USERS: Record<string, HowToBody> = {
       "Mutation. Live requires confirm:true.",
       "Expiring root/Administrator can be painful mid-round; prefer authorized humans first.",
       "This is not a password reset that prints or emails secrets.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["check-password-aging", "enforce-password-policy", "lock-user", "check-empty-passwords"],
     keywords: ["chage", "logonpasswordchg", "expire", "default password", "confirm"],

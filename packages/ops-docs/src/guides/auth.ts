@@ -11,6 +11,7 @@ export const AUTH: Record<string, HowToBody> = {
       "Run the op and list every finding (short minlen, no history, never-expires).",
       "Skim the README for a required policy; if silent, use the conservative baseline this suite documents (length 14, history 5, max 90).",
       "Fix with enforce-password-policy rather than hand-editing five files under the clock.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Min length ≥ 12–14, complexity on, history remembered, max age not 99999.",
     ],
     goodLooksLike: [
       "Min length ≥ 12–14, complexity on, history remembered, max age not 99999.",
@@ -19,6 +20,7 @@ export const AUTH: Record<string, HowToBody> = {
     risks: [
       "Read-only. Applying policy is a mutate op with confirm:true.",
       "Do not weaken policy to ‘match a guessing attack’ — this is defensive only.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["enforce-password-policy", "check-password-aging", "audit-pam", "enable-account-lockout"],
     keywords: ["login.defs", "pwquality", "net accounts", "secpol", "minlen"],
@@ -43,6 +45,7 @@ export const AUTH: Record<string, HowToBody> = {
       "Mutation. Live requires confirm:true. dryRun:true previews.",
       "A too-strict policy can lock your team out if you also expire everyone at once — do not combine blindly.",
       "Never used to attack password-guessing on other hosts.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["audit-password-policy", "expire-user-password", "enable-account-lockout", "audit-pam"],
     keywords: ["pwquality", "net accounts", "min length 14", "confirm"],
@@ -56,6 +59,7 @@ export const AUTH: Record<string, HowToBody> = {
       "Run the op. Ignore system accounts.",
       "For humans with 99999/-1: either enforce-password-policy (global) or chage the user; this op is read-only.",
       "Re-check authorized users after policy apply.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Human max age in a sane range (e.g. 90).",
     ],
     goodLooksLike: [
       "Human max age in a sane range (e.g. 90).",
@@ -64,6 +68,7 @@ export const AUTH: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Do not expire a required service account that cannot interactively change a password.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["enforce-password-policy", "expire-user-password", "audit-password-policy"],
     keywords: ["chage", "PASS_MAX_DAYS", "99999", "aging"],
@@ -78,6 +83,7 @@ export const AUTH: Record<string, HowToBody> = {
       "Run the op. Treat nullok as fire — it must go.",
       "Note missing pwquality and faillock; those are the mutate ops.",
       "Do not hand-edit PAM as your first move unless you know the distro; prefer the suite’s mutate ops.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No nullok.",
     ],
     goodLooksLike: [
       "No nullok.",
@@ -87,6 +93,7 @@ export const AUTH: Record<string, HowToBody> = {
     risks: [
       "Read-only. A broken PAM file can lock everyone out — that is why mutate ops exist.",
       "This is not a guide to bypass PAM.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["enable-account-lockout", "enforce-password-policy", "check-empty-passwords"],
     keywords: ["PAM", "nullok", "faillock", "pwquality", "common-auth"],
@@ -100,6 +107,7 @@ export const AUTH: Record<string, HowToBody> = {
       "Run the matching audit so you have a before picture.",
       "dryRun:true, then live confirm:true.",
       "Re-run audit-pam / audit-password-policy; faillock or lockout threshold should be present.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: deny=5 (or README value) and a non-zero unlock time.",
     ],
     goodLooksLike: [
       "deny=5 (or README value) and a non-zero unlock time.",
@@ -109,6 +117,7 @@ export const AUTH: Record<string, HowToBody> = {
       "Mutation. Live requires confirm:true.",
       "A very low threshold plus a shared team password can lock you during the round — 5/10 minutes is the conservative default.",
       "This does not attack other hosts and is not an online bruteforce tool.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["audit-pam", "audit-password-policy", "enforce-password-policy"],
     keywords: ["faillock", "lockoutthreshold", "deny=5", "confirm"],
@@ -134,6 +143,7 @@ export const AUTH: Record<string, HowToBody> = {
       "Mutation. Live requires confirm:true.",
       "If you have no sudo user other than root, you can strand the image — check list-admin-users first.",
       "Does not listen on other machines; local sshd only.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["ssh-hardening-audit", "harden-sshd", "list-admin-users", "disable-user"],
     keywords: ["PermitRootLogin", "sshd_config", "root login", "confirm"],
@@ -149,6 +159,7 @@ export const AUTH: Record<string, HowToBody> = {
       "Compare sudoers names to the README admins.",
       "World-writable sudoers files: fix permissions with check-sensitive-file-perms follow-up; do not leave 0666.",
       "Unexpected NOPASSWD users: remove-user-from-admins or edit sudoers via visudo on the image (not this read op).",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Only README admins have sudo.",
     ],
     goodLooksLike: [
       "Only README admins have sudo.",
@@ -158,6 +169,7 @@ export const AUTH: Record<string, HowToBody> = {
     risks: [
       "Read-only. A syntax error in sudoers can lock out sudo — use visudo if you edit by hand.",
       "This is not a privilege-escalation cookbook.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "list-admin-users",
@@ -176,6 +188,7 @@ export const AUTH: Record<string, HowToBody> = {
       "Run the op. If EnableLUA is 0, UAC is off — that is the finding.",
       "This op is read-only; turn UAC back on with the Windows settings / registry using a confirmed team procedure.",
       "Re-run until EnableLUA=1 and the admin prompt is not ‘elevate without asking.’",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: EnableLUA=1.",
     ],
     goodLooksLike: [
       "EnableLUA=1.",
@@ -185,6 +198,7 @@ export const AUTH: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Do not disable UAC to ‘make scripts easier.’",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["disable-guest-account", "audit-password-policy", "enable-windows-defender", "audit-rdp"],
     keywords: ["UAC", "EnableLUA", "ConsentPromptBehaviorAdmin"],
@@ -199,6 +213,7 @@ export const AUTH: Record<string, HowToBody> = {
       "Run the op. Sort empty+never-expires first (Guest, games, planted humans).",
       "Disable Guest; lock or expire authorized humans; enforce-password-policy for the global max-age.",
       "Do not print or copy hashes. Re-run until empty+never-expires is gone for humans.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No human with empty password + never-expires.",
     ],
     goodLooksLike: [
       "No human with empty password + never-expires.",
@@ -208,6 +223,7 @@ export const AUTH: Record<string, HowToBody> = {
     risks: [
       "Read-only. Hashes are never returned.",
       "Do not expire a required service account that cannot change a password interactively.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "check-empty-passwords",

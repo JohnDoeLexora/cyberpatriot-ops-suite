@@ -11,6 +11,7 @@ export const EVIDENCE: Record<string, HowToBody> = {
       "Run the op in demo or live read mode — it does not mutate.",
       "Skim the bundle: counts, top findings, checksums.",
       "Copy only what you need into the forensics notepad. Do not add shadow or id_rsa files by hand.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Bundle contains inventories and checksums, not secrets.",
     ],
     goodLooksLike: [
       "Bundle contains inventories and checksums, not secrets.",
@@ -19,6 +20,7 @@ export const EVIDENCE: Record<string, HowToBody> = {
     risks: [
       "Read-only. Still: do not zip private keys into the pack.",
       "Not off-image exfiltration and not a scoring-server upload.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "one-click-hardening-checklist",
@@ -39,6 +41,7 @@ export const EVIDENCE: Record<string, HowToBody> = {
       "Run the op in demo or live read mode — it does not mutate.",
       "Skim persistence, share ACLs, and perm-drift sections. Copy only what a forensics question needs.",
       "Do not add shadow, SAM, or id_rsa files by hand. Keep the pack on the image.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Pack has inventories, ACLs, perm drift, and checksums — not secrets.",
     ],
     goodLooksLike: [
       "Pack has inventories, ACLs, perm drift, and checksums — not secrets.",
@@ -47,6 +50,7 @@ export const EVIDENCE: Record<string, HowToBody> = {
     risks: [
       "Read-only. Still: do not zip private keys or hashes into the pack.",
       "Not off-image exfiltration and not a scoring-server upload.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "export-evidence-bundle",
@@ -66,6 +70,7 @@ export const EVIDENCE: Record<string, HowToBody> = {
       "Run the op. Sort fail/warn first.",
       "Open the linked mutate/read op from each failing row and follow that how-to.",
       "Re-run the checklist; remaining fails should shrink.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Required services still pass.",
     ],
     goodLooksLike: [
       "Required services still pass.",
@@ -74,6 +79,7 @@ export const EVIDENCE: Record<string, HowToBody> = {
     risks: [
       "Read-only. Fixes still need confirm:true on the mutate ops.",
       "Not the official scoreboard. Do not query scoring endpoints.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "score-image-heuristics",
@@ -95,6 +101,7 @@ export const EVIDENCE: Record<string, HowToBody> = {
       "Run the op. Sort fail rows first.",
       "Open the linked mutate/read op from each failing row and follow that how-to (confirm:true on live mutates).",
       "Re-run. Do not point this tool at scoring URLs — it will not, and you must not.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Firewall on, Guest off, telnet gone, time in sync, logging up.",
     ],
     goodLooksLike: [
       "Firewall on, Guest off, telnet gone, time in sync, logging up.",
@@ -104,6 +111,7 @@ export const EVIDENCE: Record<string, HowToBody> = {
     risks: [
       "Read-only. Fixes still need confirm:true on the mutate ops.",
       "Not the official scoreboard. Do not query scoring endpoints or other images.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "one-click-hardening-checklist",
@@ -123,6 +131,7 @@ export const EVIDENCE: Record<string, HowToBody> = {
       "Run the op. Treat remaining fails as the last work list.",
       "Follow each linked op; live mutates still need confirm:true.",
       "Re-run until remaining fails are README exceptions you can explain in notes.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No extra UID 0, no empty+never-expire humans, Guest off.",
     ],
     goodLooksLike: [
       "No extra UID 0, no empty+never-expire humans, Guest off.",
@@ -132,6 +141,7 @@ export const EVIDENCE: Record<string, HowToBody> = {
     risks: [
       "Read-only. Does not re-apply hardening for you.",
       "Not CCS. Do not hide logs or delete evidence to make rows green.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "one-click-hardening-checklist",
@@ -151,6 +161,7 @@ export const EVIDENCE: Record<string, HowToBody> = {
       "Run the op. Read top drivers (UID 0, port 31337, telnet, empty Guest) not just the integer.",
       "Work those drivers with the matching ops.",
       "Re-run; the remaining-work index should fall. If it does not, you fixed the wrong thing.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Top drivers match what you already found in specialized ops.",
     ],
     goodLooksLike: [
       "Top drivers match what you already found in specialized ops.",
@@ -159,6 +170,7 @@ export const EVIDENCE: Record<string, HowToBody> = {
     risks: [
       "Read-only heuristic. Not CCS. Not a scoring-server client.",
       "Do not optimize the number by hiding logs or deleting evidence.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "one-click-hardening-checklist",
@@ -189,6 +201,7 @@ export const EVIDENCE: Record<string, HowToBody> = {
       "Read-only. Never run the found binary ‘to confirm.’",
       "Name matches can false-positive — check the path.",
       "No exploit payloads, no off-image attacks.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "find-hidden-executables",

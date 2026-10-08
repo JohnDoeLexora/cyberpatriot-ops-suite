@@ -11,6 +11,7 @@ export const NETWORK: Record<string, HowToBody> = {
       "Run the op. Keep the README required ports (22, 80, 443, …) as the allowlist.",
       "For each unexpected bind: identify the process, then disable that service or investigate find-backdoor-binaries.",
       "Re-run until only required listeners remain.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: 22/80/443 (or whatever the README lists) only.",
     ],
     goodLooksLike: [
       "22/80/443 (or whatever the README lists) only.",
@@ -19,6 +20,7 @@ export const NETWORK: Record<string, HowToBody> = {
     risks: [
       "Read-only local audit. This is not nmap against the LAN or other teams.",
       "Killing the wrong listener can drop a scored service — identify first.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "flag-risky-services",
@@ -50,6 +52,7 @@ export const NETWORK: Record<string, HowToBody> = {
       "Read-only local audit. Never scans other hosts, the LAN, or the scoring server.",
       "Killing a required listener costs points — identify first.",
       "Bend may score the inventory on Linux live; demo never invokes Bend.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "audit-listening-ports",
@@ -78,6 +81,7 @@ export const NETWORK: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Do not disable sshd if it is a required service just to ‘hide’ findings — harden it.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["harden-sshd", "disable-root-ssh", "audit-ssh-authorized-keys", "list-admin-users"],
     keywords: ["sshd_config", "PermitRootLogin", "PermitEmptyPasswords", "MaxAuthTries"],
@@ -101,6 +105,7 @@ export const NETWORK: Record<string, HowToBody> = {
       "Mutation. Live requires confirm:true.",
       "A bad sshd reload can drop remote access — console first.",
       "Local sshd only; not a tool for connecting to other hosts.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["ssh-hardening-audit", "disable-root-ssh", "enable-firewall", "audit-ssh-authorized-keys"],
     keywords: ["sshd_config.d", "drop-in", "Protocol 2", "confirm"],
@@ -115,6 +120,7 @@ export const NETWORK: Record<string, HowToBody> = {
       "Run the audit.",
       "If not required: disable-rdp.",
       "If required: leave it on, require NLA, restrict Remote Desktop Users.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: RDP off when not required.",
     ],
     goodLooksLike: [
       "RDP off when not required.",
@@ -123,6 +129,7 @@ export const NETWORK: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Disabling RDP when it is the only remote path can strand you — know your console story.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["disable-rdp", "list-groups", "enable-firewall", "audit-listening-ports"],
     keywords: ["fDenyTSConnections", "NLA", "TermService", "RDP"],
@@ -136,11 +143,13 @@ export const NETWORK: Record<string, HowToBody> = {
       "Confirm you have console or another admin path.",
       "dryRun:true, then live confirm:true.",
       "Re-run audit-rdp and audit-listening-ports (3389).",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: fDenyTSConnections=1",
     ],
     goodLooksLike: ["fDenyTSConnections=1", "TermService stopped", "3389 closed"],
     risks: [
       "Mutation. Live requires confirm:true.",
       "Will refuse to be your only remote path if you still need it — README first.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["audit-rdp", "enable-firewall", "list-groups", "disable-service"],
     keywords: ["disable RDP", "TermService", "3389", "confirm"],
@@ -155,6 +164,7 @@ export const NETWORK: Record<string, HowToBody> = {
       "Run the op. Expected: localhost, maybe the hostname.",
       "Unexpected sinkholes of windowsupdate, defender, or scoring domains: plan to remove those lines on the image (this op is read-only).",
       "Re-run after editing. Do not add your own redirects to third-party sites.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: localhost and the machine hostname only, plus README-required entries.",
     ],
     goodLooksLike: [
       "localhost and the machine hostname only, plus README-required entries.",
@@ -163,6 +173,7 @@ export const NETWORK: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Do not probe the redirected sites from the image as a ‘test.’",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["check-pending-updates", "apply-security-updates", "enable-windows-defender", "audit-logging"],
     keywords: ["/etc/hosts", "windowsupdate", "sinkhole", "redirect"],
@@ -176,6 +187,7 @@ export const NETWORK: Record<string, HowToBody> = {
       "Run the op. Note inactive units and bogus NTP servers (10.0.0.1 plants).",
       "Enable the distro time service via the OS; this op is read-only.",
       "Do not point NTP at random internet pools if the README specifies an internal server.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: timesyncd/chronyd/w32time active.",
     ],
     goodLooksLike: [
       "timesyncd/chronyd/w32time active.",
@@ -184,6 +196,7 @@ export const NETWORK: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "This is not a denial-of-service test against NTP servers.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-logging", "check-auditd", "audit-hosts-file"],
     keywords: ["chronyd", "timesyncd", "w32time", "NTP"],
@@ -197,6 +210,7 @@ export const NETWORK: Record<string, HowToBody> = {
       "Run the op. If inactive/off, enable-firewall is the next click.",
       "Then list-firewall-rules and apply-default-deny-inbound.",
       "Allow required services (22/80/…) only after default deny.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: ufw/firewalld active, or all Windows profiles on.",
     ],
     goodLooksLike: [
       "ufw/firewalld active, or all Windows profiles on.",
@@ -205,6 +219,7 @@ export const NETWORK: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Enabling a firewall without allow rules for required services can drop scored ports — plan the allows.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["enable-firewall", "list-firewall-rules", "apply-default-deny-inbound", "audit-listening-ports"],
     keywords: ["ufw", "firewalld", "Windows Firewall", "profile off"],
@@ -224,6 +239,7 @@ export const NETWORK: Record<string, HowToBody> = {
     risks: [
       "Mutation. Live requires confirm:true.",
       "Can cut your own SSH/RDP if default deny is already in place without allows — have console access.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["audit-firewall", "apply-default-deny-inbound", "list-firewall-rules", "harden-sshd"],
     keywords: ["ufw --force enable", "Set-NetFirewallProfile", "confirm"],
@@ -237,6 +253,7 @@ export const NETWORK: Record<string, HowToBody> = {
       "Run the op. Treat any/any inbound and 23/21/445 allows as to-fix.",
       "Remove those rules on the image (OS tools); this op is read-only.",
       "Keep allows for README-required ports only.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No 0.0.0.0/0 any/any inbound.",
     ],
     goodLooksLike: [
       "No 0.0.0.0/0 any/any inbound.",
@@ -246,6 +263,7 @@ export const NETWORK: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Deleting the wrong allow can drop a scored service — README next to the rule list.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["apply-default-deny-inbound", "audit-firewall", "disable-telnet", "audit-listening-ports"],
     keywords: ["ufw status", "netsh advfirewall", "any/any", "allow 23"],
@@ -270,6 +288,7 @@ export const NETWORK: Record<string, HowToBody> = {
       "Mutation. Live requires confirm:true.",
       "Without the allow list, you can cut SSH/HTTP scoring. Console access first.",
       "Does not open or close ports on other machines.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["enable-firewall", "list-firewall-rules", "audit-listening-ports", "list-services"],
     keywords: ["default deny", "ufw default deny incoming", "confirm"],
