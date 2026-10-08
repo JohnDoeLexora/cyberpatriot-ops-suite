@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
 test.use({
   viewport: { width: 1280, height: 800 },
@@ -37,9 +37,16 @@ async function split(page: Page, axis: 'h' | 'v', opId?: string) {
   await page.getByTestId(`split-${axis}-${id}`).click()
 }
 
-async function shot(page: Page, name: string) {
+async function shot(page: Page, name: string, options?: { mask?: Locator[] }) {
   await settle(page)
-  await expect(page).toHaveScreenshot(name, { animations: 'disabled', caret: 'hide' })
+  // Baselines are linux chromium shots. A Windows runner has no matching
+  // *-chromium-win32.png files; the functional asserts above still run.
+  if (process.platform === 'win32') return
+  await expect(page).toHaveScreenshot(name, {
+    animations: 'disabled',
+    caret: 'hide',
+    mask: options?.mask,
+  })
 }
 
 test('empty workspace', async ({ page }) => {
@@ -116,6 +123,17 @@ test('shortcuts cheat sheet', async ({ page }) => {
 })
 
 test('confirm dialog keeps a dry-run slot', async ({ page }) => {
+  const applied: string[] = []
+  page.on('request', (req) => {
+    if (req.method() !== 'POST' || !req.url().includes('/run')) return
+    let body: { confirm?: boolean } | undefined
+    try {
+      body = req.postDataJSON() as { confirm?: boolean }
+    } catch {
+      return
+    }
+    if (body?.confirm === true) applied.push(req.url())
+  })
   await page.goto('/')
   await page.getByTestId('demo-toggle').click()
   await expect(page.getByTestId('mode-label')).toHaveText('this computer')
@@ -125,10 +143,16 @@ test('confirm dialog keeps a dry-run slot', async ({ page }) => {
   const dialog = page.getByTestId('confirm-dialog')
   await expect(dialog).toBeVisible()
   await expect(dialog).toContainText(/Change this computer/i)
-  // cp-13 fills cp-14's slot. Wait so the screenshot includes the preview, not a race with the empty slot.
   const preview = page.getByTestId('confirm-dry-run')
   await expect(preview).toBeVisible()
   await expect(preview).not.toHaveText('')
+  await expect(preview).toContainText(/Preview:|Skipped:|Will |would change|ufw|firewall/i)
   await expect(page.getByTestId('confirm-accept')).toHaveText('Yes, apply')
-  await shot(page, 'confirm-dialog.png')
+  // The preview text depends on whether ufw is installed. Mask that region so the baseline stays stable.
+  await shot(page, 'confirm-dialog.png', { mask: [preview] })
+  await dialog.getByRole('button', { name: 'Cancel' }).click()
+  await expect(dialog).toBeHidden()
+  expect(applied).toEqual([])
+  await expect(page.getByTestId('run-status')).not.toHaveAttribute('data-status', 'done')
+  await expect(page.getByTestId('state-idle')).toBeVisible()
 })
