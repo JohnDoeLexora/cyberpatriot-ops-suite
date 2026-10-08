@@ -108,6 +108,7 @@ test('how-to drawer', async ({ page }) => {
 
 test('shortcuts cheat sheet', async ({ page }) => {
   await page.goto('/')
+  await expect(page.getByTestId('empty-pane')).toBeVisible()
   await page.keyboard.press('?')
   await expect(page.getByTestId('shortcuts-modal')).toBeVisible()
   await expect(page.getByTestId('shortcuts-modal')).toContainText('Ctrl+K')

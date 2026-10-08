@@ -115,7 +115,7 @@ export function OpPanel({ paneId }: { paneId: string }) {
               {op.description}
             </span>
             {op.risk === 'mutate' && !ws.demoMode && (
-              <span className="rounded-md bg-warn-dim px-2 py-0.5 text-[12px] font-medium text-warn">
+              <span className="shrink-0 rounded-md bg-warn-dim px-2 py-0.5 text-[12px] font-medium text-warn">
                 asks first
               </span>
             )}

@@ -49,17 +49,17 @@ export function UserTable({ paneId, highlight }: { paneId: string; highlight?: (
         </button>
       </div>
       <div className="overflow-x-hidden overflow-y-auto">
-        <table className="w-full text-left text-[14px]" data-testid="user-table">
+        <table className="w-full table-fixed text-left text-[14px]" data-testid="user-table">
           <thead className="sticky top-0 z-10 bg-panel text-[12.5px] font-medium text-faint">
             <tr>
-              <th className="w-8 bg-panel px-3 py-2.5" />
-              <th className="min-w-[8rem] bg-panel px-3 py-2.5">Account</th>
-              <th className="hide-narrow bg-panel px-3 py-2.5">UID</th>
-              <th className="bg-panel px-3 py-2.5">Status</th>
-              <th className="hide-narrow bg-panel px-3 py-2.5">Shell</th>
-              <th className="hide-narrow bg-panel px-3 py-2.5">Last login</th>
+              <th className="w-10 bg-panel px-3 py-2.5" />
+              <th className="bg-panel px-3 py-2.5">Account</th>
+              <th className="hide-narrow w-[4.5rem] bg-panel px-3 py-2.5">UID</th>
+              <th className="w-[4.75rem] bg-panel px-3 py-2.5">Status</th>
+              <th className="hide-narrow w-[7rem] bg-panel px-3 py-2.5">Shell</th>
+              <th className="hide-narrow w-[8.5rem] bg-panel px-3 py-2.5">Last login</th>
               <th className="hide-narrow bg-panel px-3 py-2.5">Home</th>
-              <th className="bg-panel px-3 py-2.5 text-right">Actions</th>
+              <th className="w-[9.5rem] bg-panel px-2 py-2.5 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -114,13 +114,19 @@ export function UserTable({ paneId, highlight }: { paneId: string; highlight?: (
                       {u.uid ?? '—'} · {u.shell ?? '—'} · {formatLogin(u.lastLogin)}
                     </div>
                   </td>
-                  <td className="hide-narrow px-3 py-2.5 font-mono text-[13.5px] text-mute">{u.uid ?? '—'}</td>
+                  <td className="hide-narrow truncate px-3 py-2.5 font-mono text-[13.5px] text-mute">{u.uid ?? '—'}</td>
                   <td className="px-3 py-2.5">
                     <StatusChip status={u.status} />
                   </td>
-                  <td className="hide-narrow px-3 py-2.5 font-mono text-[13px] text-mute">{u.shell ?? '—'}</td>
-                  <td className="hide-narrow px-3 py-2.5 text-mute">{formatLogin(u.lastLogin)}</td>
-                  <td className="hide-narrow px-3 py-2.5 font-mono text-[13px] text-mute">{u.home ?? '—'}</td>
+                  <td className="hide-narrow truncate px-3 py-2.5 font-mono text-[13px] text-mute" title={u.shell ?? undefined}>
+                    {u.shell ?? '—'}
+                  </td>
+                  <td className="hide-narrow truncate px-3 py-2.5 text-mute" title={formatLogin(u.lastLogin)}>
+                    {formatLogin(u.lastLogin)}
+                  </td>
+                  <td className="hide-narrow truncate px-3 py-2.5 font-mono text-[13px] text-mute" title={u.home ?? undefined}>
+                    {u.home ?? '—'}
+                  </td>
                   <td className="px-2 py-2">
                     <div className="user-actions flex flex-wrap justify-end gap-0.5 text-ink">
                       <IconBtn

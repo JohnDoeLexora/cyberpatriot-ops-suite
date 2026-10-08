@@ -66,7 +66,8 @@ button {
   cursor: pointer;
 }
 
-:focus-visible {
+:focus-visible,
+[data-dialog-initial]:focus {
   outline: 3px solid var(--color-accent);
   outline-offset: 2px;
 }
@@ -262,15 +263,27 @@ button {
   gap: 1px;
 }
 
-.user-actions {
-  max-width: 11.5rem;
+[data-testid='user-table'] {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
 }
 
-@container pane (min-width: 46rem) {
-  .user-actions {
-    max-width: none;
-    flex-wrap: nowrap;
-  }
+[data-testid='user-table'] th:last-child,
+[data-testid='user-table'] td:last-child {
+  width: 9.5rem;
+  max-width: 9.5rem;
+  overflow: hidden;
+  vertical-align: top;
+}
+
+.user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  width: 9rem;
+  max-width: 100%;
+  gap: 1px;
 }
 
 .skeleton {
