@@ -19,6 +19,14 @@ Enables ufw/firewalld or Set-NetFirewallProfile -Enabled True for all profiles. 
 
 The audit finding ‘firewall disabled’ is fixed by this mutate.
 
+## What it changes
+
+On Linux it runs ufw --force enable. On Windows it runs Set-NetFirewallProfile so Domain, Public, and Private are Enabled.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/ on Linux or %ProgramData%\CyberPatriotOps\backups\<ts>\ on Windows. Turn it off only if you must recover a locked-out service: Linux ufw disable, Windows Set-NetFirewallProfile -Enabled False. Then turn it back on once the README ports are allowed.
+
 ## When to run it
 
 As soon as audit-firewall says off, after you know which ports must stay open.
@@ -39,6 +47,7 @@ As soon as audit-firewall says off, after you know which ports must stay open.
 
 - Mutation. Live requires confirm:true.
 - Can cut your own SSH/RDP if default deny is already in place without allows — have console access.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

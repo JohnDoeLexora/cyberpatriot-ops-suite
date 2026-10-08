@@ -20,6 +20,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Mutation. Live requires confirm:true (or dryRun:true to preview).",
       "Do not stop Spooler on an image that scores a printer. Authorized-image only.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["disable-service", "audit-smb", "disable-remote-registry", "flag-risky-services"],
     keywords: ["PrintNightmare", "PointAndPrint", "Spooler", "RegisterSpoolerRemoteRpcEndPoint", "confirm"],
@@ -33,11 +34,13 @@ export const CP10: Record<string, HowToBody> = {
       "Run the op. Note RunAsPPL=0 vs 1/2.",
       "If the README/image supports VBS, enabling RunAsPPL is a local policy action — this op is read-only.",
       "Never run a credential dump, mimikatz, or LSASS access tool. The result must not contain hashes.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: RunAsPPL is 1 or 2 on images that score it.",
     ],
     goodLooksLike: ["RunAsPPL is 1 or 2 on images that score it.", "No hash or ticket material in the output."],
     risks: [
       "Read-only. Enabling RunAsPPL is a separate admin action after a README check.",
       "Do not dump LSASS. Authorized-image only.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-credential-guard", "audit-uac", "check-bitlocker-status", "audit-secure-boot"],
     keywords: ["RunAsPPL", "LSA", "Protected Process Light", "LSASS"],
@@ -51,11 +54,13 @@ export const CP10: Record<string, HowToBody> = {
       "Run the op. Note SecurityServicesRunning and VirtualizationBasedSecurityStatus.",
       "If CG is off and the README requires it, enable via local policy/msinfo — this op will not flip it.",
       "If the image is a VM without nested VBS, leave it off and document that.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Status matches the README.",
     ],
     goodLooksLike: ["Status matches the README.", "No isolated secret material in the result."],
     risks: [
       "Read-only. Forcing CG on a VM that cannot run VBS can brick the round — snapshot first.",
       "Authorized-image only. Not a remote attestation of other hosts.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-lsa-protection", "audit-secure-boot", "check-bitlocker-status", "audit-uac"],
     keywords: ["Credential Guard", "Device Guard", "VBS", "Win32_DeviceGuard"],
@@ -69,11 +74,13 @@ export const CP10: Record<string, HowToBody> = {
       "Run the op. Note SecureBoot true/false.",
       "If the README requires Secure Boot and it is off, follow the image’s firmware procedure — this op will not enroll keys.",
       "Never copy PK/KEK material into chat, Git, or evidence zips.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Secure Boot on if the README requires it.",
     ],
     goodLooksLike: ["Secure Boot on if the README requires it.", "No firmware key material in the result."],
     risks: [
       "Read-only. Firmware enroll is out of band and easy to get wrong under the clock.",
       "Authorized-image only.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["check-bitlocker-status", "audit-lsa-protection", "audit-credential-guard", "run-sfc-scan"],
     keywords: ["Secure Boot", "UEFI", "SetupMode", "Confirm-SecureBootUEFI"],
@@ -87,6 +94,7 @@ export const CP10: Record<string, HowToBody> = {
       "Run the op. Note Open vs WPA2 profiles.",
       "Delete leftover SSIDs on the image (`netsh wlan delete profile`) if they are not README-required. This op is read-only.",
       "Confirm the result has keyOmitted=true and no PSK/EAP password fields.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Only README-required SSIDs remain.",
     ],
     goodLooksLike: [
       "Only README-required SSIDs remain.",
@@ -95,6 +103,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Read-only. Do not run `netsh wlan show profile key=clear`.",
       "Do not put Wi-Fi keys in the coach packet or Git.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-dns-client", "disable-llmnr-netbios-wpad", "audit-hosts-file", "export-coach-packet"],
     keywords: ["wlan", "SSID", "Open network", "PSK omitted", "netsh wlan"],
@@ -108,6 +117,7 @@ export const CP10: Record<string, HowToBody> = {
       "Run audit-powershell-logging so you know which of the three are off.",
       "dryRun:true, then live confirm:true. Leave constrainedLanguage false unless the README wants lock-down — it can break local admin scripts.",
       "Confirm the transcript directory is local (ProgramData), not a remote share.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Script Block Logging, Module Logging, and Transcription on.",
     ],
     goodLooksLike: [
       "Script Block Logging, Module Logging, and Transcription on.",
@@ -117,6 +127,7 @@ export const CP10: Record<string, HowToBody> = {
       "Mutation. Live requires confirm:true.",
       "Constrained Language can break this suite’s own PowerShell engine if you set it on the account you use to run ops. Default is logging only.",
       "Do not ship transcripts off-image.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["audit-powershell-logging", "enable-audit-policy", "audit-logging", "export-evidence-bundle"],
     keywords: ["ScriptBlockLogging", "Transcription", "Constrained Language", "Module Logging", "confirm"],
@@ -130,11 +141,13 @@ export const CP10: Record<string, HowToBody> = {
       "Run audit-smb so you know SMBv1 is actually still on the client.",
       "dryRun:true, then live confirm:true.",
       "Re-run audit-smb. SMBv2/3 can remain if shares are required.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: EnableSMB1Protocol false on the client.",
     ],
     goodLooksLike: ["EnableSMB1Protocol false on the client.", "mrxsmb10 stopped/disabled. SMBv2/3 may stay."],
     risks: [
       "Mutation. Live requires confirm:true.",
       "If a dinosaur README required SMBv1 (almost never), stop. Otherwise disable it. Does not scan other hosts.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["disable-smbv1", "audit-smb", "disable-optional-windows-features", "enable-firewall"],
     keywords: ["SMBv1 client", "mrxsmb10", "EnableSMB1Protocol", "confirm"],
@@ -148,6 +161,7 @@ export const CP10: Record<string, HowToBody> = {
       "Run the op. Note unexpected 10.x/RFC1918 DNS servers.",
       "If hosts-file poisoning is also present, run audit-hosts-file / clear-suspicious-hosts next.",
       "Do not nslookup the scoring server or other teams. Local config only.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: DNS servers match the README or a normal ISP/AD resolver.",
     ],
     goodLooksLike: [
       "DNS servers match the README or a normal ISP/AD resolver.",
@@ -156,6 +170,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Read-only. Changing DNS is a separate admin action.",
       "Do not probe other hosts or the CCS. Authorized-image only.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-hosts-file", "clear-suspicious-hosts", "audit-wifi-profiles", "disable-llmnr-netbios-wpad"],
     keywords: ["DnsClient", "DoH", "NRPT", "DNS server"],
@@ -169,6 +184,7 @@ export const CP10: Record<string, HowToBody> = {
       "Read the README: is this a domain controller, member server, or workstation?",
       "Run the op. Unexpected AD/DNS/DHCP on a workstation is a remove-feature candidate (not this op).",
       "Never dcpromo / uninstall AD-DS on a README-required DC.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Role list matches the README.",
     ],
     goodLooksLike: [
       "Role list matches the README.",
@@ -177,6 +193,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Read-only. Uninstalling AD-DS is a separate, high-risk admin action.",
       "Do not target another team’s DC. Authorized-image only.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-iis", "list-services", "flag-risky-services", "disable-optional-windows-features"],
     keywords: ["WindowsFeature", "AD-DS", "DHCP", "DNS role", "dcpromo"],
@@ -190,6 +207,7 @@ export const CP10: Record<string, HowToBody> = {
       "Run audit-null-session so you know which values are 0.",
       "dryRun:true, then live confirm:true.",
       "Re-run audit-null-session. RestrictAnonymous and RestrictAnonymousSAM should be 1; EveryoneIncludesAnonymous 0.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: RestrictAnonymous=1, RestrictAnonymousSAM=1, RestrictNullSessAccess=1, EveryoneIncludesAnonymous=0.",
     ],
     goodLooksLike: [
       "RestrictAnonymous=1, RestrictAnonymousSAM=1, RestrictNullSessAccess=1, EveryoneIncludesAnonymous=0.",
@@ -198,6 +216,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Mutation. Live requires confirm:true.",
       "Do not dump SAM or hashes. Authorized-image only.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["audit-null-session", "audit-smb", "disable-remote-registry", "audit-share-acls"],
     keywords: ["RestrictAnonymous", "RestrictAnonymousSAM", "RestrictNullSessAccess", "null session", "confirm"],
@@ -211,6 +230,7 @@ export const CP10: Record<string, HowToBody> = {
       "Skim config/kernel-module-blacklist.txt. Leave usbStorage false unless the README forbids USB disks.",
       "dryRun:true, then live confirm:true.",
       "Reboot is not required for the file to exist; loaded modules stay until rmmod/reboot.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: /etc/modprobe.d/cp-blacklist.conf lists dccp/sctp/cramfs/hfs.",
     ],
     goodLooksLike: [
       "/etc/modprobe.d/cp-blacklist.conf lists dccp/sctp/cramfs/hfs.",
@@ -219,6 +239,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Mutation. Live requires confirm:true.",
       "Blacklisting usb-storage can block a README-required USB workflow. Default is off.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["harden-sysctl", "audit-sysctl", "harden-usb-storage", "audit-mac-enforcement"],
     keywords: ["modprobe.d", "blacklist", "dccp", "usb-storage", "confirm"],
@@ -232,11 +253,13 @@ export const CP10: Record<string, HowToBody> = {
       "Run audit-mac-enforcement. If SELinux is the MAC, stop — this op is AppArmor-only.",
       "dryRun:true, then live confirm:true.",
       "Re-run audit-mac-enforcement. Complain profiles for common daemons should drop.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: aa-status shows apache2/mysqld/sshd in enforce if those packages exist.",
     ],
     goodLooksLike: ["aa-status shows apache2/mysqld/sshd in enforce if those packages exist.", "SELinux was not flipped."],
     risks: [
       "Mutation. Live requires confirm:true.",
       "Enforcing a broken profile can take down a README-required service — snapshot first.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["audit-mac-enforcement", "audit-web-server", "harden-sshd", "audit-php-hardening"],
     keywords: ["aa-enforce", "AppArmor", "complain", "confirm"],
@@ -250,6 +273,7 @@ export const CP10: Record<string, HowToBody> = {
       "Run audit-auto-updates so you know 20auto-upgrades is 0 or missing.",
       "dryRun:true, then live confirm:true. If apt cannot provide the package, the op reports that — do not wget a random installer.",
       "Re-run audit-auto-updates. Unattended-Upgrade should be 1.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: /etc/apt/apt.conf.d/20auto-upgrades has Unattended-Upgrade 1.",
     ],
     goodLooksLike: [
       "/etc/apt/apt.conf.d/20auto-upgrades has Unattended-Upgrade 1.",
@@ -258,6 +282,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Mutation. Live requires confirm:true.",
       "Need root/apt. Do not point at a third-party repo.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["audit-auto-updates", "apply-security-updates", "check-pending-updates", "audit-hosts-file"],
     keywords: ["unattended-upgrades", "20auto-upgrades", "APT Periodic", "confirm"],
@@ -271,6 +296,7 @@ export const CP10: Record<string, HowToBody> = {
       "Run the op. If mail is absent, you are done.",
       "Read the README: is mail a required service? If not, plan disable-service postfix/exim4.",
       "If mail stays, set mynetworks to local-only and disable_vrfy_command=yes on the image (this op is read-only).",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No mynetworks 0.0.0.0/0. VRFY disabled. Or the MTA is not installed.",
     ],
     goodLooksLike: [
       "No mynetworks 0.0.0.0/0. VRFY disabled. Or the MTA is not installed.",
@@ -279,6 +305,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Read-only. Do not send mail to other hosts as a ‘test’.",
       "Authorized-image only.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["flag-risky-services", "disable-service", "audit-web-server", "audit-snmp"],
     keywords: ["postfix", "mynetworks", "open relay", "VRFY", "dovecot"],
@@ -292,6 +319,7 @@ export const CP10: Record<string, HowToBody> = {
       "Run the op. If no DB is installed, you are done.",
       "README: is MySQL/Postgres required? If not, plan disable-service. If yes, bind to 127.0.0.1 and drop trust.",
       "Confirm the output has no passwords or SQL result sets.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: bind-address 127.0.0.1 (or DB absent). No skip-grant-tables. No 0.0.0.0/0 trust.",
     ],
     goodLooksLike: [
       "bind-address 127.0.0.1 (or DB absent). No skip-grant-tables. No 0.0.0.0/0 trust.",
@@ -300,6 +328,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Read-only. Do not mysql -u root without a password as an ‘exploit’ — that is still credential use; just fix the config.",
       "Authorized-image only. Do not scan other databases.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-php-hardening", "audit-web-server", "flag-risky-services", "disable-service"],
     keywords: ["bind-address", "skip-grant-tables", "pg_hba", "listen_addresses"],
@@ -313,6 +342,7 @@ export const CP10: Record<string, HowToBody> = {
       "Run the op. Note expose_php, allow_url_include, and any info.php path.",
       "If the web server is required, edit php.ini on the image (this op is read-only) and remove info.php after you snapshot.",
       "Do not use dangerous functions as an attack path. The list is for disable_functions hardening.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: expose_php=Off, allow_url_include=Off, no info.php in the web root — or PHP absent.",
     ],
     goodLooksLike: [
       "expose_php=Off, allow_url_include=Off, no info.php in the web root — or PHP absent.",
@@ -321,6 +351,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Read-only. Deleting info.php is a separate file action after a forensics check.",
       "Not an exploit guide. Authorized-image only.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-web-server", "audit-database-bind", "find-hidden-executables", "audit-iis"],
     keywords: ["expose_php", "allow_url_include", "disable_functions", "info.php", "php.ini"],
@@ -334,6 +365,7 @@ export const CP10: Record<string, HowToBody> = {
       "Run the op. Note suspicious snap/flatpak names.",
       "Confirm they are not README-required, then remove-package (confirm) or `snap remove` on the image.",
       "core/snapd/gtk-common-themes are ignored on purpose.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No steam/discord/anydesk/vlc leftovers, or they are README-required.",
     ],
     goodLooksLike: [
       "No steam/discord/anydesk/vlc leftovers, or they are README-required.",
@@ -342,6 +374,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Read-only. Removal is a mutate op with confirm:true.",
       "Do not remove snapd itself unless the README says so.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["find-prohibited-software", "hunt-remote-access-tools", "remove-package", "remove-games-samples"],
     keywords: ["snap", "flatpak", "steam", "anydesk"],
@@ -355,6 +388,7 @@ export const CP10: Record<string, HowToBody> = {
       "Confirm the README does not require a serial console.",
       "dryRun:true, then live confirm:true.",
       "tty1–6 stay. CAD should no longer reboot.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: systemctl status ctrl-alt-del.target is masked.",
     ],
     goodLooksLike: [
       "systemctl status ctrl-alt-del.target is masked.",
@@ -363,6 +397,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Mutation. Live requires confirm:true.",
       "Do not mask getty@tty1. Authorized-image only.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["harden-sysctl", "audit-idle-lock", "disable-display-manager-guest", "lock-root-account"],
     keywords: ["ctrl-alt-del", "CAD", "serial-getty", "confirm"],
@@ -376,6 +411,7 @@ export const CP10: Record<string, HowToBody> = {
       "Run with defaults (audit-only). Note accept_ra + forwarding.",
       "If the README says disable IPv6, re-run with disableIPv6:true dryRun:true, then confirm:true.",
       "If the README requires IPv6, do not disable — pair with harden-sysctl instead.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Privacy extensions on or IPv6 disabled, matching the README.",
     ],
     goodLooksLike: [
       "Privacy extensions on or IPv6 disabled, matching the README.",
@@ -384,6 +420,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Default is read-only. Live disableIPv6 requires confirm:true.",
       "Disabling IPv6 can break dual-stack required services. Check the README.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["harden-sysctl", "audit-sysctl", "blacklist-kernel-modules", "audit-firewall"],
     keywords: ["IPv6", "use_tempaddr", "accept_ra", "disable_ipv6", "confirm"],
@@ -397,6 +434,7 @@ export const CP10: Record<string, HowToBody> = {
       "Run the op. Storage=volatile or missing /var/log/journal is the finding.",
       "Set Storage=persistent in journald.conf on the image (this op is read-only) and mkdir /var/log/journal.",
       "Do not ship logs off-image or to the CCS.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: journald Storage=persistent (or /var/log/journal present) and rsyslog active.",
     ],
     goodLooksLike: [
       "journald Storage=persistent (or /var/log/journal present) and rsyslog active.",
@@ -405,6 +443,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Read-only. Editing journald.conf is a separate action.",
       "Do not upload the journal to a coach laptop that is not the authorized image.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-logging", "check-auditd", "export-evidence-bundle", "export-coach-packet"],
     keywords: ["journald", "Storage=persistent", "rsyslog", "/var/log/journal"],
@@ -418,6 +457,7 @@ export const CP10: Record<string, HowToBody> = {
       "Run the op. Note unexpected homepages (10.x, pwn) and system proxies.",
       "Fix policies.json / IE settings on the image (this op is read-only). Remove leftover extension directories after a snapshot.",
       "Confirm cookies and passwords are absent from the result.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Homepage is about:blank or a README page. No 10.x proxy.",
     ],
     goodLooksLike: [
       "Homepage is about:blank or a README page. No 10.x proxy.",
@@ -426,6 +466,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Read-only. Do not dump cookies or saved passwords into the coach packet.",
       "Authorized-image only.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-browser-baseline", "hunt-remote-access-tools", "audit-hosts-file", "export-coach-packet"],
     keywords: ["homepage", "proxy", "PAC", "extension id", "policies.json"],
@@ -439,6 +480,7 @@ export const CP10: Record<string, HowToBody> = {
       "Leave disableUsbStorage false unless the README forbids USB disks.",
       "dryRun:true, then live confirm:true.",
       "Removable media should not auto-launch. Keyboard still works.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Autorun/automount off. Deny_Execute on removable (Windows).",
     ],
     goodLooksLike: [
       "Autorun/automount off. Deny_Execute on removable (Windows).",
@@ -447,6 +489,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Mutation. Live requires confirm:true.",
       "disableUsbStorage=true can block a README-required USB stick and, on some images, more than disks. Default is off.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["disable-autoplay", "blacklist-kernel-modules", "enable-windows-defender", "audit-startup-items"],
     keywords: ["NoDriveTypeAutoRun", "usb-storage", "automount", "Deny_Execute", "confirm"],
@@ -460,6 +503,7 @@ export const CP10: Record<string, HowToBody> = {
       "Run the op. Note timezone vs the README (usually US/Eastern or the site’s zone) and NTP servers.",
       "If NTP is 10.x/planted, point timesyncd/chrony/w32time at a normal pool or the README’s server — this op is read-only.",
       "Do not run NTP flood tests. Do not query the CCS for the time.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Clock NTP-synchronized. Timezone matches the README.",
     ],
     goodLooksLike: [
       "Clock NTP-synchronized. Timezone matches the README.",
@@ -468,6 +512,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Read-only. Changing timezone/NTP is a separate admin action.",
       "Not an amplification test. Authorized-image only. CCS is not contacted.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["check-ntp", "audit-logging", "audit-dns-client", "scoreboard-preflight"],
     keywords: ["timedatectl", "timezone", "NTP", "w32tm", "chrony"],
@@ -482,6 +527,7 @@ export const CP10: Record<string, HowToBody> = {
       "Run the op. Optional outputDir must be a local path (never a URL or UNC).",
       "Open SUMMARY.md on the image. Confirm hashesIncluded=false, wifiKeysIncluded=false, ccsContacted=false.",
       "Hand the ZIP to a coach on a USB stick from the authorized image if the rules allow — do not email secrets.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: ZIP contains SUMMARY.md + inventories. redacted=true.",
     ],
     goodLooksLike: [
       "ZIP contains SUMMARY.md + inventories. redacted=true.",
@@ -490,6 +536,7 @@ export const CP10: Record<string, HowToBody> = {
     risks: [
       "Read-only assembly. Still do not copy shadow, SAM, or Wi-Fi keys into the packet — the engine will not.",
       "Not off-image exfiltration. Not a CCS scrape. Authorized-image only.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["export-evidence-bundle", "package-forensics-evidence", "scoreboard-preflight", "round-start-wizard"],
     keywords: ["coach packet", "ZIP", "redacted", "handoff", "CCS"],

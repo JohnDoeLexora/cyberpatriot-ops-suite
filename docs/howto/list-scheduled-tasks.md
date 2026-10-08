@@ -19,6 +19,14 @@ Lists non-Microsoft scheduled tasks. Highlights user-writable actions, missing a
 
 Windows persistence often lives in Task Scheduler as ‘Updater’ running %TEMP%\svc.exe.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Windows persistence pass with audit-startup-items.
@@ -28,6 +36,7 @@ Windows persistence pass with audit-startup-items.
 1. Run the op. Ignore signed Microsoft tasks unless the action looks hijacked.
 2. Disable/delete planted tasks on the image; remove the payload file after snapshotting.
 3. Re-run and check Startup folders via audit-startup-items.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No user tasks pointing at TEMP or Startup binaries.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Windows persistence pass with audit-startup-items.
 
 - Read-only.
 - Disabling a required vendor updater can be wrong — README/software list first.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

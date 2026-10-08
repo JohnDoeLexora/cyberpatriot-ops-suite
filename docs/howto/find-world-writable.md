@@ -19,6 +19,14 @@ Finds world-writable files and directories under /home /etc /opt /tmp /var /usr/
 
 0777 on /etc/cron.d/hack or /usr/local/bin is a persistence gift. Scoring checks these paths; this is an inventory, not an exploit of them.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Linux files pass, with check-sensitive-file-perms and audit-cron.
@@ -28,6 +36,7 @@ Linux files pass, with check-sensitive-file-perms and audit-cron.
 1. Run the op. Prioritize /etc, cron, sudoers, and directories on PATH.
 2. Fix modes on the image (chmod o-w, or delete planted scripts after you snapshot them for forensics).
 3. Re-run. Sticky /tmp is expected; 0777 /usr/local/bin is not.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No world-writable sudoers or cron files.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ Linux files pass, with check-sensitive-file-perms and audit-cron.
 
 - Read-only. chmod/delete is a separate action — snapshot first if a forensics question might need the file.
 - Do not ‘test’ world-writable sudoers by writing to them.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

@@ -19,6 +19,14 @@ Protection status per volume. CP scoring may or may not require encryption. Does
 
 Some Windows images score encryption; others only want you to know the state. Either way, dumping recovery keys is out of scope and dangerous.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Windows extras, after the high-value user/firewall work.
@@ -28,6 +36,7 @@ Windows extras, after the high-value user/firewall work.
 1. Run the op. Note Protection Off vs On.
 2. If the README requires BitLocker and it is off, follow the README’s encrypt procedure on the authorized image — this op will not turn it on.
 3. Never copy recovery keys into chat, Git, or evidence zips.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Status matches the README requirement.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Windows extras, after the high-value user/firewall work.
 
 - Read-only.
 - Do not export or print recovery keys. Do not encrypt blindly if the README is silent and time is short.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

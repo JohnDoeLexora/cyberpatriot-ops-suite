@@ -19,6 +19,14 @@ Sets PermitRootLogin no in sshd_config and reloads ssh if it is a required servi
 
 PermitRootLogin yes is one of the most common Linux network findings. Scoring checks the sshd config, not whether you can brute-force root.
 
+## What it changes
+
+Writes PermitRootLogin no to /etc/ssh/sshd_config.d/99-cp-noroot.conf and reloads the SSH service.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/. Delete 99-cp-noroot.conf and reload ssh (or sshd). Only do that if the README requires root SSH.
+
 ## When to run it
 
 After ssh-hardening-audit, if the README still wants SSH itself (usually yes).
@@ -41,6 +49,7 @@ After ssh-hardening-audit, if the README still wants SSH itself (usually yes).
 - Mutation. Live requires confirm:true.
 - If you have no sudo user other than root, you can strand the image — check list-admin-users first.
 - Does not listen on other machines; local sshd only.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

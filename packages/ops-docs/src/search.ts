@@ -1,6 +1,8 @@
+import { getOp } from "@cyberpatriot/ops-catalog";
 import type { HowToGuide } from "./types.js";
 
 export function guideSearchText(guide: HowToGuide): string {
+  const op = getOp(guide.opId);
   return [
     guide.opId,
     guide.title,
@@ -16,6 +18,10 @@ export function guideSearchText(guide: HowToGuide): string {
     ...guide.risks,
     ...guide.related,
     ...guide.keywords,
+    op?.whatItDoes,
+    op?.whyItScores,
+    op?.whatItChanges,
+    op?.howToUndo,
   ]
     .join("\n")
     .toLowerCase();

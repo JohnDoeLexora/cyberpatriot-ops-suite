@@ -19,6 +19,14 @@ Goes beyond audit-startup-items: systemd enabled units, rc.local, cron/cron.d, /
 
 Plants hide in profile.d and RunOnce after you cleaned rc.local. One pass over every autostart class is faster than four separate eyeballs.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Persistence pass on both platforms, after the first startup/cron sweep, and again near the end.
@@ -40,6 +48,7 @@ Persistence pass on both platforms, after the first startup/cron sweep, and agai
 
 - Read-only inventory. Do not execute the payload ‘to confirm.’
 - Disabling a required enabled unit later costs points — README.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

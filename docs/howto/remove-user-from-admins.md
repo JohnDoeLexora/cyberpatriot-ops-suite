@@ -19,6 +19,14 @@ Removes a user from Administrators / sudo / wheel. The account stays enabled as 
 
 Extra admins are high-value points. Deleting the user can be wrong if they are a required standard account; demoting them is the kosher fix.
 
+## What it changes
+
+On Linux it runs gpasswd -d to drop the user from the sudo and wheel groups (the groups that can act as root). On Windows it runs Remove-LocalGroupMember on Administrators.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/ on Linux or %ProgramData%\CyberPatriotOps\backups\<ts>\ on Windows. Put them back only if the README lists them as an admin: Linux usermod -aG sudo (or wheel), Windows Add-LocalGroupMember Administrators.
+
 ## When to run it
 
 After list-admin-users. Anyone in sudo/Administrators who is not an authorized admin on the README.
@@ -41,6 +49,7 @@ After list-admin-users. Anyone in sudo/Administrators who is not an authorized a
 - Mutation. Live requires confirm:true.
 - Removing the last authorized admin can lock your team out of the image — keep one README admin.
 - Do not confuse this with disable-user.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

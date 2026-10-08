@@ -19,6 +19,14 @@ Reads php.ini knobs and inventories info.php/phpinfo.php by name under web roots
 
 expose_php and phpinfo pages leak versions; allow_url_include is a classic LAMP plant. Scoring wants those off on a required web server.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 With audit-web-server on a LAMP image.
@@ -28,6 +36,7 @@ With audit-web-server on a LAMP image.
 1. Run the op. Note expose_php, allow_url_include, and any info.php path.
 2. If the web server is required, edit php.ini on the image (this op is read-only) and remove info.php after you snapshot.
 3. Do not use dangerous functions as an attack path. The list is for disable_functions hardening.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: expose_php=Off, allow_url_include=Off, no info.php in the web root — or PHP absent.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ With audit-web-server on a LAMP image.
 
 - Read-only. Deleting info.php is a separate file action after a forensics check.
 - Not an exploit guide. Authorized-image only.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

@@ -136,6 +136,10 @@ export function PlaylistPanel() {
                   <span className="coach-tip mt-0.5 block pl-6 text-[12px] leading-4 text-faint">
                     {s.tip}
                   </span>
+                  {/* cp-15: keep this why-now line when rebasing layout work */}
+                  <span className="mt-0.5 block pl-6 text-[12px] leading-4 text-mute" data-testid={`playlist-why-${s.opId}`}>
+                    Why now: {s.whyNow}
+                  </span>
                 </button>
                 <button
                   type="button"

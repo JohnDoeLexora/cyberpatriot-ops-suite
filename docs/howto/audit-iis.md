@@ -19,6 +19,14 @@ Lists enabled IIS-* optional features and reads anonymousAuthentication / direct
 
 IIS anonymous + directory browsing is a high Windows web finding. Sample apps are extra points. You still must not disable a README-required site.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Windows services pass when IIS is present. Pair with audit-anonymous-ftp if FTP is under IIS.
@@ -28,6 +36,7 @@ Windows services pass when IIS is present. Pair with audit-anonymous-ftp if FTP 
 1. Run the op. Note which IIS features are enabled and whether anonymous/directory browsing is on.
 2. If IIS is not required, plan to disable the feature/service (separate mutate).
 3. If it is required: turn off anonymous (unless the README wants a public site) and directory browsing on the image.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: IIS absent, or anonymous auth off unless required, directory browsing off, samples gone.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Windows services pass when IIS is present. Pair with audit-anonymous-ftp if FTP 
 
 - Read-only.
 - Disabling IIS when the README requires a website costs the whole web check — README first.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

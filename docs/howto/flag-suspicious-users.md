@@ -19,6 +19,14 @@ Scores local accounts using never-logged-in humans, weird shells, UID weirdness,
 
 Planted backdoors are often named toor/hacker/flag, given UID 0, or never used. A ranked list beats scrolling passwd under time pressure and feeds disable/lock/remove-from-admins.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Right after list-users, before you mutate anything. Re-run after lock/disable to confirm scores dropped.
@@ -30,6 +38,7 @@ Right after list-users, before you mutate anything. Re-run after lock/disable to
 3. Triage: UID 0 aliases and extra admins first, then throwaway names, then never-logged-in humans.
 4. For each hit, check the README once more — authorized coaches and service accounts can look odd.
 5. Hand the remaining names to disable-user, lock-user, or remove-user-from-admins. Do not delete homes; forensics questions may need them.
+6. How to verify: run this check again and compare the output to the image README. You are done when this is true: README users (alice, bob, coach, …) score clean.
 
 ## What “good” looks like
 
@@ -42,6 +51,7 @@ Right after list-users, before you mutate anything. Re-run after lock/disable to
 - Heuristics are not the official CCS score. Do not chase a number instead of the README.
 - Read-only. Acting on a false positive (locking a required user) is a mutate op with confirm:true.
 - Never used to attack other teams or scoring endpoints.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

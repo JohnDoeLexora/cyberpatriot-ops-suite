@@ -19,6 +19,14 @@ Joins password-aging (shadow MAX_DAYS -1/99999 or Windows PasswordNeverExpires) 
 
 Guest with a blank never-expiring password is a two-finding plant. Aging-off humans stay scored even when the password is set.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Auth pass with check-empty-passwords and check-password-aging.
@@ -28,6 +36,7 @@ Auth pass with check-empty-passwords and check-password-aging.
 1. Run the op. Sort empty+never-expires first (Guest, games, planted humans).
 2. Disable Guest; lock or expire authorized humans; enforce-password-policy for the global max-age.
 3. Do not print or copy hashes. Re-run until empty+never-expires is gone for humans.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No human with empty password + never-expires.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ Auth pass with check-empty-passwords and check-password-aging.
 
 - Read-only. Hashes are never returned.
 - Do not expire a required service account that cannot change a password interactively.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

@@ -19,6 +19,14 @@ Local share config only: guest access, Everyone Full, C$, IPC$. Complements audi
 
 A public guest-writable share is a high finding even if the SMB service is ‘required.’
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 With audit-smb. After you know whether file sharing is required.
@@ -28,6 +36,7 @@ With audit-smb. After you know whether file sharing is required.
 1. Run the op. Classify each share: required, guest, world-writable, administrative.
 2. If sharing is not required, disable the service.
 3. If it is required: remove guest, tighten ACLs, drop unexpected public shares.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Only README shares remain.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ With audit-smb. After you know whether file sharing is required.
 
 - Read-only.
 - Removing a required share costs points — README names matter.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

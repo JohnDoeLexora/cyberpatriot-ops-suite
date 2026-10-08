@@ -19,6 +19,14 @@ Reads timedatectl/w32time plus /etc/timezone or tzutil, and NTP server lists. Fl
 
 Wrong clocks break logs, Kerberos, and TLS. A planted NTP server is how images stay unsynced on purpose.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 With check-ntp on both platforms, early enough that later logs have the right time.
@@ -28,6 +36,7 @@ With check-ntp on both platforms, early enough that later logs have the right ti
 1. Run the op. Note timezone vs the README (usually US/Eastern or the site’s zone) and NTP servers.
 2. If NTP is 10.x/planted, point timesyncd/chrony/w32time at a normal pool or the README’s server — this op is read-only.
 3. Do not run NTP flood tests. Do not query the CCS for the time.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Clock NTP-synchronized. Timezone matches the README.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ With check-ntp on both platforms, early enough that later logs have the right ti
 
 - Read-only. Changing timezone/NTP is a separate admin action.
 - Not an amplification test. Authorized-image only. CCS is not contacted.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

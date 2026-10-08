@@ -22,6 +22,7 @@ export const CP07: Record<string, HowToBody> = {
       "Read-only selection. Acting on a name is a mutate op with confirm:true.",
       "Service accounts (www-data, sshd) should not appear — if they do, check the allowlist rather than disabling them.",
       "Authorized-image only. Never pointed at another team.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["flag-suspicious-users", "disable-user", "list-admin-users", "list-users"],
     keywords: ["allowlist miss", "unauthorized users", "bulk select", "allowed-users.txt"],
@@ -45,6 +46,7 @@ export const CP07: Record<string, HowToBody> = {
     risks: [
       "Read-only. chmod is a separate action.",
       "Do not chmod 1777 on /usr or /home — only shared temp dirs.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["find-world-writable", "check-sensitive-file-perms", "audit-home-permissions", "find-suid-sgid"],
     keywords: ["sticky bit", "1777", "chmod +t", "/tmp", "drwxrwxrwt"],
@@ -68,6 +70,7 @@ export const CP07: Record<string, HowToBody> = {
     risks: [
       "Read-only. This is not an anonymous login test against anyone.",
       "If the README requires FTP, do not disable the service — turn anonymous off.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["harden-vsftpd", "audit-ftp-telnet", "disable-service", "flag-risky-services"],
     keywords: ["anonymous_enable", "vsftpd.conf", "anon_upload_enable", "FTPSVC"],
@@ -90,6 +93,7 @@ export const CP07: Record<string, HowToBody> = {
     risks: [
       "Mutation. Live requires confirm:true.",
       "Disabling a README-required FTP service costs points — harden anonymous instead.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["audit-anonymous-ftp", "disable-service", "audit-ftp-telnet", "audit-listening-ports"],
     keywords: ["vsftpd", "anonymous_enable=NO", "confirm", "anon_upload"],
@@ -104,6 +108,7 @@ export const CP07: Record<string, HowToBody> = {
       "Confirm the README still wants the web server. If not, disable-service instead of hardening.",
       "Run the op. Fix failing rows on the image (Options -Indexes, ServerTokens Prod, autoindex off, modern SSLProtocol).",
       "Re-run. Do not turn off apache2 if it is scored.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No directory listings, ServerTokens Prod / server_tokens off, no SSLv3/TLSv1.",
     ],
     goodLooksLike: [
       "No directory listings, ServerTokens Prod / server_tokens off, no SSLv3/TLSv1.",
@@ -112,6 +117,7 @@ export const CP07: Record<string, HowToBody> = {
     risks: [
       "Read-only. Conf edits are a separate action on the image.",
       "A wrong SSLProtocol line can break a required HTTPS site — test locally.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["list-services", "flag-risky-services", "audit-listening-ports", "disable-service"],
     keywords: ["ServerTokens", "Options Indexes", "autoindex", "SSLProtocol", "nginx"],
@@ -136,6 +142,7 @@ export const CP07: Record<string, HowToBody> = {
       "Mutation. Live requires confirm:true.",
       "If a dinosaur README required NetBIOS browsing, stop. Otherwise disable it.",
       "Local image only — this does not attack LLMNR on other hosts.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["audit-hosts-file", "audit-smb", "enable-firewall", "disable-smbv1"],
     keywords: ["LLMNR", "EnableMulticast", "NetBIOS", "WPAD", "WinHttpAutoProxySvc", "confirm"],
@@ -149,6 +156,7 @@ export const CP07: Record<string, HowToBody> = {
       "Run the op. RestrictAnonymous and RestrictAnonymousSAM should be 1; EveryoneIncludesAnonymous 0.",
       "NullSessionShares/Pipes should not list C$ or samr on a workstation.",
       "Fix via local policy/registry on the image (this op is read-only). Do not dump SAM to confirm.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: RestrictAnonymous=1, RestrictAnonymousSAM=1, EveryoneIncludesAnonymous=0.",
     ],
     goodLooksLike: [
       "RestrictAnonymous=1, RestrictAnonymousSAM=1, EveryoneIncludesAnonymous=0.",
@@ -157,6 +165,7 @@ export const CP07: Record<string, HowToBody> = {
     risks: [
       "Read-only. Never dump SAM, SECURITY, or password hashes into notes.",
       "Do not test null sessions against other machines.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-smb", "audit-share-acls", "audit-uac", "audit-critical-perm-drift"],
     keywords: ["RestrictAnonymous", "RestrictAnonymousSAM", "null session", "NullSessionShares"],
@@ -179,6 +188,7 @@ export const CP07: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "A very short TMOUT can annoy a scored interactive service — README first.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-password-policy", "audit-uac", "enable-account-lockout", "disable-guest-account"],
     keywords: ["TMOUT", "IdleAction", "ScreenSaverIsSecure", "screensaver", "idle lock"],
@@ -193,6 +203,7 @@ export const CP07: Record<string, HowToBody> = {
       "Run the op. Record paths in team notes (not the password values).",
       "If a forensics question might reference the file, snapshot the path then remove or redact the leftover on the image.",
       "Re-run until the inventory is empty.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No unattend.xml under Panther, Sysprep, /root, or the drive root.",
     ],
     goodLooksLike: [
       "No unattend.xml under Panther, Sysprep, /root, or the drive root.",
@@ -201,6 +212,7 @@ export const CP07: Record<string, HowToBody> = {
     risks: [
       "Read-only hunt. Deleting is a separate action — snapshot first if forensics may need the path.",
       "Do not paste AutoLogon passwords into chat, tickets, or CCS.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["find-hidden-executables", "audit-persistence-deep", "check-empty-passwords", "package-forensics-evidence"],
     keywords: ["unattend.xml", "sysprep", "autounattend", "Panther", "kickstart"],
@@ -214,6 +226,7 @@ export const CP07: Record<string, HowToBody> = {
       "Run the op. If public/private appear, plan to disable SNMP unless the README requires it.",
       "If SNMP must stay, change communities on the image (this op is read-only) and firewall 161.",
       "Otherwise disable-service for snmpd / SNMP with confirm:true.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: SNMP service disabled, or no default public/private communities.",
     ],
     goodLooksLike: [
       "SNMP service disabled, or no default public/private communities.",
@@ -222,6 +235,7 @@ export const CP07: Record<string, HowToBody> = {
     risks: [
       "Read-only. Do not snmpwalk the LAN, other teams, or network printers as a ‘test.’",
       "If the README requires SNMP, do not disable it — change the community and restrict it.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["flag-risky-services", "disable-service", "audit-listening-ports", "audit-ftp-telnet"],
     keywords: ["snmpd", "rocommunity public", "rwcommunity private", "UDP 161"],
@@ -235,6 +249,7 @@ export const CP07: Record<string, HowToBody> = {
       "Run the op. Note Permissive vs Enforcing vs Disabled, and complain vs enforce profiles.",
       "If the README does not forbid MAC, plan to set enforcing (setenforce 1 / aa-enforce) as a separate admin action.",
       "Do not disable MAC to ‘make an app work’ unless the README says the app is scored and broken by it.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: SELinux Enforcing or AppArmor profiles in enforce, matching what the image shipped with.",
     ],
     goodLooksLike: [
       "SELinux Enforcing or AppArmor profiles in enforce, matching what the image shipped with.",
@@ -243,6 +258,7 @@ export const CP07: Record<string, HowToBody> = {
     risks: [
       "Read-only. Flipping to enforcing can break a scored service — README first.",
       "Disabled SELinux on a RHEL-like image is the finding; Ubuntu without SELinux is normal.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-sysctl", "harden-sysctl", "check-auditd", "audit-firewall"],
     keywords: ["getenforce", "sestatus", "aa-status", "Permissive", "AppArmor"],
@@ -256,6 +272,7 @@ export const CP07: Record<string, HowToBody> = {
       "Run the op. Note safebrowsing, password manager, SmartScreen, and insecure protocol handlers.",
       "Fix via enterprise policy / IE zone / Edge policy on the image (this op is read-only).",
       "Do not export the profile; cookies and saved passwords stay on disk.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Safe Browsing / SmartScreen on.",
     ],
     goodLooksLike: [
       "Safe Browsing / SmartScreen on.",
@@ -265,6 +282,7 @@ export const CP07: Record<string, HowToBody> = {
     risks: [
       "Read-only. Never dump browser password stores into notes.",
       "Do not browse other teams’ sites as a ‘test’ of SmartScreen.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["hunt-remote-access-tools", "find-prohibited-software", "audit-hosts-file", "disable-autoplay"],
     keywords: ["safebrowsing", "SmartScreen", "DisablePasswordSaving", "policies.json", "user.js"],
@@ -279,6 +297,7 @@ export const CP07: Record<string, HowToBody> = {
       "Run the op. APT::Periodic::Unattended-Upgrade should not be 0; wuauserv should not be disabled; AUOptions should not be ‘never check’.",
       "Fix hosts-file blocks of windowsupdate first (audit-hosts-file).",
       "Enable the channel on the image, then apply-security-updates with confirm:true.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Unattended-upgrades enabled, or Windows Update service automatic and AUOptions checking.",
     ],
     goodLooksLike: [
       "Unattended-upgrades enabled, or Windows Update service automatic and AUOptions checking.",
@@ -287,6 +306,7 @@ export const CP07: Record<string, HowToBody> = {
     risks: [
       "Read-only. Installing patches is apply-security-updates with confirm:true.",
       "Stays on the image’s configured update channels — no off-host targeting.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["check-pending-updates", "apply-security-updates", "audit-hosts-file", "enable-windows-defender"],
     keywords: ["unattended-upgrades", "20auto-upgrades", "AUOptions", "wuauserv", "Windows Update"],
@@ -310,6 +330,7 @@ export const CP07: Record<string, HowToBody> = {
       "Mutation. Live requires confirm:true.",
       "Blind purge can destroy a forensics exhibit — snapshot names first.",
       "wine/steam may be in the list; confirm they are not a required scored app.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["find-prohibited-software", "remove-package", "find-media-files", "list-installed-packages"],
     keywords: ["aisleriot", "solitaire", "example-content", "Xbox", "games", "confirm"],
@@ -324,6 +345,7 @@ export const CP07: Record<string, HowToBody> = {
       "Run the op. Note which IIS features are enabled and whether anonymous/directory browsing is on.",
       "If IIS is not required, plan to disable the feature/service (separate mutate).",
       "If it is required: turn off anonymous (unless the README wants a public site) and directory browsing on the image.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: IIS absent, or anonymous auth off unless required, directory browsing off, samples gone.",
     ],
     goodLooksLike: [
       "IIS absent, or anonymous auth off unless required, directory browsing off, samples gone.",
@@ -332,6 +354,7 @@ export const CP07: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Disabling IIS when the README requires a website costs the whole web check — README first.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["list-services", "audit-anonymous-ftp", "disable-service", "audit-listening-ports"],
     keywords: ["IIS-WebServer", "anonymousAuthentication", "directoryBrowse", "Get-WindowsOptionalFeature"],
@@ -347,6 +370,7 @@ export const CP07: Record<string, HowToBody> = {
       "Read the hit lines. They are hints, not CCS answers. Copy into team notes.",
       "Follow up with find-media-files, list-users, or package-forensics-evidence as the hits suggest.",
       "Never paste a CCS URL into searchRoot. Never fetch the scoring site.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Hits from local README files only.",
     ],
     goodLooksLike: [
       "Hits from local README files only.",
@@ -357,6 +381,7 @@ export const CP07: Record<string, HowToBody> = {
       "Read-only. Still: do not copy password values from unattend files into chat.",
       "This is not a scoring-server scrape and not a search of other teams’ shares.",
       "searchRoot must be a local path, never a URL.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["package-forensics-evidence", "export-evidence-bundle", "find-media-files", "list-users"],
     keywords: ["README", "forensics question", "keyword skim", "CCS", "Desktop README"],

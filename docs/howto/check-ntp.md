@@ -19,6 +19,14 @@ Checks chronyd / systemd-timesyncd / w32time. Wrong clocks break logs and Kerber
 
 Disabled time sync is a small but real finding, and it poisons log evidence for forensics questions.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 After logging/firewall basics, or if log timestamps look insane.
@@ -28,6 +36,7 @@ After logging/firewall basics, or if log timestamps look insane.
 1. Run the op. Note inactive units and bogus NTP servers (10.0.0.1 plants).
 2. Enable the distro time service via the OS; this op is read-only.
 3. Do not point NTP at random internet pools if the README specifies an internal server.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: timesyncd/chronyd/w32time active.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ After logging/firewall basics, or if log timestamps look insane.
 
 - Read-only.
 - This is not a denial-of-service test against NTP servers.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

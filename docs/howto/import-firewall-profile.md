@@ -19,6 +19,14 @@ If you pass a netsh .wfw path, it is imported. Otherwise Domain/Private/Public a
 
 Windows Firewall off or allow-all inbound is a staple finding. Importing a known-good profile is how many public kits do it in one click.
 
+## What it changes
+
+If you pass a .wfw file it runs netsh advfirewall import. Otherwise it enables Domain, Public, and Private, sets inbound to Block, and sets outbound to Allow.
+
+## How to undo
+
+If a backup was made, restore from %ProgramData%\CyberPatriotOps\backups\<ts>\. Import the previous .wfw export if you have one. Otherwise set the inbound default back only for the moment you need, then return to Block.
+
 ## When to run it
 
 After audit-firewall, once you know which inbound ports the README requires (then add those rules separately).
@@ -39,6 +47,7 @@ After audit-firewall, once you know which inbound ports the README requires (the
 
 - Mutation. Live requires confirm:true.
 - A leftover .wfw from another image can be wrong — prefer the known-good apply unless you exported this image yourself.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

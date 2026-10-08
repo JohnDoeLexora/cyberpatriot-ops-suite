@@ -19,6 +19,14 @@ Uses ss / Get-NetTCPConnection on the local image. Flags 23, 111, 139, 445, 512�
 
 A listener is a service you forgot. Backdoor ports (31337, 4444) are planted; 23/445 are insecure services. Scoring and forensics both care.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Early, and after every service disable. Pair with list-services.
@@ -28,6 +36,7 @@ Early, and after every service disable. Pair with list-services.
 1. Run the op. Keep the README required ports (22, 80, 443, …) as the allowlist.
 2. For each unexpected bind: identify the process, then disable that service or investigate find-backdoor-binaries.
 3. Re-run until only required listeners remain.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: 22/80/443 (or whatever the README lists) only.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Early, and after every service disable. Pair with list-services.
 
 - Read-only local audit. This is not nmap against the LAN or other teams.
 - Killing the wrong listener can drop a scored service — identify first.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

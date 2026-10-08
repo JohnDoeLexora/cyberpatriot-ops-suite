@@ -19,6 +19,14 @@ Looks for nc/netcat/ncat/socat in /tmp /home /opt, suid copies of bash, meterpre
 
 Loose reverse-admin tools in /tmp are plants. This is filename/location hygiene, not malware development.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 With find-hidden-executables, find-suid-sgid, and audit-listening-ports.
@@ -41,6 +49,7 @@ With find-hidden-executables, find-suid-sgid, and audit-listening-ports.
 - Read-only. Never run the found binary ‘to confirm.’
 - Name matches can false-positive — check the path.
 - No exploit payloads, no off-image attacks.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

@@ -19,6 +19,14 @@ Lists packages via dpkg-query / rpm / Get-Package. Large but filterable; input t
 
 You cannot remove nmap if you never saw it in the inventory. Some READMEs also require a package to stay.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Software pass, before mass removal. Also when a forensics question asks ‘what is installed.’
@@ -28,6 +36,7 @@ Software pass, before mass removal. Also when a forensics question asks ‘what 
 1. Run the op. Search the output for names in config/prohibited-software.txt and the README banned list.
 2. Note required stacks (openssh-server, apache2) so you do not purge them later.
 3. Hand hits to find-prohibited-software / remove-package.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Inventory completes without hashes or credentials.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Software pass, before mass removal. Also when a forensics question asks ‘what 
 
 - Read-only.
 - A huge list is normal — do not delete ‘unknown’ packages blindly.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

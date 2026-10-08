@@ -19,6 +19,14 @@ Reports unattended-upgrades/apt/dnf or Windows Update pending security patches. 
 
 Unpatched images lose update points. Checking first tells you whether apply-security-updates will take a long time.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Once the hosts file is clean (so updates are not sinkholed) and the network/firewall will allow the vendor update channel.
@@ -28,6 +36,7 @@ Once the hosts file is clean (so updates are not sinkholed) and the network/fire
 1. Run audit-hosts-file first if updates look blocked.
 2. Run this op. Note the count and whether unattended-upgrades is off.
 3. When you have a quiet stretch, apply-security-updates with confirm:true.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Zero pending security updates, or a documented reason (offline image).
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Once the hosts file is clean (so updates are not sinkholed) and the network/fire
 
 - Read-only. Installing is the mutate op.
 - Do not point the image at unofficial third-party repos to ‘get more patches.’
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

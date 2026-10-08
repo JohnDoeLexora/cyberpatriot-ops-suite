@@ -19,6 +19,14 @@ Finds executable files whose names start with ‘.’ under homes, /tmp, /var/tm
 
 .hidden_shell and .kworker in /tmp are textbook CP plants. Startup folder .update.exe too.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Files/evidence pass with find-suid-sgid and find-backdoor-binaries.
@@ -28,6 +36,7 @@ Files/evidence pass with find-suid-sgid and find-backdoor-binaries.
 1. Run the op. Record paths for forensics notes.
 2. If not needed for a question, remove the executable (and the cron/startup that calls it).
 3. Re-run. Pair with audit-cron and audit-startup-items so it does not come back.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No hidden executables in /tmp, /var/tmp, homes, or Startup.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Files/evidence pass with find-suid-sgid and find-backdoor-binaries.
 
 - Read-only inventory. Do not execute the hidden file ‘to see what it does.’
 - Snapshot before delete if a forensics question may reference it.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

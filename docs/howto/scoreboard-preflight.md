@@ -19,6 +19,14 @@ Pre-competition local checklist covering firewall, guest, time sync, logging, no
 
 These are the first-hour misses that cost easy points. The checklist is a huddle tool, not a way to query or game the official scoreboard.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Start of the round, and after any big mutate batch before you walk away.
@@ -28,6 +36,7 @@ Start of the round, and after any big mutate batch before you walk away.
 1. Run the op. Sort fail rows first.
 2. Open the linked mutate/read op from each failing row and follow that how-to (confirm:true on live mutates).
 3. Re-run. Do not point this tool at scoring URLs — it will not, and you must not.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Firewall on, Guest off, telnet gone, time in sync, logging up.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ Start of the round, and after any big mutate batch before you walk away.
 
 - Read-only. Fixes still need confirm:true on the mutate ops.
 - Not the official scoreboard. Do not query scoring endpoints or other images.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

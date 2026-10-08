@@ -19,6 +19,14 @@ Checks /tmp, /var/tmp, and /dev/shm for the sticky bit and inventories world-wri
 
 Without sticky, anyone can delete or replace files in /tmp — including other users’ work and planted droppers. Scoring checks 1777 on shared temp dirs.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Linux files pass with find-world-writable. /tmp 1777 is the common “this is fine” exception that this op makes explicit.
@@ -39,6 +47,7 @@ Linux files pass with find-world-writable. /tmp 1777 is the common “this is fi
 
 - Read-only. chmod is a separate action.
 - Do not chmod 1777 on /usr or /home — only shared temp dirs.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

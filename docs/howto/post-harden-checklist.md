@@ -19,6 +19,14 @@ After-action verification on the authorized image: password policy, SSH/UAC, ext
 
 End-of-round leaks (media, extra root, RATs still installed) are avoidable. A second checklist after you think you are done catches them.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 After the main harden pass, and once more in the last 15 minutes.
@@ -28,6 +36,7 @@ After the main harden pass, and once more in the last 15 minutes.
 1. Run the op. Treat remaining fails as the last work list.
 2. Follow each linked op; live mutates still need confirm:true.
 3. Re-run until remaining fails are README exceptions you can explain in notes.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No extra UID 0, no empty+never-expire humans, Guest off.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ After the main harden pass, and once more in the last 15 minutes.
 
 - Read-only. Does not re-apply hardening for you.
 - Not CCS. Do not hide logs or delete evidence to make rows green.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

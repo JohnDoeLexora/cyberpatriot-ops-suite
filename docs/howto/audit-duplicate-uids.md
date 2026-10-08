@@ -19,6 +19,14 @@ Finds distinct usernames that share a UID. Duplicate UID 0 is critical; other co
 
 A second name with UID 0 is root by another name. Non-zero duplicates confuse logs and file ownership — both are findings.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Together with audit-uid-zero on Linux.
@@ -28,6 +36,7 @@ Together with audit-uid-zero on Linux.
 1. Run the op. Treat any UID 0 collision as urgent.
 2. Disable the extra name (disable-user). Do not try to ‘merge’ the UIDs.
 3. Re-run until each UID maps to one username (plus expected system aliases if the distro documents them).
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No two human usernames share a UID.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Together with audit-uid-zero on Linux.
 
 - Read-only.
 - Some distros have aliases; still, CP images that plant toor are not ‘aliases’ — they are backdoors to disable.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

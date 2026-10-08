@@ -19,6 +19,14 @@ Reads getenforce/sestatus and aa-status. Permissive or disabled MAC is a finding
 
 SELinux Permissive and AppArmor complain-mode are common plants. Scoring wants enforcing on images that had it.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Linux kernel pass with audit-sysctl. After you know the distro (Ubuntu=AppArmor, Fedora/CentOS=SELinux).
@@ -28,6 +36,7 @@ Linux kernel pass with audit-sysctl. After you know the distro (Ubuntu=AppArmor,
 1. Run the op. Note Permissive vs Enforcing vs Disabled, and complain vs enforce profiles.
 2. If the README does not forbid MAC, plan to set enforcing (setenforce 1 / aa-enforce) as a separate admin action.
 3. Do not disable MAC to ‘make an app work’ unless the README says the app is scored and broken by it.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: SELinux Enforcing or AppArmor profiles in enforce, matching what the image shipped with.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Linux kernel pass with audit-sysctl. After you know the distro (Ubuntu=AppArmor,
 
 - Read-only. Flipping to enforcing can break a scored service — README first.
 - Disabled SELinux on a RHEL-like image is the finding; Ubuntu without SELinux is normal.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

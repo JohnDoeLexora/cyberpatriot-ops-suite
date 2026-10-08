@@ -19,6 +19,14 @@ Parses PermitRootLogin, PasswordAuthentication, Protocol, X11Forwarding, MaxAuth
 
 sshd_config is a dense scoring surface. PermitRootLogin yes and PermitEmptyPasswords yes are the usual plants.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Linux network pass, before harden-sshd / disable-root-ssh.
@@ -39,6 +47,7 @@ Linux network pass, before harden-sshd / disable-root-ssh.
 
 - Read-only.
 - Do not disable sshd if it is a required service just to ‘hide’ findings — harden it.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

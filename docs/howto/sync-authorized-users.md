@@ -19,6 +19,14 @@ Reads config/allowed-users.txt and config/allowed-admins.txt. Creates missing hu
 
 Public kits sync users.txt/admins.txt at round start. Creating missing README users scores; planted extras must still be disabled by hand so you do not nuke a required account.
 
+## What it changes
+
+On Linux it runs useradd -m -s /bin/bash for missing allowlist names (no password is set) and usermod -aG sudo or wheel for names in allowed-admins.txt. On Windows it runs New-LocalUser -NoPassword for missing names and Add-LocalGroupMember Administrators for the admin list. You must set each new password yourself.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/ on Linux or %ProgramData%\CyberPatriotOps\backups\<ts>\ on Windows. Delete a user this op created only if they were not on the README: Linux userdel, Windows Remove-LocalUser. Remove an admin group membership with gpasswd -d or Remove-LocalGroupMember if you added the wrong name.
+
 ## When to run it
 
 Right after you paste the README lists into the two config files. Before disable-user.
@@ -29,6 +37,7 @@ Right after you paste the README lists into the two config files. Before disable
 2. dryRun:true. Read missingToCreate, extras, extraAdmins, and setPasswordManually.
 3. Live confirm:true creates missing accounts with no password. Immediately set those passwords yourself (passwd / lusrmgr).
 4. Hand extras to disable-user / lock-user and extra admins to remove-user-from-admins — this op will not auto-disable them.
+5. How to verify: run this check again and compare the output to the image README. You are done when this is true: Every README human exists. New accounts have ‘set password manually’ and no password in the output.
 
 ## What “good” looks like
 
@@ -40,6 +49,7 @@ Right after you paste the README lists into the two config files. Before disable
 - Mutation (creates/group-adds). Live requires confirm:true.
 - Never invents passwords. Empty/locked new accounts cannot log in until you set one.
 - Do not put passwords in the allowlist files.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

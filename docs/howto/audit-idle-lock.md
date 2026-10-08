@@ -19,6 +19,14 @@ Linux: TMOUT in profile and systemd-logind IdleAction. Windows: ScreenSaveActive
 
 Idle lock is a common ‘physical access’ scoring item on both platforms. A missing TMOUT or ScreenSaverIsSecure=0 is an easy miss.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Auth/policy pass with audit-password-policy and audit-uac.
@@ -39,6 +47,7 @@ Auth/policy pass with audit-password-policy and audit-uac.
 
 - Read-only.
 - A very short TMOUT can annoy a scored interactive service — README first.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

@@ -19,6 +19,14 @@ Checks fDenyTSConnections, NLA, and TermService. RDP should be off unless the RE
 
 Open RDP without NLA is a common Windows finding. Extra RDP when not required is also scored.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Windows network pass with audit-firewall and list-groups (Remote Desktop Users).
@@ -29,6 +37,7 @@ Windows network pass with audit-firewall and list-groups (Remote Desktop Users).
 2. Run the audit.
 3. If not required: disable-rdp.
 4. If required: leave it on, require NLA, restrict Remote Desktop Users.
+5. How to verify: run this check again and compare the output to the image README. You are done when this is true: RDP off when not required.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ Windows network pass with audit-firewall and list-groups (Remote Desktop Users).
 
 - Read-only.
 - Disabling RDP when it is the only remote path can strand you — know your console story.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

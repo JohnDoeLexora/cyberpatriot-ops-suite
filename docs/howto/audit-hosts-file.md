@@ -19,6 +19,14 @@ Reads the hosts file for unexpected redirects (Windows Update, antivirus, scorin
 
 Planted hosts entries can block updates or AV. That both costs update points and hides other findings.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Network pass, before apply-security-updates, and if updates seem ‘broken’.
@@ -28,6 +36,7 @@ Network pass, before apply-security-updates, and if updates seem ‘broken’.
 1. Run the op. Expected: localhost, maybe the hostname.
 2. Unexpected sinkholes of windowsupdate, defender, or scoring domains: plan to remove those lines on the image (this op is read-only).
 3. Re-run after editing. Do not add your own redirects to third-party sites.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: localhost and the machine hostname only, plus README-required entries.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Network pass, before apply-security-updates, and if updates seem ‘broken’.
 
 - Read-only.
 - Do not probe the redirected sites from the image as a ‘test.’
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

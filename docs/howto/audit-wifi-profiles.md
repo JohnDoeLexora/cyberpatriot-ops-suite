@@ -19,6 +19,14 @@ Inventories netsh WLAN profiles: SSID + authentication only. Flags Open networks
 
 Leftover Open or home Wi-Fi profiles are a Windows extras item and a persistence/credential leak if keys were printed — we do not print them.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Windows network pass with audit-dns-client and disable-llmnr-netbios-wpad.
@@ -28,6 +36,7 @@ Windows network pass with audit-dns-client and disable-llmnr-netbios-wpad.
 1. Run the op. Note Open vs WPA2 profiles.
 2. Delete leftover SSIDs on the image (`netsh wlan delete profile`) if they are not README-required. This op is read-only.
 3. Confirm the result has keyOmitted=true and no PSK/EAP password fields.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Only README-required SSIDs remain.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Windows network pass with audit-dns-client and disable-llmnr-netbios-wpad.
 
 - Read-only. Do not run `netsh wlan show profile key=clear`.
 - Do not put Wi-Fi keys in the coach packet or Git.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

@@ -1,6 +1,7 @@
 import { CircleHelp, Search, X } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'
 import { GUIDES, getGuide, searchHowto, type HowToGuide } from '@cyberpatriot/ops-docs'
+import { OpExplainer } from './OpExplainer'
 import { cn } from '../lib/cn'
 import { useWorkspace } from '../state/workspace'
 
@@ -169,6 +170,7 @@ function GuideBody({
         </div>
         <p className="mt-1.5 font-mono text-[12.5px] text-faint">{guide.opId}</p>
         <p className="mt-3 text-mute">{guide.summary}</p>
+        <OpExplainer opId={guide.opId} />
       </header>
 
       <Section title="What it is">{guide.what}</Section>

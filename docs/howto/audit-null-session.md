@@ -19,6 +19,14 @@ Reads RestrictAnonymous, RestrictAnonymousSAM, EveryoneIncludesAnonymous, Restri
 
 Anonymous SAM and null sessions are high Windows findings. Scoring checks the LSA/LanmanServer knobs, not whether you enumerated anyone.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Windows auth pass with audit-smb and audit-share-acls.
@@ -28,6 +36,7 @@ Windows auth pass with audit-smb and audit-share-acls.
 1. Run the op. RestrictAnonymous and RestrictAnonymousSAM should be 1; EveryoneIncludesAnonymous 0.
 2. NullSessionShares/Pipes should not list C$ or samr on a workstation.
 3. Fix via local policy/registry on the image (this op is read-only). Do not dump SAM to confirm.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: RestrictAnonymous=1, RestrictAnonymousSAM=1, EveryoneIncludesAnonymous=0.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Windows auth pass with audit-smb and audit-share-acls.
 
 - Read-only. Never dump SAM, SECURITY, or password hashes into notes.
 - Do not test null sessions against other machines.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

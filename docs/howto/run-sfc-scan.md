@@ -19,6 +19,14 @@ Runs sfc /verifyonly and returns a truncated integrity report. It does not repai
 
 Planted system files and a broken component store show up here. Knowing SFC is dirty tells you to snapshot and then repair on the image.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 When you suspect tampered system files, after audit-hosts-file, before a long update pass.
@@ -28,6 +36,7 @@ When you suspect tampered system files, after audit-hosts-file, before a long up
 1. Run the op. It can take several minutes on a real image.
 2. If violations name hosts or system DLLs, pair with clear-suspicious-hosts / apply-security-updates.
 3. Repair (sfc /scannow) is a separate admin action — this op stays read-only.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Windows Resource Protection did not find integrity violations.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ When you suspect tampered system files, after audit-hosts-file, before a long up
 
 - Read-only. Still slow — do not block the whole team on it at T+0.
 - Authorized-image only.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

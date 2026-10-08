@@ -19,6 +19,14 @@ passwd -l root so password auth as root fails. sudo can stay. Does not delete ro
 
 CAMS and Ubuntu checklists lock root so the only path is sudo for authorized admins.
 
+## What it changes
+
+Runs passwd -l root.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/. Unlock with passwd -u root only if the README says direct root login is required, then set a new password yourself.
+
 ## When to run it
 
 After you have a working sudo admin from allowed-admins.txt. Not before.
@@ -28,6 +36,7 @@ After you have a working sudo admin from allowed-admins.txt. Not before.
 1. Confirm alice (or another README admin) can sudo.
 2. dryRun:true, then live confirm:true.
 3. Do not lock root if the README requires a console root password — read it twice.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: root still UID 0, password locked.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ After you have a working sudo admin from allowed-admins.txt. Not before.
 
 - Mutation. Live requires confirm:true.
 - Locking root before you have sudo is a self-own. Check list-admin-users first.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

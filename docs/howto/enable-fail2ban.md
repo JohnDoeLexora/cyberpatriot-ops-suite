@@ -19,6 +19,14 @@ apt/dnf install fail2ban, then systemctl enable --now. If the package is not in 
 
 SSH brute-force defense on the local image is a common Linux item. Missing universe repo should not panic you.
 
+## What it changes
+
+Runs apt-get install -y fail2ban or dnf install -y fail2ban, then systemctl enable --now fail2ban. It does not download a script from the internet.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/. systemctl disable --now fail2ban, and apt-get remove fail2ban or dnf remove fail2ban if you need it gone.
+
 ## When to run it
 
 After harden-sshd / disable-root-ssh, if the README does not forbid extra packages.
@@ -28,6 +36,7 @@ After harden-sshd / disable-root-ssh, if the README does not forbid extra packag
 1. dryRun:true to see whether fail2ban is already active.
 2. Live confirm:true. If apt/dnf cannot find the package, record that and move on.
 3. This jails local sshd. It is not a remote attack tool.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: fail2ban.service active.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ After harden-sshd / disable-root-ssh, if the README does not forbid extra packag
 
 - Mutation (package install + enable). Live requires confirm:true.
 - Do not fetch unofficial fail2ban installers. Do not point it at other teams.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

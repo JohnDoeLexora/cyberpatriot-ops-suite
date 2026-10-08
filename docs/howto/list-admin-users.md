@@ -19,6 +19,14 @@ Lists members of Administrators, sudo, wheel, and UID 0. Cross-checks the README
 
 Privilege is scored separately from “user exists.” A standard user who is also in sudo is a finding even if the name looks friendly.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Immediately after list-users, and again after remove-user-from-admins.
@@ -29,6 +37,7 @@ Immediately after list-users, and again after remove-user-from-admins.
 2. Circle names that are admin but not on the README as admins.
 3. Note UID 0 duplicates (toor) — those also belong in audit-uid-zero.
 4. Feed extras to remove-user-from-admins or disable-user.
+5. How to verify: run this check again and compare the output to the image README. You are done when this is true: Only README admins plus the OS built-in (root / Administrator).
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ Immediately after list-users, and again after remove-user-from-admins.
 
 - Read-only.
 - Windows built-in Administrator and Linux root are expected; do not “fix” them by deletion.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

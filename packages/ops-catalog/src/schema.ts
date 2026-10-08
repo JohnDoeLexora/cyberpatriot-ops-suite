@@ -1,4 +1,4 @@
-import type { OpDefinition, ParamsSchema, Platform, Risk, Category } from "./types.js";
+import type { OpSeed, ParamsSchema, Platform, Risk, Category } from "./types.js";
 
 export const emptyParams: ParamsSchema = {
   type: "object",
@@ -306,7 +306,7 @@ export function op(
   description: string,
   demoFixtureHint: string,
   paramsSchema: ParamsSchema = emptyParams,
-): OpDefinition {
+): OpSeed {
   return {
     id,
     title,

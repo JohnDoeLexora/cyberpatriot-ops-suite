@@ -19,6 +19,14 @@ Runs secedit /configure against a local .inf (default config/windows/cp-baseline
 
 Public Windows kits apply a security template in one shot so password policy, Guest, and audit policy are not forgotten under the clock. This is that mutate, with dryRun and confirm.
 
+## What it changes
+
+Runs secedit /configure against the template (default config/windows/cp-baseline.inf) into a temporary security database, which writes those policy settings.
+
+## How to undo
+
+If a backup was made, restore from %ProgramData%\CyberPatriotOps\backups\<ts>\. Re-import the previous .inf if you saved one. Otherwise put password length, lockout, and Guest back by hand from the backup copy of the security policy.
+
 ## When to run it
 
 Windows auth pass after you have read the README. Prefer dryRun first.
@@ -40,6 +48,7 @@ Windows auth pass after you have read the README. Prefer dryRun first.
 - Mutation. Live requires confirm:true (or dryRun:true to preview).
 - secedit overwrites local policy. Snapshot the image first.
 - Authorized-image only. Never pointed at another team.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

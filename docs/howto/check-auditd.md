@@ -19,6 +19,14 @@ Checks auditd/auditctl presence, enabled flag, and a few expected rules (identit
 
 auditd off is a Linux logging finding. Watches on /etc/passwd are the usual expected rules.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Linux logging pass with audit-logging.
@@ -28,6 +36,7 @@ Linux logging pass with audit-logging.
 1. Run the op. If missing/inactive, install/enable on the image (read-only here).
 2. If running but no watches, add conservative watches via the OS — do not paste huge rule packs you do not understand.
 3. Re-run. Pair with audit-logging so rsyslog/journald is also alive.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: auditd active.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Linux logging pass with audit-logging.
 
 - Read-only in this op.
 - Aggressive audit rules can fill the disk and take the image down — keep it conservative.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

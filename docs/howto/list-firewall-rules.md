@@ -19,6 +19,14 @@ Lists host firewall rules. Highlights allow-any inbound, allow 23/21/445, and di
 
 A firewall that is ‘on’ but allows 0.0.0.0/0 any/any is still a finding.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 After enable-firewall, before you declare the network pass done.
@@ -28,6 +36,7 @@ After enable-firewall, before you declare the network pass done.
 1. Run the op. Treat any/any inbound and 23/21/445 allows as to-fix.
 2. Remove those rules on the image (OS tools); this op is read-only.
 3. Keep allows for README-required ports only.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No 0.0.0.0/0 any/any inbound.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ After enable-firewall, before you declare the network pass done.
 
 - Read-only.
 - Deleting the wrong allow can drop a scored service — README next to the rule list.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

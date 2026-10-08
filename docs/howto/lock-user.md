@@ -19,6 +19,14 @@ Locks a local account password (passwd -l / usermod -L, or the Windows lock equi
 
 Some checklists want the account present but unable to log in (especially service-like humans or stale authorized users you are not allowed to delete).
 
+## What it changes
+
+On Linux it runs usermod -L (or passwd -l). On Windows it runs Disable-LocalUser for that name.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/ on Linux or %ProgramData%\CyberPatriotOps\backups\<ts>\ on Windows. On Linux run usermod -U or passwd -u for that name. On Windows run Enable-LocalUser. Only unlock someone the README allows.
+
 ## When to run it
 
 When the README still lists the person as a user but you need to stop a known-default or compromised password, or when disable-user is too heavy.
@@ -40,6 +48,7 @@ When the README still lists the person as a user but you need to stop a known-de
 - Mutation. Live requires confirm:true.
 - Locking a required service account can break a scored service — check required-services and the README.
 - This is not a password-cracking tool and never prints hashes.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

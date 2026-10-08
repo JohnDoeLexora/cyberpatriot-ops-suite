@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { catalog } from "../src/catalog.ts";
+import { assertCatalogIntegrity, catalog } from "../src/catalog.ts";
 import { PLAYLISTS, assertPlaylistsIntegrity } from "../src/playlists.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -25,6 +25,7 @@ for (const op of catalog) {
   grouped.set(op.category, list as typeof catalog);
 }
 
+assertCatalogIntegrity(catalog);
 assertPlaylistsIntegrity(catalog);
 
 const lines: string[] = [
@@ -71,6 +72,10 @@ for (const [category, ops] of grouped) {
     lines.push(`- **Risk:** ${op.risk}`);
     lines.push(`- **Params:** ${paramsSummary(op)}`);
     lines.push(`- **Demo fixture:** ${op.demoFixtureHint}`);
+    lines.push(`- **What it does:** ${op.whatItDoes}`);
+    lines.push(`- **Why it scores:** ${op.whyItScores}`);
+    lines.push(`- **What it changes:** ${op.whatItChanges}`);
+    lines.push(`- **How to undo:** ${op.howToUndo}`);
     lines.push("");
     lines.push(op.description);
     lines.push("");
@@ -85,11 +90,11 @@ lines.push(
 for (const pl of PLAYLISTS) {
   lines.push(`### \`${pl.id}\``, "");
   lines.push(`${pl.title} — ${pl.summary}`, "");
-  lines.push("| # | Op | Coach tip | How-to |");
-  lines.push("| --- | --- | --- | --- |");
+  lines.push("| # | Op | Coach tip | Why now | How-to |");
+  lines.push("| --- | --- | --- | --- | --- |");
   pl.steps.forEach((s, i) => {
     lines.push(
-      `| ${i + 1} | \`${s.opId}\` | ${s.tip} | [how-to](./howto/${s.opId}.md) |`,
+      `| ${i + 1} | \`${s.opId}\` | ${s.tip} | ${s.whyNow} | [how-to](./howto/${s.opId}.md) |`,
     );
   });
   lines.push("");

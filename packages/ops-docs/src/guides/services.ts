@@ -13,6 +13,7 @@ export const SERVICES: Record<string, HowToBody> = {
       "Run the op. Sort mentally: required, risky, other.",
       "Required but stopped: start/enable via the OS (this op is read-only).",
       "Risky and not required: hand to disable-service / disable-telnet.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Every README-required service is running and enabled.",
     ],
     goodLooksLike: [
       "Every README-required service is running and enabled.",
@@ -21,6 +22,7 @@ export const SERVICES: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Stopping a required scored service costs points — always README-check before disable-service.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["flag-risky-services", "disable-service", "audit-ftp-telnet", "list-firewall-rules"],
     keywords: ["systemctl", "services.msc", "required-services", "baseline"],
@@ -35,6 +37,7 @@ export const SERVICES: Record<string, HowToBody> = {
       "Run the op. For each flag, open the README: is this service a scored requirement?",
       "If not required, use the specific disable op (disable-telnet, disable-legacy-r-services, disable-smbv1) or disable-service.",
       "If required, document why you left it on and harden around it (firewall, no anonymous, etc.).",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Flags remaining are only README-required services.",
     ],
     goodLooksLike: [
       "Flags remaining are only README-required services.",
@@ -43,6 +46,7 @@ export const SERVICES: Record<string, HowToBody> = {
     risks: [
       "Read-only. Disabling is a mutate with confirm:true.",
       "Local image only — never a network vulnerability scan of other teams.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "list-services",
@@ -72,6 +76,7 @@ export const SERVICES: Record<string, HowToBody> = {
       "Mutation. Live requires confirm:true.",
       "force=true can disable a scored service — only if you are sure the README does not need it.",
       "Wrong name (sshd vs ssh) can take down remote access; keep a console session.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["list-services", "flag-risky-services", "disable-telnet", "audit-startup-items"],
     keywords: ["systemctl disable", "Set-Service", "confirm", "force"],
@@ -85,6 +90,7 @@ export const SERVICES: Record<string, HowToBody> = {
       "Run the op. Note whether the problem is a socket, a daemon, anonymous_enable, or just an open port.",
       "If not README-required, disable-telnet and/or disable-service for vsftpd/ftpd.",
       "Re-run this audit and audit-listening-ports.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No telnet.socket / TlntSvr.",
     ],
     goodLooksLike: [
       "No telnet.socket / TlntSvr.",
@@ -94,6 +100,7 @@ export const SERVICES: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "If the README requires FTP, do not disable it — tighten anonymous off and firewall instead.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["disable-telnet", "audit-listening-ports", "flag-risky-services", "disable-service"],
     keywords: ["telnet.socket", "vsftpd", "anonymous_enable", "port 23"],
@@ -107,6 +114,7 @@ export const SERVICES: Record<string, HowToBody> = {
       "Confirm README does not require Telnet (it shouldn’t).",
       "dryRun:true, then live confirm:true.",
       "Re-run audit-ftp-telnet and audit-listening-ports.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Telnet unit disabled.",
     ],
     goodLooksLike: [
       "Telnet unit disabled.",
@@ -116,6 +124,7 @@ export const SERVICES: Record<string, HowToBody> = {
     risks: [
       "Mutation. Live requires confirm:true.",
       "Local image only; this does not scan or block other teams.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["audit-ftp-telnet", "enable-firewall", "audit-listening-ports", "disable-legacy-r-services"],
     keywords: ["telnetd", "TlntSvr", "tcp/23", "confirm"],
@@ -129,6 +138,7 @@ export const SERVICES: Record<string, HowToBody> = {
       "Run flag-risky-services / list-services to see which r-* units exist.",
       "dryRun:true, then live confirm:true.",
       "Re-run list-services and audit-listening-ports (512–514).",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: rsh.socket, rlogin.socket, rexec.socket disabled.",
     ],
     goodLooksLike: [
       "rsh.socket, rlogin.socket, rexec.socket disabled.",
@@ -137,6 +147,7 @@ export const SERVICES: Record<string, HowToBody> = {
     risks: [
       "Mutation. Live requires confirm:true.",
       "If xinetd is only there for these, consider disabling xinetd too via disable-service after a README check.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["disable-telnet", "flag-risky-services", "audit-listening-ports", "disable-service"],
     keywords: ["rsh", "rlogin", "rexec", "xinetd", "confirm"],
@@ -151,6 +162,7 @@ export const SERVICES: Record<string, HowToBody> = {
       "Run the op. Split findings: service running, SMBv1, guest map, dangerous shares.",
       "If SMB is not required, disable-service / disable-smbv1 as appropriate.",
       "If SMB is required: disable SMBv1, turn off guest, tighten share ACLs (see audit-shared-folders).",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: SMBv1 off.",
     ],
     goodLooksLike: [
       "SMBv1 off.",
@@ -160,6 +172,7 @@ export const SERVICES: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Disabling LanmanServer on a Windows image that needs shares will cost points — README first.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-shared-folders", "disable-smbv1", "disable-service", "audit-listening-ports"],
     keywords: ["smbd", "SMBv1", "map to guest", "LanmanServer"],

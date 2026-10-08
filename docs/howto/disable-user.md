@@ -19,6 +19,14 @@ Disables a local account (usermod/nologin or Disable-LocalUser) so it cannot log
 
 Unauthorized interactive users are a staple scoring item. Disabling is safer than deleting because forensics questions and README checks may still need the username and home.
 
+## What it changes
+
+On Linux it locks the password (usermod -L) and sets the shell to /usr/sbin/nologin. On Windows it runs Disable-LocalUser. The home folder is not deleted.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/ on Linux or %ProgramData%\CyberPatriotOps\backups\<ts>\ on Windows. On Linux run usermod -U and set the shell back (usually /bin/bash). On Windows run Enable-LocalUser. Do this only if the README says the person should exist.
+
 ## When to run it
 
 After flag-suspicious-users / list-users, and only for names the README does not authorize.
@@ -43,6 +51,7 @@ After flag-suspicious-users / list-users, and only for names the README does not
 - Never disable root or a README-required admin unless the README says so.
 - Do not userdel. Deleting homes can wipe forensics evidence.
 - Authorized image only.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

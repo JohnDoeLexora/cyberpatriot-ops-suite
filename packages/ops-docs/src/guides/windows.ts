@@ -10,11 +10,13 @@ export const WINDOWS: Record<string, HowToBody> = {
       "Run audit-smb so you know SMBv1 is actually on.",
       "dryRun:true, then live confirm:true.",
       "Re-run audit-smb. SMBv2/3 can remain if shares are required.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: SMB1Protocol disabled.",
     ],
     goodLooksLike: ["SMB1Protocol disabled.", "Guest shares still handled separately via audit-shared-folders."],
     risks: [
       "Mutation. Live requires confirm:true.",
       "If a dinosaur README required SMBv1 (almost never), stop. Otherwise disable it.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["audit-smb", "audit-shared-folders", "enable-firewall", "disable-autoplay"],
     keywords: ["SMB1Protocol", "Disable-WindowsOptionalFeature", "confirm"],
@@ -28,6 +30,7 @@ export const WINDOWS: Record<string, HowToBody> = {
       "Run the op with dryRun:true if you only need the intended Set-MpPreference.",
       "Live confirm:true.",
       "If hosts file sinkholed Defender, fix that first (audit-hosts-file).",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Realtime monitoring on.",
     ],
     goodLooksLike: [
       "Realtime monitoring on.",
@@ -36,6 +39,7 @@ export const WINDOWS: Record<string, HowToBody> = {
     risks: [
       "Mutation. Live requires confirm:true.",
       "Do not sideload cracked AV. Do not disable Defender to ‘go faster.’",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["audit-hosts-file", "check-pending-updates", "disable-autoplay", "audit-uac"],
     keywords: ["Defender", "DisableRealtimeMonitoring", "Set-MpPreference", "confirm"],
@@ -49,6 +53,7 @@ export const WINDOWS: Record<string, HowToBody> = {
       "Run the op. Note which of the three are off.",
       "Enable them via local policy/registry on the image (this op is read-only).",
       "Re-run. Transcription path should be a local directory, not a remote share you do not control.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Script Block Logging on.",
     ],
     goodLooksLike: [
       "Script Block Logging on.",
@@ -58,6 +63,7 @@ export const WINDOWS: Record<string, HowToBody> = {
     risks: [
       "Read-only here.",
       "Do not ship transcripts off-image. This is not unconstrained attack scripting.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-logging", "export-evidence-bundle", "enable-windows-defender"],
     keywords: ["ScriptBlockLogging", "Transcription", "Module Logging"],
@@ -71,6 +77,7 @@ export const WINDOWS: Record<string, HowToBody> = {
       "dryRun:true to see the registry value that would be set.",
       "Live confirm:true.",
       "Re-check with your registry checklist / this op’s demo output.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: NoDriveTypeAutoRun=0xFF (or equivalent ‘no autorun’ policy).",
     ],
     goodLooksLike: [
       "NoDriveTypeAutoRun=0xFF (or equivalent ‘no autorun’ policy).",
@@ -79,6 +86,7 @@ export const WINDOWS: Record<string, HowToBody> = {
     risks: [
       "Mutation. Live requires confirm:true.",
       "Local image registry only.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["enable-windows-defender", "disable-smbv1", "audit-uac", "audit-startup-items"],
     keywords: ["NoDriveTypeAutoRun", "autorun", "autoplay", "confirm"],
@@ -93,6 +101,7 @@ export const WINDOWS: Record<string, HowToBody> = {
       "Run the op. Note Protection Off vs On.",
       "If the README requires BitLocker and it is off, follow the README’s encrypt procedure on the authorized image — this op will not turn it on.",
       "Never copy recovery keys into chat, Git, or evidence zips.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Status matches the README requirement.",
     ],
     goodLooksLike: [
       "Status matches the README requirement.",
@@ -101,6 +110,7 @@ export const WINDOWS: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Do not export or print recovery keys. Do not encrypt blindly if the README is silent and time is short.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["enable-windows-defender", "audit-uac", "export-evidence-bundle"],
     keywords: ["BitLocker", "Protection Off", "recovery key"],

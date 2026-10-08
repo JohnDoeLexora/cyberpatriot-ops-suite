@@ -19,6 +19,14 @@ Masks the CAD reboot target and disables serial-getty@ttyS0. Does not disable tt
 
 CAD reboot is a cheap plant on a physical/console image. Extra serial gettys are unused attack surface.
 
+## What it changes
+
+Runs systemctl mask ctrl-alt-del.target and systemctl disable --now serial-getty@ttyS0.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/. systemctl unmask ctrl-alt-del.target and systemctl enable serial-getty@ttyS0 if you truly need the serial console.
+
 ## When to run it
 
 Linux kernel extras with harden-sysctl, after you know a serial console is not required.
@@ -28,6 +36,7 @@ Linux kernel extras with harden-sysctl, after you know a serial console is not r
 1. Confirm the README does not require a serial console.
 2. dryRun:true, then live confirm:true.
 3. tty1–6 stay. CAD should no longer reboot.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: systemctl status ctrl-alt-del.target is masked.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Linux kernel extras with harden-sysctl, after you know a serial console is not r
 
 - Mutation. Live requires confirm:true.
 - Do not mask getty@tty1. Authorized-image only.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

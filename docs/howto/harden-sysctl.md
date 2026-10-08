@@ -19,6 +19,14 @@ Writes /etc/sysctl.d/99-cp-hardening.conf (no forwarding, syncookies, rp_filter,
 
 This is the mutate that closes audit-sysctl findings on a workstation image.
 
+## What it changes
+
+Writes /etc/sysctl.d/99-cp-hardening.conf (ip_forward 0, send/accept redirects 0, accept_source_route 0, log_martians 1, rp_filter 1, tcp_syncookies 1, IPv6 accept_redirects 0, randomize_va_space 2, dmesg_restrict 1, kptr_restrict 2) and runs sysctl --system.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/. Delete 99-cp-hardening.conf and run sysctl --system so the previous files apply again.
+
 ## When to run it
 
 After audit-sysctl, when the README does not require routing/forwarding.
@@ -28,6 +36,7 @@ After audit-sysctl, when the README does not require routing/forwarding.
 1. Confirm the image is not a router per README.
 2. dryRun:true, then live confirm:true.
 3. Re-run audit-sysctl.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Drop-in present.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ After audit-sysctl, when the README does not require routing/forwarding.
 
 - Mutation. Live requires confirm:true.
 - Disabling forwarding on a required router image will cost points.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

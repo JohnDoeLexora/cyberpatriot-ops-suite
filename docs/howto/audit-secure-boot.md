@@ -19,6 +19,14 @@ Calls Confirm-SecureBootUEFI. Off or Setup Mode is a firmware finding. PK/KEK/db
 
 Some Windows images score Secure Boot. Even when they do not, Setup Mode is a plant you want to know about.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Windows extras after BitLocker/LSA, not in the first five minutes.
@@ -28,6 +36,7 @@ Windows extras after BitLocker/LSA, not in the first five minutes.
 1. Run the op. Note SecureBoot true/false.
 2. If the README requires Secure Boot and it is off, follow the image’s firmware procedure — this op will not enroll keys.
 3. Never copy PK/KEK material into chat, Git, or evidence zips.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Secure Boot on if the README requires it.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Windows extras after BitLocker/LSA, not in the first five minutes.
 
 - Read-only. Firmware enroll is out of band and easy to get wrong under the clock.
 - Authorized-image only.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { getOp } from "@cyberpatriot/ops-catalog";
 import { GUIDES, assertHowtoIntegrity, type HowToGuide } from "../src/index.ts";
 
 assertHowtoIntegrity(GUIDES);
@@ -24,6 +25,7 @@ function relatedLinks(ids: readonly string[]): string {
 }
 
 function renderGuide(guide: HowToGuide): string {
+  const op = getOp(guide.opId);
   const confirmNote =
     guide.risk === "mutate"
       ? "Live mutations require `confirm: true` (or `dryRun: true` to preview). See [SAFETY.md](../SAFETY.md)."
@@ -49,6 +51,14 @@ function renderGuide(guide: HowToGuide): string {
     "## Why it scores in CyberPatriot",
     "",
     guide.whyItScores,
+    "",
+    "## What it changes",
+    "",
+    op?.whatItChanges ?? "",
+    "",
+    "## How to undo",
+    "",
+    op?.howToUndo ?? "",
     "",
     "## When to run it",
     "",

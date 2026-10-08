@@ -19,6 +19,14 @@ Looks for telnet/ftp units and listeners. Anonymous FTP and Telnet are almost ne
 
 Port 23 and anonymous FTP are checkbox findings. The audit tells you which package/unit to disable.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 With flag-risky-services and audit-listening-ports.
@@ -28,6 +36,7 @@ With flag-risky-services and audit-listening-ports.
 1. Run the op. Note whether the problem is a socket, a daemon, anonymous_enable, or just an open port.
 2. If not README-required, disable-telnet and/or disable-service for vsftpd/ftpd.
 3. Re-run this audit and audit-listening-ports.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No telnet.socket / TlntSvr.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ With flag-risky-services and audit-listening-ports.
 
 - Read-only.
 - If the README requires FTP, do not disable it — tighten anonymous off and firewall instead.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

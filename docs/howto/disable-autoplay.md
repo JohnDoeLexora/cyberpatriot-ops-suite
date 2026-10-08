@@ -19,6 +19,14 @@ Sets NoDriveTypeAutoRun (0xFF). Standard CP Windows hardening against removable-
 
 Autoplay is a checkbox Windows item and a persistence path for planted USB-style payloads.
 
+## What it changes
+
+Creates HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer if needed and sets NoDriveTypeAutoRun to 255 (all drive types).
+
+## How to undo
+
+If a backup was made, restore from %ProgramData%\CyberPatriotOps\backups\<ts>\. Delete the NoDriveTypeAutoRun value, or set it back to the previous number, if the README required AutoPlay.
+
 ## When to run it
 
 Windows hardening pass with enable-windows-defender and disable-smbv1.
@@ -28,6 +36,7 @@ Windows hardening pass with enable-windows-defender and disable-smbv1.
 1. dryRun:true to see the registry value that would be set.
 2. Live confirm:true.
 3. Re-check with your registry checklist / this op’s demo output.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: NoDriveTypeAutoRun=0xFF (or equivalent ‘no autorun’ policy).
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Windows hardening pass with enable-windows-defender and disable-smbv1.
 
 - Mutation. Live requires confirm:true.
 - Local image registry only.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

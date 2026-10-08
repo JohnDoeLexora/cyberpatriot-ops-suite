@@ -11,6 +11,7 @@ export const PACKAGES: Record<string, HowToBody> = {
       "Run the op. Search the output for names in config/prohibited-software.txt and the README banned list.",
       "Note required stacks (openssh-server, apache2) so you do not purge them later.",
       "Hand hits to find-prohibited-software / remove-package.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Inventory completes without hashes or credentials.",
     ],
     goodLooksLike: [
       "Inventory completes without hashes or credentials.",
@@ -19,6 +20,7 @@ export const PACKAGES: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "A huge list is normal — do not delete ‘unknown’ packages blindly.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["find-prohibited-software", "remove-package", "list-services", "check-pending-updates"],
     keywords: ["dpkg", "rpm", "Get-Package", "inventory"],
@@ -33,6 +35,7 @@ export const PACKAGES: Record<string, HowToBody> = {
       "Skim the README prohibited list; update config/prohibited-software.txt if needed.",
       "Run the op. Each hit should name a package or path.",
       "remove-package for packages; for loose binaries in /tmp, delete the file after snapshotting (see find-backdoor-binaries).",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No nmap/hydra/john/netcat/ophcrack unless the README amazingly requires them (it will not).",
     ],
     goodLooksLike: [
       "No nmap/hydra/john/netcat/ophcrack unless the README amazingly requires them (it will not).",
@@ -41,6 +44,7 @@ export const PACKAGES: Record<string, HowToBody> = {
     risks: [
       "Read-only. This is not a tutorial for using nmap or hydra.",
       "netcat may be named nc, ncat, or netcat-traditional — read the hit.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["remove-package", "list-installed-packages", "find-backdoor-binaries", "find-hidden-executables"],
     keywords: ["nmap", "hydra", "john", "netcat", "ophcrack", "prohibited-software"],
@@ -64,6 +68,7 @@ export const PACKAGES: Record<string, HowToBody> = {
       "Mutation. Live requires confirm:true.",
       "force=true can remove a scored service.",
       "Purging may remove config you wanted for forensics — snapshot first if unsure.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["find-prohibited-software", "list-installed-packages", "list-services", "disable-service"],
     keywords: ["apt-get remove", "purge", "Uninstall-Package", "confirm"],
@@ -77,6 +82,7 @@ export const PACKAGES: Record<string, HowToBody> = {
       "Run the op. If rsyslog/journald/EventLog is inactive, enable it on the image (this op is read-only).",
       "Note tiny log sizes and missing auditd (see check-auditd).",
       "Do not wipe logs to ‘hide’ your work — that is the opposite of CP.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Logging service running.",
     ],
     goodLooksLike: [
       "Logging service running.",
@@ -85,6 +91,7 @@ export const PACKAGES: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Do not send logs off-image to random collectors.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["check-auditd", "audit-powershell-logging", "export-evidence-bundle", "check-ntp"],
     keywords: ["rsyslog", "journald", "EventLog", "auditd"],
@@ -98,6 +105,7 @@ export const PACKAGES: Record<string, HowToBody> = {
       "Run the op. If missing/inactive, install/enable on the image (read-only here).",
       "If running but no watches, add conservative watches via the OS — do not paste huge rule packs you do not understand.",
       "Re-run. Pair with audit-logging so rsyslog/journald is also alive.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: auditd active.",
     ],
     goodLooksLike: [
       "auditd active.",
@@ -106,6 +114,7 @@ export const PACKAGES: Record<string, HowToBody> = {
     risks: [
       "Read-only in this op.",
       "Aggressive audit rules can fill the disk and take the image down — keep it conservative.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-logging", "check-sensitive-file-perms", "audit-sudoers"],
     keywords: ["auditd", "auditctl", "watches", "/etc/passwd"],
@@ -119,6 +128,7 @@ export const PACKAGES: Record<string, HowToBody> = {
       "Run audit-hosts-file first if updates look blocked.",
       "Run this op. Note the count and whether unattended-upgrades is off.",
       "When you have a quiet stretch, apply-security-updates with confirm:true.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Zero pending security updates, or a documented reason (offline image).",
     ],
     goodLooksLike: [
       "Zero pending security updates, or a documented reason (offline image).",
@@ -127,6 +137,7 @@ export const PACKAGES: Record<string, HowToBody> = {
     risks: [
       "Read-only. Installing is the mutate op.",
       "Do not point the image at unofficial third-party repos to ‘get more patches.’",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["apply-security-updates", "audit-hosts-file", "enable-windows-defender"],
     keywords: ["unattended-upgrades", "Windows Update", "pending patches"],
@@ -152,6 +163,7 @@ export const PACKAGES: Record<string, HowToBody> = {
       "Read-only discovery. Removal is a separate confirm:true mutate.",
       "Do not dump extension source or attack other hosts.",
       "Do not keep a RAT ‘for testing’ on the scoring image.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "find-prohibited-software",
@@ -181,6 +193,7 @@ export const PACKAGES: Record<string, HowToBody> = {
       "Mutation. Live requires confirm:true. Can take a long time and may reboot.",
       "Do not add random PPAs or third-party patch tools.",
       "Authorized image only — never push updates to other teams’ hosts.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["check-pending-updates", "audit-hosts-file", "list-services", "enable-windows-defender"],
     keywords: ["apt-get upgrade", "dnf update --security", "Windows Update", "confirm"],

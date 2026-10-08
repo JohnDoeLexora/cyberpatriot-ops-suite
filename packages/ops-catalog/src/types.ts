@@ -36,7 +36,19 @@ export interface ParamsSchema {
   required?: string[];
 }
 
-export interface OpDefinition {
+/** Plain-language card so a first-time teammate can run the op without reading the engine. */
+export interface OpExplain {
+  /** One plain-English line: what running this op does. */
+  whatItDoes: string;
+  /** Why CyberPatriot rewards it, or the weakness it addresses. */
+  whyItScores: string;
+  /** Exactly what it modifies. Audits use "Nothing - read-only audit". */
+  whatItChanges: string;
+  /** Concrete undo, or "Nothing to undo" for a read-only op. */
+  howToUndo: string;
+}
+
+export interface OpDefinition extends OpExplain {
   /** Kebab-case unique id, stable for dashboard docking and API routes. */
   id: string;
   title: string;
@@ -48,6 +60,9 @@ export interface OpDefinition {
   /** What the demo runner returns so UI authors can design against fixtures. */
   demoFixtureHint: string;
 }
+
+/** Catalog row before the required explainer fields are attached. */
+export type OpSeed = Omit<OpDefinition, keyof OpExplain>;
 
 export interface CatalogFilter {
   category?: Category;

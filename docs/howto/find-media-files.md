@@ -19,6 +19,14 @@ Finds mp3/mp4/avi/mkv/mov/flac/wav/ogg under user homes and common stash dirs. I
 
 Prohibited media is a frequent file-category scoring item. Deleting the wrong file can also cost forensics points, so list first.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 After the critical user/firewall pass, when you have time to review names.
@@ -28,6 +36,7 @@ After the critical user/firewall pass, when you have time to review names.
 1. Run the op. Read each path — is it obviously a song/video, or could it be a forensics exhibit?
 2. If the README forbids media and it is not needed for a question, delete on the image using OS tools.
 3. Re-run until the inventory is empty (or only authorized exceptions).
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No prohibited media under homes/Public.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ After the critical user/firewall pass, when you have time to review names.
 
 - Read-only discovery. Blind recursive delete can destroy evidence.
 - Do not search other teams’ shares.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

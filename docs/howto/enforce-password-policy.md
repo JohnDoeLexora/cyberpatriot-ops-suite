@@ -19,6 +19,14 @@ Writes min length 14, remember 5, max age 90, min age 1, complexity on, inactive
 
 The audit op finds the gap; this op is the fix. Scoring checks the policy files/objects, not whether you cracked anyone.
 
+## What it changes
+
+On Linux it edits /etc/login.defs (PASS_MAX_DAYS 90, PASS_MIN_DAYS 1, PASS_MIN_LEN 14, PASS_WARN_AGE 7) and writes /etc/security/pwquality.conf.d/99-cp.conf (minlen 14, mixed character classes, remember 5). On Windows it runs net accounts /minpwlen:14 /maxpwage:90 /minpwage:1 /uniquepw:5.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/ on Linux or %ProgramData%\CyberPatriotOps\backups\<ts>\ on Windows. Put the previous numbers back into login.defs and delete 99-cp.conf on Linux. On Windows rerun net accounts with the old lengths and ages.
+
 ## When to run it
 
 After audit-password-policy, once you know the README does not demand a weaker custom policy.
@@ -40,6 +48,7 @@ After audit-password-policy, once you know the README does not demand a weaker c
 - Mutation. Live requires confirm:true. dryRun:true previews.
 - A too-strict policy can lock your team out if you also expire everyone at once — do not combine blindly.
 - Never used to attack password-guessing on other hosts.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

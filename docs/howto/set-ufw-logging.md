@@ -19,6 +19,14 @@ ufw logging high plus default deny incoming and allow outgoing. Does not open po
 
 Default-deny plus high logging is the Linux firewall baseline public kits apply after ‘ufw enable’.
 
+## What it changes
+
+Runs ufw logging high, ufw default deny incoming, and ufw default allow outgoing.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/. Set logging back with ufw logging low or medium. Change the default policy only if you saved the previous one in the backup.
+
 ## When to run it
 
 Immediately after enable-firewall / apply-default-deny-inbound.
@@ -28,6 +36,7 @@ Immediately after enable-firewall / apply-default-deny-inbound.
 1. If ufw is inactive, run enable-firewall first (confirm).
 2. dryRun:true, then live confirm:true on this op.
 3. ufw status verbose should show logging high and default deny incoming.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: logging high
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Immediately after enable-firewall / apply-default-deny-inbound.
 
 - Mutation. Live requires confirm:true.
 - Default deny can hide a README-required port — add an allow rule, do not flip default to allow.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

@@ -19,6 +19,14 @@ Lists installed ServerManager roles (or optional features on a workstation). Fla
 
 A workstation image with AD-DS/DNS/DHCP installed is usually a plant. Server images that *are* the DC need those roles left alone — read the README.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Windows extras after you have read whether this image is a DC, member, or workstation.
@@ -28,6 +36,7 @@ Windows extras after you have read whether this image is a DC, member, or workst
 1. Read the README: is this a domain controller, member server, or workstation?
 2. Run the op. Unexpected AD/DNS/DHCP on a workstation is a remove-feature candidate (not this op).
 3. Never dcpromo / uninstall AD-DS on a README-required DC.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Role list matches the README.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Windows extras after you have read whether this image is a DC, member, or workst
 
 - Read-only. Uninstalling AD-DS is a separate, high-risk admin action.
 - Do not target another team’s DC. Authorized-image only.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

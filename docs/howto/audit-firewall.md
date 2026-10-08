@@ -19,6 +19,14 @@ Reports ufw/firewalld/iptables or Windows Firewall profiles (Domain/Private/Publ
 
 ‘Firewall off’ is one of the fastest network points. Profiles that are off individually (Public) also score.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Immediately in the network pass — often in the first ten minutes.
@@ -28,6 +36,7 @@ Immediately in the network pass — often in the first ten minutes.
 1. Run the op. If inactive/off, enable-firewall is the next click.
 2. Then list-firewall-rules and apply-default-deny-inbound.
 3. Allow required services (22/80/…) only after default deny.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: ufw/firewalld active, or all Windows profiles on.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Immediately in the network pass — often in the first ten minutes.
 
 - Read-only.
 - Enabling a firewall without allow rules for required services can drop scored ports — plan the allows.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

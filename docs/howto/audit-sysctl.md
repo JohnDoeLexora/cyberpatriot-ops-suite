@@ -19,6 +19,14 @@ Reads ip_forward, rp_filter, accept_redirects, tcp_syncookies, dmesg_restrict, k
 
 ip_forward=1 and tcp_syncookies=0 are common kernel plants on Linux workstations.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Linux kernel pass, before harden-sysctl.
@@ -28,6 +36,7 @@ Linux kernel pass, before harden-sysctl.
 1. Run the op. Workstations should not forward; routers might — believe the README.
 2. Apply harden-sysctl for the conservative workstation set.
 3. Re-run the audit.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: ip_forward=0 on a workstation (unless the README says router).
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Linux kernel pass, before harden-sysctl.
 
 - Read-only.
 - If the README says this image is a router, do not blindly disable forwarding.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

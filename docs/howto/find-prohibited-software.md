@@ -19,6 +19,14 @@ Matches nmap, hydra, john, netcat, ophcrack, aircrack, and friends from config/p
 
 Hacking tools and games on a CP image are scored. Discovery first keeps you from removing a required look-alike.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Right after list-installed-packages, and anytime you find nc in /tmp.
@@ -28,6 +36,7 @@ Right after list-installed-packages, and anytime you find nc in /tmp.
 1. Skim the README prohibited list; update config/prohibited-software.txt if needed.
 2. Run the op. Each hit should name a package or path.
 3. remove-package for packages; for loose binaries in /tmp, delete the file after snapshotting (see find-backdoor-binaries).
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No nmap/hydra/john/netcat/ophcrack unless the README amazingly requires them (it will not).
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Right after list-installed-packages, and anytime you find nc in /tmp.
 
 - Read-only. This is not a tutorial for using nmap or hydra.
 - netcat may be named nc, ncat, or netcat-traditional — read the hit.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

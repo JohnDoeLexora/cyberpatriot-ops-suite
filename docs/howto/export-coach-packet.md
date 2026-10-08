@@ -19,6 +19,14 @@ Writes SUMMARY.md, findings.json, and user/service/port inventories (hashes omit
 
 Coaches want a clean handoff without secrets. Scoring does not want you to exfiltrate the image. This is Sabbath-coffee maximalism still inside the rules.
 
+## What it changes
+
+Creates a folder and coach-packet.zip under the temp directory (Linux /tmp/cp-ops-coach-packet, Windows %TEMP%\cp-ops-coach-packet) or the outputDir you pass. Accounts, services, and policies are not modified.
+
+## How to undo
+
+Nothing to undo on system settings. Delete that folder if you do not want the zip left on disk.
+
 ## When to run it
 
 End of a pass or when a coach asks for status. After the high-value mutates, not instead of them.
@@ -28,6 +36,7 @@ End of a pass or when a coach asks for status. After the high-value mutates, not
 1. Run the op. Optional outputDir must be a local path (never a URL or UNC).
 2. Open SUMMARY.md on the image. Confirm hashesIncluded=false, wifiKeysIncluded=false, ccsContacted=false.
 3. Hand the ZIP to a coach on a USB stick from the authorized image if the rules allow — do not email secrets.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: ZIP contains SUMMARY.md + inventories. redacted=true.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ End of a pass or when a coach asks for status. After the high-value mutates, not
 
 - Read-only assembly. Still do not copy shadow, SAM, or Wi-Fi keys into the packet — the engine will not.
 - Not off-image exfiltration. Not a CCS scrape. Authorized-image only.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

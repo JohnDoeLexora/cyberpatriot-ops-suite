@@ -19,6 +19,14 @@ Checks system Firefox policies/user.js and IE/Edge SmartScreen / password-saving
 
 Safebrowsing off and password-saving on a shared image are common browser findings. SmartScreen off is a Windows favorite.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Software/browser pass with hunt-remote-access-tools (extensions) and audit-hosts-file.
@@ -28,6 +36,7 @@ Software/browser pass with hunt-remote-access-tools (extensions) and audit-hosts
 1. Run the op. Note safebrowsing, password manager, SmartScreen, and insecure protocol handlers.
 2. Fix via enterprise policy / IE zone / Edge policy on the image (this op is read-only).
 3. Do not export the profile; cookies and saved passwords stay on disk.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Safe Browsing / SmartScreen on.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ Software/browser pass with hunt-remote-access-tools (extensions) and audit-hosts
 
 - Read-only. Never dump browser password stores into notes.
 - Do not browse other teams’ sites as a ‘test’ of SmartScreen.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

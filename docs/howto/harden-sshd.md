@@ -19,6 +19,14 @@ Drop-in with PermitRootLogin no, PermitEmptyPasswords no, X11Forwarding no, MaxA
 
 One confirmed mutate beats five error-prone hand edits, and the audit op can verify it.
 
+## What it changes
+
+Writes /etc/ssh/sshd_config.d/99-cp-hardening.conf with PermitRootLogin no, PermitEmptyPasswords no, X11Forwarding no, MaxAuthTries 4, Protocol 2, LoginGraceTime 30, ClientAliveInterval 300, ClientAliveCountMax 2, then reloads ssh or sshd.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/. Delete 99-cp-hardening.conf and reload ssh. Existing settings in sshd_config then apply again.
+
 ## When to run it
 
 After ssh-hardening-audit, with a sudo user session already open.
@@ -40,6 +48,7 @@ After ssh-hardening-audit, with a sudo user session already open.
 - Mutation. Live requires confirm:true.
 - A bad sshd reload can drop remote access — console first.
 - Local sshd only; not a tool for connecting to other hosts.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

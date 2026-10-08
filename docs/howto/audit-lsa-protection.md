@@ -19,6 +19,14 @@ Reads HKLM LSA RunAsPPL / RunAsPPLBoot. Unprotected LSA is a credential-theft fi
 
 Windows images often score LSA protection. Knowing the bit is on is the check; dumping LSASS is out of scope and against the rules.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Windows auth extras with audit-uac and audit-credential-guard, after the high-value user/firewall work.
@@ -28,6 +36,7 @@ Windows auth extras with audit-uac and audit-credential-guard, after the high-va
 1. Run the op. Note RunAsPPL=0 vs 1/2.
 2. If the README/image supports VBS, enabling RunAsPPL is a local policy action — this op is read-only.
 3. Never run a credential dump, mimikatz, or LSASS access tool. The result must not contain hashes.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: RunAsPPL is 1 or 2 on images that score it.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Windows auth extras with audit-uac and audit-credential-guard, after the high-va
 
 - Read-only. Enabling RunAsPPL is a separate admin action after a README check.
 - Do not dump LSASS. Authorized-image only.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

@@ -19,6 +19,14 @@ Classifies accounts as empty / locked / set using shadow or Windows PasswordRequ
 
 Empty-password Guest or human accounts are easy points and an open door on the image. CP images often ship Guest or games this way.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 With the first user pass, especially before you connect the image to a network you care about.
@@ -40,6 +48,7 @@ With the first user pass, especially before you connect the image to a network y
 
 - Read-only. This is not John/hashcat and must never become a cracker.
 - Setting passwords is a manual/OS step; this op only detects emptiness.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

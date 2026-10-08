@@ -19,6 +19,14 @@ systemctl disable --now / Set-Service -StartupType Disabled for a named unit. Re
 
 This is the generic hammer after flag-risky-services. Safer than a blind ‘disable all’ script.
 
+## What it changes
+
+On Linux it runs systemctl disable --now for the unit you name. On Windows it runs Stop-Service and Set-Service -StartupType Disabled.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/ on Linux or %ProgramData%\CyberPatriotOps\backups\<ts>\ on Windows. Turn it back on only if the README needs it: Linux systemctl enable --now <service>, Windows Set-Service -StartupType Automatic and Start-Service.
+
 ## When to run it
 
 When a specific non-required service is running and you do not have a specialized op for it.
@@ -40,6 +48,7 @@ When a specific non-required service is running and you do not have a specialize
 - Mutation. Live requires confirm:true.
 - force=true can disable a scored service — only if you are sure the README does not need it.
 - Wrong name (sshd vs ssh) can take down remote access; keep a console session.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

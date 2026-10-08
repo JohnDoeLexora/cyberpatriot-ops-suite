@@ -19,6 +19,14 @@ Reads vsftpd.conf / proftpd / FTPSVC knobs: anonymous_enable, anon_upload, write
 
 Anonymous FTP is almost never required and almost always scored. Knowing *which knob* is on tells you whether to harden or disable the daemon.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 With audit-ftp-telnet and flag-risky-services, before harden-vsftpd.
@@ -39,6 +47,7 @@ With audit-ftp-telnet and flag-risky-services, before harden-vsftpd.
 
 - Read-only. This is not an anonymous login test against anyone.
 - If the README requires FTP, do not disable the service — turn anonymous off.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

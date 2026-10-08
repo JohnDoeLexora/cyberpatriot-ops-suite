@@ -19,6 +19,14 @@ Compares local interactive users to config/allowed-users.txt and returns a disab
 
 Unauthorized humans and extra admins are a staple point block. A bulk miss list is faster than scrolling a scored inventory under the clock, and it feeds disable-user / remove-user-from-admins.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Right after you paste the README user list into config/allowed-users.txt. Re-run after each disable/lock.
@@ -41,6 +49,7 @@ Right after you paste the README user list into config/allowed-users.txt. Re-run
 - Read-only selection. Acting on a name is a mutate op with confirm:true.
 - Service accounts (www-data, sshd) should not appear — if they do, check the allowlist rather than disabling them.
 - Authorized-image only. Never pointed at another team.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

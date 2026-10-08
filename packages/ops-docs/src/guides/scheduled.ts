@@ -21,6 +21,7 @@ export const SCHEDULED: Record<string, HowToBody> = {
     risks: [
       "Read-only. Do not run the cron command ‘to see what it does.’",
       "Deleting distro logrotate/cron can break logging — only remove plants.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-at-jobs", "find-hidden-executables", "find-world-writable", "audit-startup-items"],
     keywords: ["crontab", "wget | sh", "cron.d/hack", "world-writable cron"],
@@ -34,11 +35,13 @@ export const SCHEDULED: Record<string, HowToBody> = {
       "Run the op. If empty, good.",
       "Unexpected jobs: copy the command into notes, then atrm on the image.",
       "Investigate the user who queued it (flag-suspicious-users).",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No unexpected at jobs.",
     ],
     goodLooksLike: ["No unexpected at jobs.", "Remaining jobs are README-justified."],
     risks: [
       "Read-only. The reverse-looking command is reported, not executed.",
       "Do not ‘test’ the job.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-cron", "flag-suspicious-users", "find-backdoor-binaries", "list-scheduled-tasks"],
     keywords: ["atq", "atrm", "batch", "at job"],
@@ -52,6 +55,7 @@ export const SCHEDULED: Record<string, HowToBody> = {
       "Run the op. Ignore signed Microsoft tasks unless the action looks hijacked.",
       "Disable/delete planted tasks on the image; remove the payload file after snapshotting.",
       "Re-run and check Startup folders via audit-startup-items.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: No user tasks pointing at TEMP or Startup binaries.",
     ],
     goodLooksLike: [
       "No user tasks pointing at TEMP or Startup binaries.",
@@ -60,6 +64,7 @@ export const SCHEDULED: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Disabling a required vendor updater can be wrong — README/software list first.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["audit-startup-items", "find-hidden-executables", "find-backdoor-binaries", "audit-cron"],
     keywords: ["schtasks", "%TEMP%", "Updater", "Startup folder"],
@@ -73,6 +78,7 @@ export const SCHEDULED: Record<string, HowToBody> = {
       "Run the op. Workstations should not forward; routers might — believe the README.",
       "Apply harden-sysctl for the conservative workstation set.",
       "Re-run the audit.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: ip_forward=0 on a workstation (unless the README says router).",
     ],
     goodLooksLike: [
       "ip_forward=0 on a workstation (unless the README says router).",
@@ -81,6 +87,7 @@ export const SCHEDULED: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "If the README says this image is a router, do not blindly disable forwarding.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: ["harden-sysctl", "audit-firewall", "enable-firewall"],
     keywords: ["ip_forward", "tcp_syncookies", "accept_redirects", "rp_filter"],
@@ -94,6 +101,7 @@ export const SCHEDULED: Record<string, HowToBody> = {
       "Confirm the image is not a router per README.",
       "dryRun:true, then live confirm:true.",
       "Re-run audit-sysctl.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: Drop-in present.",
     ],
     goodLooksLike: [
       "Drop-in present.",
@@ -102,6 +110,7 @@ export const SCHEDULED: Record<string, HowToBody> = {
     risks: [
       "Mutation. Live requires confirm:true.",
       "Disabling forwarding on a required router image will cost points.",
+      "Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.",
     ],
     related: ["audit-sysctl", "enable-firewall", "apply-default-deny-inbound"],
     keywords: ["sysctl.d", "99-cp-hardening.conf", "confirm"],
@@ -115,6 +124,7 @@ export const SCHEDULED: Record<string, HowToBody> = {
       "Run the op. Keep required services (sshd) in the enabled list.",
       "Remove planted rc.local lines, Run keys, and Startup shortcuts on the image.",
       "Delete the payload files after snapshotting.",
+      "How to verify: run this check again and compare the output to the image README. You are done when this is true: sshd/required units still enabled.",
     ],
     goodLooksLike: [
       "sshd/required units still enabled.",
@@ -123,6 +133,7 @@ export const SCHEDULED: Record<string, HowToBody> = {
     risks: [
       "Read-only.",
       "Disabling a required enabled unit here (by later mutate) costs points — README.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "audit-cron",
@@ -153,6 +164,7 @@ export const SCHEDULED: Record<string, HowToBody> = {
     risks: [
       "Read-only inventory. Do not execute the payload ‘to confirm.’",
       "Disabling a required enabled unit later costs points — README.",
+      "Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.",
     ],
     related: [
       "audit-startup-items",
