@@ -37,7 +37,7 @@ Open the URL Vite prints (http://localhost:5173).
 - **Beginner** (on by default): larger tips, starter checks first, **Show advanced** for the rest. Empty panes suggest a playlist. Turn it off for the full catalog.
 - **Edit allowlists**: paste the README user/admin lists (saved in this browser). Download/upload `allowed-users.txt` / `allowed-admins.txt` in the same format as `config/`.
 - Click a check to **replace the focused pane** (an empty pane just fills). **Split** or drop on an edge to open another. Two across, then two below (a 2×2). Tabs from the fifth pane.
-- **How-to** (or `?`) explains what the check is and why it scores.
+- **How-to** (or `?`) explains what the check does, why it scores, what it changes, and how to undo it. Full write-ups: [docs/howto/](docs/howto/).
 - On account panes, hover a row for Flag / Turn off / Turn on / Expire password. Extra columns tuck away on a narrow pane.
 
 More: [docs/SAFETY.md](docs/SAFETY.md) · [docs/OPS.md](docs/OPS.md) (every check) · [docs/howto/](docs/howto/) · [CONTRIBUTING.md](CONTRIBUTING.md)

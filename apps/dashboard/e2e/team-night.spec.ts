@@ -126,6 +126,8 @@ test('how-to search still finds a guide from the header', async ({ page }) => {
 })
 
 test('playlist run next then run all stays on one pane', async ({ page }) => {
+  // linux-starter is 16 steps after the scoring-order rewrite. Same budget as the full Run all test.
+  test.setTimeout(90_000)
   await page.goto('/')
   const next = page.getByTestId('playlist-run-next')
   await next.click()
@@ -137,12 +139,12 @@ test('playlist run next then run all stays on one pane', async ({ page }) => {
   await expect(page.getByTestId('playlist-step-list-users')).toHaveAttribute('data-status', 'done', {
     timeout: 15_000,
   })
-  await expect(page.getByTestId('playlist-progress')).toHaveText('2/13')
+  await expect(page.getByTestId('playlist-progress')).toHaveText('2/16')
   await expect(page.getByTestId('pane')).toHaveCount(1)
   await expect(page.getByTestId('confirm-dialog')).toHaveCount(0)
 
   await page.getByTestId('playlist-run-all').click()
-  await expect(page.getByTestId('playlist-progress')).toHaveText('13/13', { timeout: 20_000 })
+  await expect(page.getByTestId('playlist-progress')).toHaveText('16/16', { timeout: 60_000 })
   await expect(page.getByTestId('playlist-step-enable-firewall')).toHaveAttribute('data-status', 'done')
   await expect(page.getByTestId('playlist-step-scoreboard-preflight')).toHaveAttribute('data-status', 'done')
   await expect(page.getByTestId('pane')).toHaveCount(1)

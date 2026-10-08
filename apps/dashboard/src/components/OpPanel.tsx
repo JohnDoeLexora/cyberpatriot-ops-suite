@@ -8,6 +8,7 @@ import { isSuspicious } from '../lib/users'
 import { collectFindings, useWorkspace } from '../state/workspace'
 import { PREFLIGHT_ITEMS } from '../state/persist'
 import { EmptyPane } from './EmptyPane'
+import { OpExplainer } from './OpExplainer'
 import { OutputView } from './OutputView'
 import { UserTable } from './UserTable'
 
@@ -97,6 +98,7 @@ export function OpPanel({ paneId }: { paneId: string }) {
               </span>
             )}
           </div>
+          <OpExplainer opId={op.id} />
           <CoachTip opId={op.id} />
           <ParamBar paneId={paneId} />
           <div className="pane-cq min-h-0 flex-1 overflow-auto" data-testid={`pane-body-${paneId}`}>
