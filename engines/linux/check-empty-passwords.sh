@@ -4,23 +4,35 @@ set -Eeuo pipefail
 # shellcheck source=_lib.sh
 . "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 python3 - <<'PY'
-import json, spwd
+import json
 users = []
 try:
-    entries = spwd.getspall()
-except Exception as e:
+    lines = open("/etc/shadow", encoding="utf-8", errors="replace").read().splitlines()
+except OSError:
     print(json.dumps({
         "ok": False,
         "status": "skipped",
         "summary": "Skipped: password classifications need permission to read the shadow file. Re-run as root on the authorized image. Hashes are not printed.",
         "warnings": ["shadow unreadable"],
+        "exitCode": 3,
     }))
     raise SystemExit(3)
-for s in entries:
-    field = s.sp_pwd or ""
+for line in lines:
+    parts = line.split(":")
+    if len(parts) < 2 or not parts[0]:
+        continue
+    field = parts[1]
     empty = field == ""
     locked = field.startswith("!") or field.startswith("*")
-    if empty or (not locked and not field):
-        users.append({"name": s.sp_nam, "passwordEmpty": empty, "locked": locked, "passwordHidden": True, "platform": "linux", "groups": []})
-print(json.dumps({"ok": True, "users": users}, indent=2))
+    if empty:
+        users.append({
+            "name": parts[0],
+            "passwordEmpty": True,
+            "locked": locked,
+            "passwordHidden": True,
+            "platform": "linux",
+            "groups": [],
+        })
+summary = f"{len(users)} empty-password accounts (hashes omitted)." if users else "No empty passwords detected (or shadow unreadable)."
+print(json.dumps({"ok": True, "status": "ok", "summary": summary, "users": users}, indent=2))
 PY

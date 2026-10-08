@@ -7,4 +7,8 @@ if [[ -z "${CP_SKIP_BEND:-}" && -z "${CP_SCAN_ROOT:-}" && -x "$HERE/../bend/run.
   "$HERE/../bend/run.sh" files-ww
   exit 0
 fi
-find /home /etc /opt /tmp /var /usr/local -xdev -perm -0002 -type f 2>/dev/null | head -n 200 | python3 -c 'import json,sys; print(json.dumps({"ok":True,"files":[{"path":l.strip(),"worldWritable":True} for l in sys.stdin if l.strip()]}))'
+# Python reads the whole find stream so head's SIGPIPE cannot fail the script under pipefail.
+find /home /etc /opt /tmp /var /usr/local -xdev -perm -0002 -type f -print 2>/dev/null | python3 -c 'import json,sys
+lines=[l.strip() for l in sys.stdin if l.strip()][:200]
+print(json.dumps({"ok": True, "status": "ok", "summary": f"{len(lines)} world-writable files (capped).", "files": [{"path": l, "kind": "file", "worldWritable": True} for l in lines]}))
+'

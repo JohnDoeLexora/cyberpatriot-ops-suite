@@ -16,9 +16,9 @@ is unchanged — Bend does not talk to the Win32 APIs.
 | `run.sh` | Prefer `bend`, else Python fallback |
 | `scan-files.bend` / `scan-ports.bend` / `score-heuristics.bend` | Extra KIND\|PATH inventory scorers (`runner.sh` + `CP_BEND_INVENTORY`) |
 
-`ops-engine` live Linux path calls `run.sh` when `bend` exists, then falls
-back to the existing TypeScript `find` collectors. Demo mode never invokes
-Bend (Mac-safe fixtures). Mutations never go through Bend.
+File-hunt scripts call `run.sh` when `bend` is on PATH and `CP_SKIP_BEND` is
+unset. If Bend is missing, the same script scores with Python. Demo mode
+never invokes Bend. Mutations never go through Bend.
 
 ```bash
 export PATH="$HOME/.bend/bin:$PATH"

@@ -1,7 +1,8 @@
 import path from "node:path";
-import type { EngineContext, RunResult } from "../types.js";
 import { runCmd } from "../linux/exec.js";
+import { mapScriptPayload } from "../script-result.js";
 import { asBoolean, asString } from "../safety.js";
+import type { EngineContext, RunResult } from "../types.js";
 
 export function windowsScriptPath(repoRoot: string, opId: string): string {
   return path.join(repoRoot, "engines", "windows", `${opId}.ps1`);
@@ -61,44 +62,26 @@ export async function runWindows(ctx: EngineContext): Promise<RunResult> {
   if (ctx.confirm) args.push("-ConfirmLive");
   const timeout = ctx.op.id === "run-sfc-scan" ? 180000 : 60000;
   const result = await runCmd("powershell.exe", args, timeout);
-  let ok = result.code === 0;
-  let summary = ok ? `PowerShell ${ctx.op.id} completed` : `PowerShell ${ctx.op.id} failed (exit ${result.code}).`;
-  let data: RunResult["data"] = { extra: { script, stdout: result.stdout.slice(0, 8000), exitCode: result.code } };
-  const warnings: string[] = [];
+  let parsed: Record<string, unknown> | undefined;
   try {
     const start = result.stdout.indexOf("{");
     const end = result.stdout.lastIndexOf("}");
-    const parsed = start >= 0 && end > start ? JSON.parse(result.stdout.slice(start, end + 1)) : undefined;
-    if (parsed && typeof parsed === "object") {
-      data = parsed as RunResult["data"];
-      const rec = parsed as Record<string, unknown>;
-      // Honor the script's own ok/summary. A wrapper that exits 0 with ok:false is still a failure.
-      if (rec.ok === false) ok = false;
-      if (typeof rec.summary === "string" && rec.summary.trim()) summary = rec.summary.trim();
-      const preview = Array.isArray(rec.preview) ? rec.preview.filter((line): line is string => typeof line === "string") : [];
-      const extraLines = preview.filter((line) => !summary.includes(line));
-      if (extraLines.length) summary = `${summary}\n${extraLines.join("\n")}`;
-      if (Array.isArray(rec.warnings)) {
-        for (const warning of rec.warnings) {
-          if (typeof warning === "string" && warning.trim()) warnings.push(warning);
-        }
-      }
+    if (start >= 0 && end > start) {
+      const value = JSON.parse(result.stdout.slice(start, end + 1)) as unknown;
+      if (value && typeof value === "object" && !Array.isArray(value)) parsed = value as Record<string, unknown>;
     }
   } catch {
-    // keep raw stdout
+    parsed = undefined;
   }
-  if (result.code !== 0) ok = false;
-  if (!ok) {
-    const err = result.stderr.trim();
-    if (err) warnings.push(err.slice(0, 2000));
-    if (!warnings.length) warnings.push(summary);
-  }
+  const mapped = mapScriptPayload(parsed, result.code, "windows", result.stderr);
   return {
     ...base,
-    ok,
+    ok: mapped.ok,
     finishedAt: new Date().toISOString(),
-    summary,
-    data,
-    warnings,
+    summary: mapped.summary,
+    findings: mapped.findings,
+    data: { ...mapped.data, extra: { ...(mapped.data.extra ?? {}), script, dispatcher } },
+    warnings: mapped.warnings,
+    engine: mapped.engine,
   };
 }
