@@ -86,6 +86,27 @@ export interface ChecklistItem {
   relatedOpId: string;
 }
 
+/** clear = ok, watch = warning, urgent = high. empty = nothing matched, and the summary says what was checked. */
+export type ReportTone = "clear" | "watch" | "urgent" | "info" | "empty";
+
+export interface ReportFact {
+  label: string;
+  value: string;
+}
+
+export interface ReportTable {
+  title: string;
+  columns: Array<{ key: string; label: string; mono?: boolean }>;
+  rows: Array<Record<string, string>>;
+}
+
+/** Generic status card: headline is RunResult.summary, facts are the details, table is optional. */
+export interface StatusReport {
+  tone: ReportTone;
+  facts: ReportFact[];
+  table?: ReportTable;
+}
+
 export interface RunData {
   users?: UserRecord[];
   services?: ServiceRecord[];
@@ -98,6 +119,8 @@ export interface RunData {
   shares?: Array<{ name: string; path?: string; guest?: boolean; writable?: boolean }>;
   checksums?: Record<string, string>;
   extra?: Record<string, unknown>;
+  /** Plain-English status. When set, the dashboard uses summary as the headline. */
+  report?: StatusReport;
 }
 
 export interface RunResult {
