@@ -30,8 +30,25 @@ exploitation, and no “cheat the CCS” automation.
 - **Read** ops inventory the local image: users, services, ports, files, policy.
 - **Mutate** ops (disable user, enable firewall, purge a package, …) are blocked
   unless the body includes `"confirm": true`.
-- `params.dryRun: true` describes a mutation without applying it (confirm not
-  required).
+- `params.dryRun: true` (or a top-level `"dryRun": true`) previews a mutation
+  and changes nothing. Confirm is not required for a preview. The dashboard
+  confirm dialog loads that preview before **Yes, apply**.
+- Linux mutating ops run `engines/linux/<id>.sh` (`--dry-run` or `--confirm`).
+  A missing tool returns status `skipped` and exit 3, for example
+  `Skipped: ufw is not installed. Install it with: sudo apt-get install ufw`.
+  Exit 0 is success or a preview. Exit 1 is an error. Exit 2 is a refusal
+  (no confirm, empty allowlist, current user, or the scoring service).
+- Before a Linux config edit, the script copies the file to
+  `/var/backups/cyberpatriot-ops/<timestamp>/` and reports that path.
+  `sshd -t` and `visudo -c` run when those tools exist. A failed check restores
+  the backup.
+- Windows mutating ops use `-DryRun` or `-ConfirmLive`. Backups go to
+  `%ProgramData%\CyberPatriotOps\backups\<timestamp>\`, including a registry
+  export before a registry change. These scripts are not executed on the Linux
+  builder.
+- Allowlist-driven changes refuse to run when the allowlist is missing or empty,
+  and they refuse to change the current user or an allowlisted admin.
+- The full per-op contract is [QUALITY.md](./QUALITY.md).
 - Usernames, service names, and package names are validated before they are
   passed as argv (never interpolated into a shell string).
 - `sync-authorized-users` creates missing README accounts **without a password**
