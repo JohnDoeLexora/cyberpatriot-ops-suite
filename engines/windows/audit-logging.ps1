@@ -19,8 +19,26 @@ param(
     [switch]$DryRun,
     [switch]$ConfirmLive
 )
+$ErrorActionPreference = 'Stop'
 Import-Module "$PSScriptRoot\lib\CpOps.psm1" -Force
-$result = Invoke-CpOp -OpId 'audit-logging' -Username $Username -Service $Service -Package $Package `
-    -AllowlistPath $AllowlistPath -AdminsPath $AdminsPath -TemplatePath $TemplatePath `
-    -ProfilePath $ProfilePath -FeaturesPath $FeaturesPath -DryRun:$DryRun -ConfirmLive:$ConfirmLive
-ConvertTo-CpJson $result
+try {
+    $result = Invoke-CpOp -OpId 'audit-logging' -Username $Username -Service $Service -Package $Package `
+        -AllowlistPath $AllowlistPath -AdminsPath $AdminsPath -TemplatePath $TemplatePath `
+        -ProfilePath $ProfilePath -FeaturesPath $FeaturesPath -DryRun:$DryRun -ConfirmLive:$ConfirmLive
+    if ($null -ne $result -and -not ($result.PSObject.Properties.Name -contains 'summary')) {
+        $result | Add-Member -NotePropertyName summary -NotePropertyValue $(if ($result.ok -eq $false) { 'The check failed. Read the message, then re-run on the authorized image.' } else { 'Completed.' }) -Force
+    }
+    ConvertTo-CpJson $result
+    if ($null -ne $result -and ($result.PSObject.Properties.Name -contains 'ok') -and $result.ok -eq $false) { exit 1 }
+    exit 0
+} catch {
+    $msg = $_.Exception.Message
+    if (-not $msg) { $msg = "$_" }
+    ConvertTo-CpJson ([pscustomobject]@{
+        ok       = $false
+        status   = 'error'
+        summary  = "Failed: $msg"
+        warnings = @($msg)
+    })
+    exit 1
+}

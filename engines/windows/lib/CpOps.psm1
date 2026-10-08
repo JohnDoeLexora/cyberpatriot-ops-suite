@@ -1,8 +1,9 @@
-# CyberPatriot Ops Suite — defensive Windows engine.
+# CyberPatriot Ops Suite - defensive Windows engine.
 # Authorized competition images only. Never dumps password hashes.
 #Requires -Version 5.1
 
 Set-StrictMode -Version Latest
+. "$PSScriptRoot\CpReliability.ps1"
 
 function Get-CpAllowlist {
     param([string]$Path = "config/allowed-users.txt")
@@ -35,6 +36,8 @@ function ConvertTo-CpJson {
 }
 
 function Get-CpLocalUsers {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification='Exported engine name. Wrappers and Invoke-CpOp already call Get-CpLocalUsers.')]
+    param()
     $users = @()
     Get-LocalUser | ForEach-Object {
         $users += [pscustomobject]@{
@@ -63,12 +66,13 @@ function Get-CpLocalUsers {
                     $byName[$short].groups += $g.Name
                 }
             }
-        } catch {}
+        } catch { Write-Verbose $_.Exception.Message }
     }
     [pscustomobject]@{ ok = $true; users = @($byName.Values) }
 }
 
 function Get-CpSuspiciousUsers {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification='Exported engine name. Wrappers and Invoke-CpOp already call Get-CpSuspiciousUsers.')]
     param([string]$AllowlistPath = "config/allowed-users.txt")
     $allow = Get-CpAllowlist -Path $AllowlistPath
     $bundle = Get-CpLocalUsers
@@ -95,6 +99,8 @@ function Get-CpSuspiciousUsers {
 }
 
 function Get-CpServices {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification='Exported engine name. Wrappers and Invoke-CpOp already call Get-CpServices.')]
+    param()
     $svc = Get-Service | Select-Object -First 400 Name, Status, StartType, DisplayName
     [pscustomobject]@{
         ok       = $true
@@ -113,6 +119,8 @@ function Get-CpServices {
 }
 
 function Get-CpPorts {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification='Exported engine name. Wrappers and Invoke-CpOp already call Get-CpPorts.')]
+    param()
     $conns = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue
     [pscustomobject]@{
         ok    = $true
@@ -135,6 +143,8 @@ function Get-CpFirewall {
 }
 
 function Get-CpShares {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification='Exported engine name. Wrappers and Invoke-CpOp already call Get-CpShares.')]
+    param()
     $shares = Get-SmbShare -ErrorAction SilentlyContinue
     [pscustomobject]@{
         ok     = $true
@@ -438,6 +448,7 @@ function Invoke-CpOp {
                 extra = @{
                     DisablePasswordSaving = $ie.DisablePasswordSaving
                     SmartScreenEnabled    = $ss.SmartScreenEnabled
+                    internetZoneReadable  = [bool]$ieZone
                     note                  = "Cookies/history/saved passwords not dumped."
                 }
             }
@@ -476,14 +487,14 @@ function Invoke-CpOp {
                 $features = Get-WindowsOptionalFeature -Online -ErrorAction SilentlyContinue |
                     Where-Object { $_.FeatureName -like "IIS-*" -and $_.State -eq "Enabled" } |
                     Select-Object -ExpandProperty FeatureName
-            } catch {}
+            } catch { Write-Verbose $_.Exception.Message }
             $anon = $null
             $browse = $null
             try {
                 Import-Module WebAdministration -ErrorAction SilentlyContinue
                 $anon = (Get-WebConfigurationProperty -Filter /system.webServer/security/authentication/anonymousAuthentication -Name enabled -ErrorAction SilentlyContinue).Value
                 $browse = (Get-WebConfigurationProperty -Filter /system.webServer/directoryBrowse -Name enabled -ErrorAction SilentlyContinue).Value
-            } catch {}
+            } catch { Write-Verbose $_.Exception.Message }
             return [pscustomobject]@{
                 ok    = $true
                 extra = @{
@@ -652,7 +663,7 @@ function Invoke-CpOp {
             $dg = $null
             try {
                 $dg = Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\Microsoft\Windows\DeviceGuard -ErrorAction Stop
-            } catch {}
+            } catch { Write-Verbose $_.Exception.Message }
             return [pscustomobject]@{
                 ok    = $true
                 extra = @{
@@ -697,9 +708,9 @@ function Invoke-CpOp {
                     Where-Object { $_.ServerAddresses } |
                     ForEach-Object { $_.ServerAddresses } |
                     Select-Object -Unique)
-            } catch {}
+            } catch { Write-Verbose $_.Exception.Message }
             $doh = $null
-            try { $doh = Get-DnsClientDohServerAddress -ErrorAction SilentlyContinue } catch {}
+            try { $doh = Get-DnsClientDohServerAddress -ErrorAction SilentlyContinue } catch { Write-Verbose $_.Exception.Message }
             return [pscustomobject]@{
                 ok    = $true
                 extra = @{ servers = $servers; doh = $doh; note = "Local adapter config only; names were not queried." }
@@ -712,14 +723,14 @@ function Invoke-CpOp {
                 $roles = @(Get-WindowsFeature -ErrorAction SilentlyContinue |
                     Where-Object { $_.Installed -and $_.Name -match "AD-|DNS|DHCP|Web-Server|FS-|NPAS|Remote-Desktop" } |
                     ForEach-Object { [pscustomobject]@{ name = $_.Name; installed = $true; unexpected = ($_.Name -match "AD-Domain|DNS|DHCP") } })
-            } catch {}
+            } catch { Write-Verbose $_.Exception.Message }
             if (-not $roles.Count) {
                 try {
                     $roles = @(Get-WindowsOptionalFeature -Online -ErrorAction SilentlyContinue |
                         Where-Object { $_.State -eq "Enabled" -and $_.FeatureName -match "IIS-|DirectoryServices|DNS|DHCP|SMB1" } |
                         Select-Object -First 40 |
                         ForEach-Object { [pscustomobject]@{ name = $_.FeatureName; installed = $true; unexpected = ($_.FeatureName -match "SMB1|Directory") } })
-                } catch {}
+                } catch { Write-Verbose $_.Exception.Message }
             }
             return [pscustomobject]@{
                 ok    = $true
@@ -737,7 +748,7 @@ function Invoke-CpOp {
             return [pscustomobject]@{
                 ok    = $true
                 extra = @{
-                    homepage       = $ie.Start Page
+                    homepage       = $ie.'Start Page'
                     proxyEnable    = $proxy.ProxyEnable
                     proxyServer    = $proxy.ProxyServer
                     extensionIds   = $ext
@@ -810,222 +821,14 @@ function Invoke-CpOp {
                     "harden-print-spooler", "harden-powershell-constrained", "disable-smb-client-v1",
                     "harden-null-session", "harden-usb-storage"
                 )) {
-                Test-CpConfirm -ConfirmLive:$ConfirmLive -DryRun:$DryRun
-                if ($DryRun) {
-                    return [pscustomobject]@{ ok = $true; extra = @{ dryRun = $true; op = $OpId; username = $Username; service = $Service; package = $Package; templatePath = $TemplatePath; profilePath = $ProfilePath } }
-                }
-                switch ($OpId) {
-                    "disable-user" { Disable-LocalUser -Name $Username; break }
-                    "lock-user" { Disable-LocalUser -Name $Username; break }
-                    "disable-guest-account" { Disable-LocalUser -Name "Guest" -ErrorAction SilentlyContinue; break }
-                    "remove-user-from-admins" { Remove-LocalGroupMember -Group "Administrators" -Member $Username; break }
-                    "expire-user-password" { net user $Username /logonpasswordchg:yes | Out-Null; break }
-                    "disable-service" { Stop-Service -Name $Service -Force; Set-Service -Name $Service -StartupType Disabled; break }
-                    "disable-telnet" { Stop-Service TlntSvr -ErrorAction SilentlyContinue; Set-Service TlntSvr -StartupType Disabled -ErrorAction SilentlyContinue; break }
-                    "disable-rdp" {
-                        Set-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server" -Name fDenyTSConnections -Value 1
-                        Stop-Service TermService -Force -ErrorAction SilentlyContinue
-                        break
-                    }
-                    "enable-firewall" { Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled True; break }
-                    "apply-default-deny-inbound" { Set-NetFirewallProfile -DefaultInboundAction Block -DefaultOutboundAction Allow; break }
-                    "disable-smbv1" { Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart -ErrorAction SilentlyContinue; break }
-                    "enable-windows-defender" { Set-MpPreference -DisableRealtimeMonitoring $false -ErrorAction SilentlyContinue; break }
-                    "disable-autoplay" {
-                        New-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Force | Out-Null
-                        Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Name NoDriveTypeAutoRun -Value 255
-                        break
-                    }
-                    "enforce-password-policy" { net accounts /minpwlen:14 /maxpwage:90 /minpwage:1 /uniquepw:5 | Out-Null; break }
-                    "enable-account-lockout" { net accounts /lockoutthreshold:5 /lockoutduration:10 /lockoutwindow:10 | Out-Null; break }
-                    "remove-package" { Uninstall-Package -Name $Package -ErrorAction SilentlyContinue; break }
-                    "apply-security-updates" { return [pscustomobject]@{ ok = $true; extra = @{ note = "Trigger Windows Update on-image; no off-host targeting." } }
-                    }
-                    "disable-llmnr-netbios-wpad" {
-                        New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\DNSClient" -Force | Out-Null
-                        Set-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\DNSClient" -Name EnableMulticast -Value 0
-                        Get-CimInstance Win32_NetworkAdapterConfiguration -ErrorAction SilentlyContinue |
-                            Where-Object { $_.IPEnabled } |
-                            ForEach-Object { $_.SetTcpipNetbios(2) | Out-Null }
-                        Set-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings" -Name AutoDetect -Value 0 -ErrorAction SilentlyContinue
-                        New-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\WinHttp" -Force | Out-Null
-                        Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\WinHttp" -Name DisableWpad -Value 1 -ErrorAction SilentlyContinue
-                        Stop-Service WinHttpAutoProxySvc -Force -ErrorAction SilentlyContinue
-                        Set-Service WinHttpAutoProxySvc -StartupType Disabled -ErrorAction SilentlyContinue
-                        break
-                    }
-                    "remove-games-samples" {
-                        $names = @("Microsoft.XboxApp", "Microsoft.XboxGamingOverlay", "Microsoft.MicrosoftSolitaireCollection", "Microsoft.ZuneMusic", "king.com.CandyCrushSaga")
-                        foreach ($n in $names) {
-                            Get-AppxPackage -Name $n -ErrorAction SilentlyContinue | Remove-AppxPackage -ErrorAction SilentlyContinue
-                        }
-                        break
-                    }
-                    "apply-security-template" {
-                        if (-not (Test-Path $TemplatePath)) {
-                            return [pscustomobject]@{ ok = $false; extra = @{ error = "template not found: $TemplatePath" } }
-                        }
-                        $db = Join-Path $env:TEMP "cp-secedit.sdb"
-                        secedit /configure /db $db /cfg $TemplatePath /overwrite /quiet | Out-Null
-                        break
-                    }
-                    "import-firewall-profile" {
-                        if ($ProfilePath -and (Test-Path $ProfilePath)) {
-                            netsh advfirewall import $ProfilePath | Out-Null
-                        } else {
-                            Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled True -DefaultInboundAction Block -DefaultOutboundAction Allow -ErrorAction SilentlyContinue
-                        }
-                        break
-                    }
-                    "enable-audit-policy" {
-                        foreach ($cat in @("Account Logon", "Account Management", "Logon/Logoff", "Policy Change", "Privilege Use", "System")) {
-                            auditpol /set /category:"$cat" /success:enable /failure:enable | Out-Null
-                        }
-                        break
-                    }
-                    "disable-remote-registry" {
-                        Stop-Service RemoteRegistry -Force -ErrorAction SilentlyContinue
-                        Set-Service RemoteRegistry -StartupType Disabled -ErrorAction SilentlyContinue
-                        break
-                    }
-                    "disable-remote-assistance" {
-                        $p = "HKLM:\SYSTEM\CurrentControlSet\Control\Remote Assistance"
-                        New-Item -Path $p -Force | Out-Null
-                        Set-ItemProperty $p -Name fAllowToGetHelp -Value 0
-                        Set-ItemProperty $p -Name fAllowFullControl -Value 0 -ErrorAction SilentlyContinue
-                        break
-                    }
-                    "force-password-change" {
-                        $names = @()
-                        if ($Username) { $names = @($Username) }
-                        else {
-                            $allow = Get-CpAllowlist -Path $AllowlistPath
-                            $skip = @("Administrator", "DefaultAccount", "WDAGUtilityAccount", "Guest")
-                            $names = @($allow | Where-Object { $skip -notcontains $_ })
-                        }
-                        foreach ($n in $names) {
-                            net user $n /logonpasswordchg:yes 2>$null | Out-Null
-                        }
-                        break
-                    }
-                    "sync-authorized-users" {
-                        $allow = Get-CpAllowlist -Path $AllowlistPath
-                        $admins = Get-CpAdminlist -Path $AdminsPath
-                        $local = Get-LocalUser
-                        $present = @($local | ForEach-Object { $_.Name })
-                        $created = @()
-                        foreach ($n in $allow) {
-                            if ($present -contains $n) { continue }
-                            try {
-                                New-LocalUser -Name $n -NoPassword -UserMayChangePassword $true -ErrorAction Stop | Out-Null
-                                $created += [pscustomobject]@{ name = $n; setPasswordManually = $true; detail = "Created with -NoPassword. Set a password in lusrmgr / net user." }
-                            } catch {
-                                $created += [pscustomobject]@{ name = $n; setPasswordManually = $true; detail = "Could not auto-create $n. Create it manually and set a password — this op will not invent one." }
-                            }
-                        }
-                        foreach ($n in $admins) {
-                            if ($n -eq "Administrator") { continue }
-                            try { Add-LocalGroupMember -Group "Administrators" -Member $n -ErrorAction SilentlyContinue } catch {}
-                        }
-                        return [pscustomobject]@{
-                            ok    = $true
-                            extra = @{
-                                created             = $created
-                                setPasswordManually = @($created | ForEach-Object { $_.detail })
-                                extras              = @($local | Where-Object { $allow -notcontains $_.Name -and $_.Name -notin @("DefaultAccount", "WDAGUtilityAccount") } | ForEach-Object { $_.Name })
-                                note                = "Extras flagged only. Passwords never invented."
-                            }
-                        }
-                    }
-                    "disable-optional-windows-features" {
-                        $list = @("TelnetClient", "TelnetServer", "TFTP", "SMB1Protocol", "SimpleTCP")
-                        if (Test-Path $FeaturesPath) {
-                            $list = @(Get-Content $FeaturesPath | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notmatch '^#' })
-                        }
-                        foreach ($f in $list) {
-                            Disable-WindowsOptionalFeature -Online -FeatureName $f -NoRestart -ErrorAction SilentlyContinue | Out-Null
-                        }
-                        break
-                    }
-                    "clear-suspicious-hosts" {
-                        $hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
-                        $lines = Get-Content $hostsPath -ErrorAction SilentlyContinue
-                        $keep = @()
-                        foreach ($line in $lines) {
-                            $t = $line.Trim()
-                            if (-not $t -or $t.StartsWith("#")) { $keep += $line; continue }
-                            $parts = $t -split '\s+'
-                            $ip = $parts[0]
-                            $names = $parts | Select-Object -Skip 1
-                            $sink = $ip -match '^(127\.0\.0\.1|0\.0\.0\.0|::1)$'
-                            $bad = $false
-                            foreach ($nm in $names) {
-                                if ($sink -and (Test-CpSuspiciousHostName -Name $nm)) { $bad = $true }
-                            }
-                            if (-not $bad) { $keep += $line }
-                        }
-                        Set-Content -Path $hostsPath -Value $keep
-                        break
-                    }
-                    "harden-print-spooler" {
-                        $pp = "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PointAndPrint"
-                        New-Item -Path $pp -Force | Out-Null
-                        Set-ItemProperty $pp -Name RestrictDriverInstallationToAdministrators -Value 1
-                        Set-ItemProperty $pp -Name NoWarningNoElevationOnInstall -Value 0
-                        Set-ItemProperty $pp -Name UpdatePromptSettings -Value 0
-                        $prn = "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Printers"
-                        New-Item -Path $prn -Force | Out-Null
-                        Set-ItemProperty $prn -Name RegisterSpoolerRemoteRpcEndPoint -Value 2
-                        Set-ItemProperty $prn -Name RpcAuthnLevelPrivacyEnabled -Value 1 -ErrorAction SilentlyContinue
-                        break
-                    }
-                    "harden-powershell-constrained" {
-                        $base = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell"
-                        New-Item -Path "$base\ScriptBlockLogging" -Force | Out-Null
-                        Set-ItemProperty "$base\ScriptBlockLogging" -Name EnableScriptBlockLogging -Value 1
-                        New-Item -Path "$base\ModuleLogging" -Force | Out-Null
-                        Set-ItemProperty "$base\ModuleLogging" -Name EnableModuleLogging -Value 1
-                        New-Item -Path "$base\Transcription" -Force | Out-Null
-                        Set-ItemProperty "$base\Transcription" -Name EnableTranscripting -Value 1
-                        $trans = "C:\ProgramData\cp-ops\ps-transcripts"
-                        New-Item -ItemType Directory -Force -Path $trans | Out-Null
-                        Set-ItemProperty "$base\Transcription" -Name OutputDirectory -Value $trans
-                        break
-                    }
-                    "disable-smb-client-v1" {
-                        try { Set-SmbClientConfiguration -EnableSMB1Protocol $false -Force -ErrorAction SilentlyContinue } catch {}
-                        Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart -ErrorAction SilentlyContinue | Out-Null
-                        Stop-Service mrxsmb10 -Force -ErrorAction SilentlyContinue
-                        Set-Service mrxsmb10 -StartupType Disabled -ErrorAction SilentlyContinue
-                        break
-                    }
-                    "harden-null-session" {
-                        $lsa = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"
-                        Set-ItemProperty $lsa -Name RestrictAnonymous -Value 1
-                        Set-ItemProperty $lsa -Name RestrictAnonymousSAM -Value 1
-                        Set-ItemProperty $lsa -Name EveryoneIncludesAnonymous -Value 0
-                        Set-ItemProperty $lsa -Name LimitBlankPasswordUse -Value 1 -ErrorAction SilentlyContinue
-                        $lan = "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters"
-                        New-Item -Path $lan -Force | Out-Null
-                        Set-ItemProperty $lan -Name RestrictNullSessAccess -Value 1
-                        break
-                    }
-                    "harden-usb-storage" {
-                        $ex = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer"
-                        New-Item -Path $ex -Force | Out-Null
-                        Set-ItemProperty $ex -Name NoDriveTypeAutoRun -Value 255
-                        $rs = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\RemovableStorageDevices"
-                        New-Item -Path $rs -Force | Out-Null
-                        New-Item -Path "$rs\{53f5630d-b6bf-11d0-94f2-00a0c91efb8b}" -Force | Out-Null
-                        Set-ItemProperty "$rs\{53f5630d-b6bf-11d0-94f2-00a0c91efb8b}" -Name Deny_Execute -Value 1 -ErrorAction SilentlyContinue
-                        break
-                    }
-                }
-                return [pscustomobject]@{ ok = $true; extra = @{ op = $OpId; applied = $true } }
+                # Preview, backups, allowlist refusals, and idempotent registry writes: CpReliability.ps1.
+                return Invoke-CpWindowsMutation -OpId $OpId -Username $Username -Service $Service -Package $Package `
+                    -AllowlistPath $AllowlistPath -AdminsPath $AdminsPath -TemplatePath $TemplatePath `
+                    -ProfilePath $ProfilePath -FeaturesPath $FeaturesPath -DryRun:$DryRun -ConfirmLive:$ConfirmLive
             }
             return [pscustomobject]@{ ok = $false; extra = @{ error = "Unhandled Windows op $OpId" } }
         }
     }
 }
 
-Export-ModuleMember -Function Invoke-CpOp, Get-CpLocalUsers, Get-CpSuspiciousUsers, Get-CpServices, Get-CpPorts, ConvertTo-CpJson
+Export-ModuleMember -Function Invoke-CpOp, Get-CpLocalUsers, Get-CpSuspiciousUsers, Get-CpServices, Get-CpPorts, ConvertTo-CpJson, Get-CpAllowlistStrict, Test-CpCcsName, Test-CpSelfAccount, Test-CpSuspiciousHostName, Format-CpSummary, New-CpResult, Invoke-CpWindowsMutation
