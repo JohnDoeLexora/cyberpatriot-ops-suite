@@ -18,7 +18,7 @@ This is the reliability contract for every catalog op. A stressed operator shoul
 - The confirm-dialog screenshot masks the dry-run preview. A missing `ufw` on this builder no longer changes the baseline. The test still asserts the preview text is non-empty and that Cancel applies nothing.
 - Heavy file walks (world-writable, SUID, media, backdoors, listening ports, checklist scans) are shellchecked and are not pointed at the whole disk by the unit harness.
 - `apply-security-updates` on a real preview runs `apt-get -s upgrade`, which can be slow. The harness sets `CP_FAST=1` and does not install or upgrade packages.
-- Windows `net accounts` and `auditpol` re-apply the same policy. They do not report the previous value, so a second run may still say a setting changed. Registry, firewall, service, local-user, and hosts edits compare the current value first.
+- Windows `net accounts` and `auditpol` re-apply the same policy and do not report the previous value. The smoke undo path snapshots `net accounts` and `auditpol /backup` before those applies, then restores that snapshot. Registry, firewall, service, local-user, and hosts edits compare the current value first.
 - Bend programs score inventories. They do not mutate. `npm run lint:engines` typechecks every `.bend` file with `bend --check-only`. Division is written `(len / 2n : Nat)` because Bend 2.0.35 rejects a bare `/`. If `bend` fails at runtime, `engines/bend/run.sh` falls back to Python and still exits non-zero when that fallback fails.
 
 ## Per-op status
@@ -122,7 +122,7 @@ This is the reliability contract for every catalog op. A stressed operator shoul
 | `skim-forensics-readme` | linux+windows | yes | partial | n/a | n/a | shellcheck+pwsh parse | shellcheck only; not walked in unit tests | not run (workflow scope) | Live read runs engines/linux/<id>.sh through the API. Full-disk walk is intentionally outside the unit harness. |
 | `apply-security-template` | windows | yes | yes | yes | yes | pwsh parse | parser+Pester helpers; not executed here | not run (workflow scope) | Needs a Windows image. -DryRun previews; -ConfirmLive applies. |
 | `import-firewall-profile` | windows | yes | yes | yes | n/a | pwsh parse | parser+Pester helpers; not executed here | not run (workflow scope) | Needs a Windows image. -DryRun previews; -ConfirmLive applies. |
-| `enable-audit-policy` | windows | yes | yes | yes | n/a | pwsh parse | parser+Pester helpers; not executed here | not run (workflow scope) | Needs a Windows image. -DryRun previews; -ConfirmLive applies. net/auditpol re-applies; those tools do not report the previous value. |
+| `enable-audit-policy` | windows | yes | yes | yes | n/a | pwsh parse | parser+Pester helpers; not executed here | not run (workflow scope) | Needs a Windows image. -DryRun previews; -ConfirmLive applies. The smoke undo path snapshots auditpol before the apply. |
 | `disable-remote-registry` | windows | yes | yes | yes | n/a | pwsh parse | parser+Pester helpers; not executed here | not run (workflow scope) | Needs a Windows image. -DryRun previews; -ConfirmLive applies. |
 | `disable-remote-assistance` | windows | yes | yes | yes | yes | pwsh parse | parser+Pester helpers; not executed here | not run (workflow scope) | Needs a Windows image. -DryRun previews; -ConfirmLive applies. |
 | `force-password-change` | linux+windows | yes | yes | yes | n/a | shellcheck+pwsh parse | dry-run harness | not run (workflow scope) | Live confirm runs the shell script. Dry-run was exercised here. |

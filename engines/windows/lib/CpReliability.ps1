@@ -306,6 +306,7 @@ function Invoke-CpWindowsMutation {
     $backup = ''
     try {
         $backup = New-CpBackupDir
+        Save-CpUndoSnapshot -OpId $OpId -BackupDir $backup -Service $Service
         $changedRef = [ref]$changed
         $alreadyRef = [ref]$okCount
         switch ($OpId) {
@@ -576,4 +577,182 @@ function Disable-CpWindowsService {
     if ($svc.Status -eq 'Running') { Stop-Service -Name $Name -Force -ErrorAction SilentlyContinue }
     Set-Service -Name $Name -StartupType Disabled
     $Changed.Value++
+}
+
+function Get-CpPasswordPolicySnapshot {
+    $text = (& net.exe accounts 2>&1 | Out-String)
+    $snap = [ordered]@{
+        minpwage = $null
+        maxpwage = $null
+        minpwlen = $null
+        uniquepw = $null
+    }
+    foreach ($pair in @(
+            @{ Key = 'minpwage'; Label = 'Minimum password age \(days\):' },
+            @{ Key = 'maxpwage'; Label = 'Maximum password age \(days\):' },
+            @{ Key = 'minpwlen'; Label = 'Minimum password length:' },
+            @{ Key = 'uniquepw'; Label = 'Length of password history maintained:' }
+        )) {
+        $pattern = '(?m)^' + $pair.Label + '\s+(.+?)\s*$'
+        if ($text -match $pattern) { $snap[$pair.Key] = $Matches[1].Trim() }
+    }
+    return $snap
+}
+
+function Convert-CpAccountToken {
+    param([string]$Value, [string]$Kind)
+    if (-not $Value) { return $null }
+    $token = $Value.Trim()
+    if ($Kind -eq 'max' -and $token -match '^(Unlimited|Never)$') { return 'unlimited' }
+    if ($Kind -eq 'history' -and $token -match '^(None|Never)$') { return '0' }
+    if ($token -match '^\d+$') { return $token }
+    return $null
+}
+
+function Save-CpUndoSnapshot {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification='Writes undo.json inside the backup directory created for a confirmed apply.')]
+    param(
+        [string]$OpId,
+        [string]$BackupDir,
+        [string]$Service
+    )
+    if (-not $BackupDir) { return }
+    $manifest = [ordered]@{
+        opId       = $OpId
+        capturedAt = (Get-Date).ToString('o')
+    }
+    switch ($OpId) {
+        'enable-firewall' {
+            if (Get-Command Get-NetFirewallProfile -ErrorAction SilentlyContinue) {
+                $manifest.firewall = @(Get-NetFirewallProfile | ForEach-Object {
+                        [ordered]@{ Name = [string]$_.Name; Enabled = [bool]$_.Enabled }
+                    })
+            }
+        }
+        'enforce-password-policy' {
+            $manifest.password = Get-CpPasswordPolicySnapshot
+        }
+        'enable-audit-policy' {
+            $csv = Join-Path $BackupDir 'auditpol.csv'
+            & auditpol.exe /backup /file:"$csv" | Out-Null
+            if ((Test-Path -LiteralPath $csv)) { $manifest.auditpol = $csv }
+        }
+        'disable-guest-account' {
+            $guest = $null
+            try { $guest = Get-LocalUser -Name 'Guest' -ErrorAction Stop } catch { $guest = $null }
+            $manifest.guest = [ordered]@{
+                present = [bool]$guest
+                enabled = $(if ($guest) { [bool]$guest.Enabled } else { $false })
+            }
+        }
+        'disable-service' {
+            $svc = Get-Service -Name $Service -ErrorAction SilentlyContinue
+            if ($svc) {
+                $start = 'Manual'
+                if ($svc.PSObject.Properties['StartType'] -and $svc.StartType) { $start = [string]$svc.StartType }
+                $manifest.service = [ordered]@{
+                    name      = $Service
+                    startType = $start
+                    status    = [string]$svc.Status
+                }
+            }
+        }
+        'sync-authorized-users' {
+            $present = @()
+            if (Get-Command Get-LocalUser -ErrorAction SilentlyContinue) {
+                $present = @(Get-LocalUser | ForEach-Object { $_.Name })
+            }
+            $admins = @()
+            try {
+                $admins = @(Get-LocalGroupMember -Group 'Administrators' -ErrorAction Stop | ForEach-Object { ($_.Name -split '\\')[-1] })
+            } catch {
+                $admins = @()
+            }
+            $manifest.users = [ordered]@{
+                present         = @($present)
+                administrators  = @($admins)
+            }
+        }
+    }
+    $path = Join-Path $BackupDir 'undo.json'
+    ($manifest | ConvertTo-Json -Depth 6) | Set-Content -LiteralPath $path -Encoding utf8
+}
+
+function Restore-CpAccountPolicy {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification='Restores the password-policy snapshot taken before a confirmed apply.')]
+    param($AccountPolicy)
+    if (-not $AccountPolicy) { return }
+    $minAge = Convert-CpAccountToken -Value $AccountPolicy.minpwage -Kind 'age'
+    $maxAge = Convert-CpAccountToken -Value $AccountPolicy.maxpwage -Kind 'max'
+    $minLen = Convert-CpAccountToken -Value $AccountPolicy.minpwlen -Kind 'len'
+    $unique = Convert-CpAccountToken -Value $AccountPolicy.uniquepw -Kind 'history'
+    $netArgs = @('accounts')
+    if ($null -ne $minAge) { $netArgs += "/minpwage:$minAge" }
+    if ($null -ne $maxAge) { $netArgs += "/maxpwage:$maxAge" }
+    if ($null -ne $minLen) { $netArgs += "/minpwlen:$minLen" }
+    if ($null -ne $unique) { $netArgs += "/uniquepw:$unique" }
+    if ($netArgs.Count -eq 1) { return }
+    & net.exe @netArgs | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "net accounts restore failed (exit $LASTEXITCODE)." }
+}
+
+function Restore-CpUndo {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification='Restores the snapshot taken before a confirmed apply. Refuses scoring-service names.')]
+    param([Parameter(Mandatory)][string]$BackupDir)
+    $path = Join-Path $BackupDir 'undo.json'
+    if (-not (Test-Path -LiteralPath $path)) {
+        return [pscustomobject]@{ ok = $false; summary = "No undo.json in $BackupDir." }
+    }
+    $manifest = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
+    switch ([string]$manifest.opId) {
+        'enable-firewall' {
+            foreach ($fwProfile in @($manifest.firewall)) {
+                if (-not $fwProfile) { continue }
+                $enabled = if ($fwProfile.Enabled) { 'True' } else { 'False' }
+                Set-NetFirewallProfile -Name $fwProfile.Name -Enabled $enabled
+            }
+        }
+        'enforce-password-policy' { Restore-CpAccountPolicy -AccountPolicy $manifest.password }
+        'enable-audit-policy' {
+            if (-not $manifest.auditpol -or -not (Test-Path -LiteralPath $manifest.auditpol)) {
+                throw "Audit policy backup is missing."
+            }
+            & auditpol.exe /restore /file:"$($manifest.auditpol)" | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "auditpol /restore failed (exit $LASTEXITCODE)." }
+        }
+        'disable-guest-account' {
+            if ($manifest.guest -and $manifest.guest.present) {
+                if ($manifest.guest.enabled) { Enable-LocalUser -Name 'Guest' }
+                else { Disable-LocalUser -Name 'Guest' }
+            }
+        }
+        'disable-service' {
+            if ($manifest.service -and $manifest.service.name) {
+                Set-Service -Name $manifest.service.name -StartupType $manifest.service.startType
+                if ([string]$manifest.service.status -eq 'Running') {
+                    Start-Service -Name $manifest.service.name -ErrorAction SilentlyContinue
+                }
+            }
+        }
+        'sync-authorized-users' {
+            $before = @($manifest.users.present)
+            $adminsBefore = @($manifest.users.administrators)
+            $now = @(Get-LocalUser | ForEach-Object { $_.Name })
+            foreach ($name in @($now | Where-Object { $before -notcontains $_ })) {
+                if (Test-CpCcsName -Name $name) { throw "Refusing to delete '$name'. The scoring service must stay untouched." }
+                Remove-LocalGroupMember -Group 'Administrators' -Member $name -ErrorAction SilentlyContinue
+                Remove-LocalUser -Name $name -ErrorAction Stop
+            }
+            $adminsNow = @(Get-LocalGroupMember -Group 'Administrators' -ErrorAction SilentlyContinue | ForEach-Object { ($_.Name -split '\\')[-1] })
+            foreach ($name in $adminsNow) {
+                if ($adminsBefore -notcontains $name) {
+                    Remove-LocalGroupMember -Group 'Administrators' -Member $name -ErrorAction SilentlyContinue
+                }
+            }
+        }
+        default {
+            return [pscustomobject]@{ ok = $true; summary = "No field snapshot for $($manifest.opId). Backup directory left in place." }
+        }
+    }
+    return [pscustomobject]@{ ok = $true; summary = "Restored $($manifest.opId) from $BackupDir." }
 }
