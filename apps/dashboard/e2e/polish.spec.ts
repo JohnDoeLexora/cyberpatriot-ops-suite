@@ -39,9 +39,9 @@ async function split(page: Page, axis: 'h' | 'v', opId?: string) {
 
 async function shot(page: Page, name: string, options?: { mask?: Locator[] }) {
   await settle(page)
-  // Baselines are linux chromium shots. A Windows runner has no matching
-  // *-chromium-win32.png files; the functional asserts above still run.
-  if (process.platform === 'win32') return
+  // Baselines are linux chromium shots (*-chromium-linux.png). Other
+  // platforms have no matching snapshots; the functional asserts above still run.
+  if (process.platform !== 'linux') return
   await expect(page).toHaveScreenshot(name, {
     animations: 'disabled',
     caret: 'hide',
