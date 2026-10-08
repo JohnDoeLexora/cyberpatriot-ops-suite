@@ -1,3 +1,4 @@
+/** Retired from the live path. Live ops run engines/linux/<id>.sh. */
 import { mkdirSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { hitsToFiles, hitsToFindings, tryRunBend } from "../bend/runner.js";

@@ -1,3 +1,4 @@
+/** Retired from the live path. Mutating ops run engines/linux/<id>.sh. */
 import { isSafeUsername } from "../safety.js";
 import { runCmd } from "./exec.js";
 

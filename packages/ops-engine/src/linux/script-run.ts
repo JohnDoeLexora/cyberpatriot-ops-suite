@@ -1,8 +1,15 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { resolveConfigFile } from "../paths.js";
+import {
+  findingsFromUnauthorized,
+  findingsFromUsers,
+  scoreUsers,
+  selectUnauthorizedUsers,
+} from "../heuristics/suspicious-users.js";
+import { readNameList, resolveConfigFile } from "../paths.js";
+import { mapScriptPayload } from "../script-result.js";
 import { asBoolean, asString, isSafeLocalPath, isSafeUsername } from "../safety.js";
-import type { EngineContext, Finding, FindingSeverity, RunResult } from "../types.js";
+import type { EngineContext, RunResult, UserRecord } from "../types.js";
 import { runCmd } from "./exec.js";
 
 const USER_OPS = new Set([
@@ -21,9 +28,27 @@ const SLOW_OPS = new Set([
   "remove-games-samples",
   "remove-package",
   "sync-authorized-users",
+  "find-world-writable",
+  "find-suid-sgid",
+  "find-media-files",
+  "find-hidden-executables",
+  "find-backdoor-binaries",
+  "find-prohibited-software",
+  "hunt-remote-access-tools",
+  "hunt-shell-backdoors",
+  "hunt-sysprep-leftovers",
+  "audit-listening-ports",
+  "diff-expected-ports",
+  "audit-critical-perm-drift",
+  "audit-sticky-tmp",
+  "skim-forensics-readme",
+  "scoreboard-preflight",
+  "post-harden-checklist",
+  "one-click-hardening-checklist",
+  "score-image-heuristics",
+  "list-installed-packages",
+  "check-pending-updates",
 ]);
-
-const SEVERITIES = new Set<FindingSeverity>(["info", "low", "medium", "high", "critical"]);
 
 /** Unit names such as telnet.socket or serial-getty@ttyS0. No shell metacharacters. */
 function isSafeUnit(value: string): boolean {
@@ -32,31 +57,6 @@ function isSafeUnit(value: string): boolean {
 
 function isSafePackage(value: string): boolean {
   return /^[A-Za-z0-9._+-]{1,128}$/.test(value);
-}
-
-function asStringList(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter((item): item is string => typeof item === "string");
-}
-
-function asFindings(value: unknown): Finding[] {
-  if (!Array.isArray(value)) return [];
-  const findings: Finding[] = [];
-  for (const item of value) {
-    if (!item || typeof item !== "object") continue;
-    const rec = item as Record<string, unknown>;
-    if (typeof rec.id !== "string" || typeof rec.title !== "string") continue;
-    if (typeof rec.severity !== "string" || !SEVERITIES.has(rec.severity as FindingSeverity)) continue;
-    findings.push({
-      id: rec.id,
-      severity: rec.severity as FindingSeverity,
-      title: rec.title,
-      detail: typeof rec.detail === "string" ? rec.detail : undefined,
-      resource: typeof rec.resource === "string" ? rec.resource : undefined,
-      remediationOpId: typeof rec.remediationOpId === "string" ? rec.remediationOpId : undefined,
-    });
-  }
-  return findings;
 }
 
 function localPath(repoRoot: string, value: string | undefined, fallbackRel?: string): string | undefined {
@@ -71,54 +71,70 @@ export function linuxScriptPath(repoRoot: string, opId: string): string {
   return path.join(repoRoot, "engines", "linux", `${opId}.sh`);
 }
 
-interface ScriptPayload {
-  ok?: boolean;
-  status?: string;
-  summary?: string;
-  changed?: number;
-  alreadyOk?: number;
-  skipped?: number;
-  preview?: unknown;
-  details?: unknown;
-  warnings?: unknown;
-  backupDir?: string | null;
-  exitCode?: number;
-  findings?: unknown;
-  extra?: Record<string, unknown>;
-}
-
-function parsePayload(stdout: string): ScriptPayload | undefined {
+function parsePayload(stdout: string): Record<string, unknown> | undefined {
   const start = stdout.indexOf("{");
   const end = stdout.lastIndexOf("}");
   if (start < 0 || end <= start) return undefined;
   try {
     const parsed = JSON.parse(stdout.slice(start, end + 1)) as unknown;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return undefined;
-    return parsed as ScriptPayload;
+    return parsed as Record<string, unknown>;
   } catch {
     return undefined;
   }
 }
 
-function withPreview(summary: string, preview: string[]): string {
-  const extra = preview.filter((line) => line && !summary.includes(line));
-  if (!extra.length) return summary;
-  return `${summary}\n${extra.join("\n")}`;
+function allowlistOf(ctx: EngineContext): Set<string> {
+  const file = localPath(ctx.repoRoot, asString(ctx.params.allowlistPath), "config/allowed-users.txt");
+  return new Set(file ? readNameList(file) : []);
 }
 
 /**
- * Run engines/linux/<id>.sh for a mutating op.
- * Returns undefined when the op is read-only or the script is not on disk,
- * so the TypeScript collectors stay in charge of reads.
- * --dry-run never confirms. confirm:true passes --confirm and CP_CONFIRM=1.
+ * The shell inventory is the only collector. Scoring stays here so the user
+ * table and findings match the shape the dashboard already renders.
+ */
+function scoreReadUsers(ctx: EngineContext, users: UserRecord[], mappedSummary: string, mappedFindings: RunResult["findings"]) {
+  const scored = scoreUsers(users, { allowlist: allowlistOf(ctx), now: ctx.now });
+  if (ctx.op.id === "flag-suspicious-users") {
+    const findings = findingsFromUsers(scored);
+    return {
+      users: scored.filter((user) => (user.suspicionScore ?? 0) >= 10),
+      findings,
+      summary: `Heuristic pack scored ${scored.length} accounts; ${findings.length} above threshold.`,
+      extra: { unauthorizedNames: selectUnauthorizedUsers(scored, allowlistOf(ctx)).names },
+    };
+  }
+  if (ctx.op.id === "select-unauthorized-users") {
+    const allowlist = allowlistOf(ctx);
+    const sel = selectUnauthorizedUsers(scored, allowlist);
+    return {
+      users: sel.unauthorized,
+      findings: findingsFromUnauthorized(sel),
+      summary: `${sel.names.length} unauthorized/extra-admin accounts; ${sel.missingAllowlist.length} allowlist names missing.`,
+      extra: {
+        unauthorizedNames: sel.names,
+        extraAdmins: sel.extraAdmins.map((user) => user.name),
+        missingAllowlist: sel.missingAllowlist,
+      },
+    };
+  }
+  return { users, findings: mappedFindings, summary: mappedSummary, extra: {} };
+}
+
+/**
+ * Run engines/linux/<id>.sh. Reads and mutations share this path.
+ * --dry-run never confirms. confirm:true on a mutating op passes --confirm and CP_CONFIRM=1.
+ * Returns undefined only when the script file is not on disk.
  */
 export async function runLinuxScript(ctx: EngineContext, startedAt: string): Promise<RunResult | undefined> {
-  if (ctx.op.risk !== "mutate") return undefined;
   const script = linuxScriptPath(ctx.repoRoot, ctx.op.id);
   if (!existsSync(script)) return undefined;
 
   const dryRun = asBoolean(ctx.params.dryRun, false);
-  const args = [script, dryRun ? "--dry-run" : "--confirm"];
+  const mutating = ctx.op.risk === "mutate";
+  const args = [script];
+  if (mutating) args.push(dryRun ? "--dry-run" : "--confirm");
+  else if (dryRun) args.push("--dry-run");
   const username = asString(ctx.params.username);
   const service = asString(ctx.params.service);
   const pkg = asString(ctx.params.package);
@@ -151,45 +167,26 @@ export async function runLinuxScript(ctx: EngineContext, startedAt: string): Pro
   const timeout = SLOW_OPS.has(ctx.op.id) ? 120_000 : 25_000;
   const bash = await runCmd("bash", args, timeout, env);
   const parsed = parsePayload(bash.stdout);
-  const preview = asStringList(parsed?.preview);
-  const details = asStringList(parsed?.details);
-  const scriptWarnings = asStringList(parsed?.warnings);
-  const findings = asFindings(parsed?.findings);
+  const mapped = mapScriptPayload(parsed, bash.code, "linux", bash.stderr);
+  let { summary, findings, data, warnings, ok, engine } = mapped;
+  data = { ...data, extra: { ...(data.extra ?? {}), script, dryRun } };
 
-  let summary: string;
-  if (parsed && typeof parsed.summary === "string" && parsed.summary.trim()) {
-    summary = withPreview(parsed.summary.trim(), preview);
-  } else if (bash.code === 0) {
-    summary = `Ran ${path.basename(script)} but it did not return a summary.`;
-  } else {
+  const scoredIds = ctx.op.id === "flag-suspicious-users" || ctx.op.id === "select-unauthorized-users";
+  if (scoredIds && data.users?.length && data.users.every((user) => user.suspicionScore == null)) {
+    const scored = scoreReadUsers(ctx, data.users, summary, findings);
+    summary = scored.summary;
+    findings = scored.findings;
+    data = {
+      ...data,
+      users: scored.users,
+      extra: { ...(data.extra ?? {}), ...scored.extra },
+    };
+  }
+
+  if (!parsed && bash.code !== 0 && !summary) {
     const err = bash.stderr.trim().split("\n").filter(Boolean).slice(-3).join(" ");
     summary = err || `${path.basename(script)} failed (exit ${bash.code}). Re-run with --dry-run and read the message above.`;
   }
-
-  const status = parsed?.status;
-  const previewOk = parsed?.ok === true && (status === "ok" || status === "preview" || status == null);
-  const ok = bash.code === 0 && previewOk;
-
-  const warnings = [...scriptWarnings];
-  if (!ok) {
-    const err = bash.stderr.trim();
-    if (err && !summary.includes(err.slice(0, 180))) warnings.push(err.slice(0, 2000));
-    if (!warnings.length) warnings.push(summary);
-  }
-
-  const extra: Record<string, unknown> = {
-    ...(parsed?.extra ?? {}),
-    script,
-    dryRun,
-    status: status ?? (ok ? "ok" : "error"),
-    preview,
-    details,
-    backupDir: parsed?.backupDir ?? null,
-    exitCode: typeof parsed?.exitCode === "number" ? parsed.exitCode : bash.code,
-    changed: parsed?.changed,
-    alreadyOk: parsed?.alreadyOk,
-    skipped: parsed?.skipped,
-  };
 
   return {
     opId: ctx.op.id,
@@ -203,8 +200,8 @@ export async function runLinuxScript(ctx: EngineContext, startedAt: string): Pro
     finishedAt: new Date().toISOString(),
     summary,
     findings,
-    data: { extra },
+    data,
     warnings,
-    engine: "linux",
+    engine,
   };
 }

@@ -1,3 +1,4 @@
+/** Retired from the live path. Live ops run engines/linux/<id>.sh. */
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { readNameList } from "../paths.js";

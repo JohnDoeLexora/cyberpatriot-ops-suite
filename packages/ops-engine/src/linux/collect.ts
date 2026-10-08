@@ -1,3 +1,4 @@
+/** Retired from the live path. Live ops run engines/linux/<id>.sh. */
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { runCmd } from "./exec.js";
 import type { FileRecord, PortRecord, ServiceRecord, UserRecord } from "../types.js";

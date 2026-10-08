@@ -1,3 +1,4 @@
+/** Retired from the live path. Live ops run engines/linux/<id>.sh. */
 import { mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
