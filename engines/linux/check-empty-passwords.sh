@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
 # Classifies empty/locked/set. Never prints hashes.
-set -euo pipefail
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
+. "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 python3 - <<'PY'
 import json, spwd
 users = []
 try:
     entries = spwd.getspall()
 except Exception as e:
-    print(json.dumps({"ok": False, "error": "shadow unreadable (need root)", "detail": str(e)}))
-    raise SystemExit(0)
+    print(json.dumps({
+        "ok": False,
+        "status": "skipped",
+        "summary": "Skipped: password classifications need permission to read the shadow file. Re-run as root on the authorized image. Hashes are not printed.",
+        "warnings": ["shadow unreadable"],
+    }))
+    raise SystemExit(3)
 for s in entries:
     field = s.sp_pwd or ""
     empty = field == ""

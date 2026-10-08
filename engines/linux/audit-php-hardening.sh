@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Read-only PHP ini audit. info.php contents not dumped.
-set -euo pipefail
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
+. "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 python3 - <<'PY'
 import json, os, re, glob
 def read(p):

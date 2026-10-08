@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
+. "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-if [[ -x "$HERE/../bend/run.sh" ]]; then
+if [[ -z "${CP_SKIP_BEND:-}" && -z "${CP_SCAN_ROOT:-}" && -x "$HERE/../bend/run.sh" ]]; then
   "$HERE/../bend/run.sh" agg
   exit 0
 fi

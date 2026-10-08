@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
+. "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 python3 - <<'PY'
 import json, os, pathlib
 paths = [pathlib.Path("/etc/sudoers"), *pathlib.Path("/etc/sudoers.d").glob("*")]

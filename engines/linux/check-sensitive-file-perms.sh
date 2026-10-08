@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
+. "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 python3 - <<'PY'
 import json, os, stat
 paths = ["/etc/passwd", "/etc/shadow", "/etc/gshadow", "/etc/group", "/etc/sudoers", "/etc/ssh/sshd_config", "/etc/crontab"]

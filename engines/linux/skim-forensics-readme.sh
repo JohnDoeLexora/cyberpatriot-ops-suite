@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Read-only local README keyword skim. Never contacts CCS or the internet.
-set -euo pipefail
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
+. "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-if [[ -x "$HERE/../bend/run.sh" ]]; then
+if [[ -z "${CP_SKIP_BEND:-}" && -z "${CP_SCAN_ROOT:-}" && -x "$HERE/../bend/run.sh" ]]; then
   "$HERE/../bend/run.sh" files-readme && exit 0 || true
 fi
 ROOT="$(cd "$HERE/../.." && pwd)"

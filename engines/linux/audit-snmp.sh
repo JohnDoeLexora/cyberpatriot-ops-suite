@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Read-only: SNMP default communities. Does not walk other hosts.
-set -euo pipefail
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
+. "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 python3 - <<'PY'
 import json, os, re
 cfg = ""

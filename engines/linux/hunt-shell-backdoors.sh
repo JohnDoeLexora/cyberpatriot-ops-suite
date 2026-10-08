@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Read-only: grep rc/profile files for alias hijacks and wget|sh plants. Does not execute them.
-set -euo pipefail
+set -Eeuo pipefail
 . "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 python3 - <<'PY'
 import json, os, re

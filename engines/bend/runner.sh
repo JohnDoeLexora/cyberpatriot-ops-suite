@@ -3,7 +3,7 @@
 # Usage: runner.sh <scan-files|score-heuristics|scan-ports> [inventory-file]
 # Inventory may also be piped on stdin. Prints JSON on stdout.
 # Exit 3 if Bend is missing or disabled — callers should fall back to shell.
-set -euo pipefail
+set -Eeuo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PROG="${1:-scan-files}"
@@ -52,7 +52,8 @@ if [[ ! -s "${INV}" ]]; then
 fi
 
 export CP_BEND_INVENTORY="${INV}"
-export PATH="$(dirname "${BEND}"):${PATH}"
+bend_dir="$(dirname "${BEND}")"
+export PATH="${bend_dir}:${PATH}"
 set +e
 "${BEND}" "${FILE}"
 code=$?

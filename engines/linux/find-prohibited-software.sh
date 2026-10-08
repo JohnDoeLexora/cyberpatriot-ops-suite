@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
+. "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 LIST="${CP_PROHIBITED:-$ROOT/config/prohibited-software.txt}"
 python3 - "$LIST" <<'PY'

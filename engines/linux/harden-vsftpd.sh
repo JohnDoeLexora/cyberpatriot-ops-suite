@@ -1,28 +1,40 @@
 #!/usr/bin/env bash
-# Mutate: disable anonymous FTP in vsftpd.conf; disable vsftpd if not required.
-set -euo pipefail
+# Turn off anonymous FTP. Disable vsftpd when it is not required.
+set -Eeuo pipefail
+# shellcheck source=_lib.sh
 . "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
 cp_require_confirm "${1:-}"
-python3 - <<'PY'
-import os, re
-candidates = ["/etc/vsftpd.conf", "/etc/vsftpd/vsftpd.conf"]
-path = next((p for p in candidates if os.path.isfile(p)), None)
-if not path:
-    raise SystemExit(0)
-text = open(path, encoding="utf-8", errors="replace").read()
-def setk(blob, key, val):
-    pat = re.compile(rf"(?im)^\s*{key}\s*=\s*\S+")
-    if pat.search(blob):
-        return pat.sub(f"{key}={val}", blob, count=1)
-    return blob + f"\n{key}={val}\n"
-for k in ("anonymous_enable", "write_enable", "anon_upload_enable", "anon_mkdir_write_enable"):
-    text = setk(text, k, "NO")
-open(path, "w", encoding="utf-8").write(text)
-print(path)
-PY
-systemctl reload vsftpd 2>/dev/null || systemctl restart vsftpd 2>/dev/null || true
-REQ="$(cd "$(dirname "$0")" && pwd)/../../config/required-services.txt"
-if ! grep -qiE '^vsftpd$' "$REQ" 2>/dev/null; then
-  systemctl disable --now vsftpd 2>/dev/null || true
+conf=""
+for candidate in /etc/vsftpd.conf /etc/vsftpd/vsftpd.conf; do
+  if [[ -f "$(cp_resolve "$candidate")" ]]; then
+    conf="$candidate"
+    break
+  fi
+done
+if [[ -z "$conf" ]]; then
+  if ! cp_is_dry; then
+    cp_skip "Skipped: vsftpd config is not installed (/etc/vsftpd.conf missing)."
+  fi
+  cp_note_change "Will set anonymous_enable=NO, write_enable=NO, anon_upload_enable=NO when vsftpd.conf exists"
+  cp_finish "Preview: vsftpd config is not on this host, so nothing would be written."
 fi
-echo '{"ok":true,"detail":"anonymous FTP disabled in vsftpd.conf"}'
+for key in anonymous_enable write_enable anon_upload_enable anon_mkdir_write_enable; do
+  cp_ensure_kv "$conf" "$key" NO assign
+done
+repo="$(cp_repo_root)"
+req="${CP_REQUIRED_SERVICES:-${repo}/config/required-services.txt}"
+if [[ -f "$req" ]] && grep -Fxi -- vsftpd "$req" >/dev/null 2>&1; then
+  cp_detail "vsftpd is in required-services.txt, so the service was left running with anonymous FTP off."
+elif command -v systemctl >/dev/null 2>&1; then
+  enabled="$(systemctl is-enabled vsftpd 2>/dev/null || true)"
+  if [[ -n "$enabled" && "$enabled" != "not-found" && "$enabled" != "disabled" && "$enabled" != "masked" ]]; then
+    cp_note_change "Will disable service vsftpd (not in required-services.txt)"
+    if ! cp_is_dry; then
+      cp_need_root
+      systemctl disable --now vsftpd || cp_warn "Could not disable vsftpd. The config was still hardened."
+    fi
+  else
+    cp_note_ok "vsftpd service is already disabled or not installed"
+  fi
+fi
+cp_finish
