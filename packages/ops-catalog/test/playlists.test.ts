@@ -67,6 +67,33 @@ describe("round playlists", () => {
     }
   });
 
+  it("describes the audience, the time, and why each step is now", () => {
+    for (const pl of PLAYLISTS) {
+      assert.match(pl.summary, /for /i, pl.id);
+      assert.match(pl.summary, /\d+\s*[–-]\s*\d+\s*minutes/i, pl.id);
+      for (const s of pl.steps) {
+        assert.ok(s.whyNow.trim().length > 8, `${pl.id}/${s.opId}`);
+      }
+    }
+    const order = (id: string) => getPlaylist(id)!.steps.map((s) => s.opId);
+    const linux = order("linux-starter");
+    const windows = order("windows-starter");
+    const before = (ids: string[], earlier: string, later: string) => {
+      assert.ok(ids.indexOf(earlier) < ids.indexOf(later), `${earlier} before ${later}`);
+    };
+    for (const ids of [linux, windows]) {
+      before(ids, "skim-forensics-readme", "list-users");
+      before(ids, "list-users", "audit-password-policy");
+      before(ids, "audit-password-policy", "enable-firewall");
+      before(ids, "enable-firewall", "find-prohibited-software");
+      before(ids, "find-prohibited-software", "audit-logging");
+    }
+    before(linux, "enable-firewall", "ssh-hardening-audit");
+    before(order("linux-deep"), "enable-account-lockout", "harden-sysctl");
+    before(order("windows-deep"), "apply-security-template", "enable-audit-policy");
+    before(order("forensics-first"), "skim-forensics-readme", "find-media-files");
+  });
+
   it("beginner ops are the starter + forensics lists; deep-only ops are advanced", () => {
     const beginner = beginnerOpIds();
     assert.ok(beginner.has("list-users"));
