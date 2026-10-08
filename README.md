@@ -36,8 +36,8 @@ Open the URL Vite prints (http://localhost:5173).
 - **Round playlists** (Linux starter, Windows starter, Linux deep, Windows deep, Forensics first): pick one, **Run next** or **Run all**. Each step is an existing check with a coach tip and a how-to. Live mutations still ask you to confirm. Nothing talks to CCS.
 - **Beginner** (on by default): larger tips, starter checks first, **Show advanced** for the rest. Empty panes suggest a playlist. Turn it off for the full catalog.
 - **Edit allowlists**: paste the README user/admin lists (saved in this browser). Download/upload `allowed-users.txt` / `allowed-admins.txt` in the same format as `config/`.
-- Click a check to **replace the focused pane** (an empty pane just fills). **Split** or drop on an edge to open another. Two across, then two below (a 2×2). Tabs from the fifth pane.
-- **How-to** (or `?`) explains what the check does, why it scores, what it changes, and how to undo it. Full write-ups: [docs/howto/](docs/howto/).
+- Click a check to **replace the focused pane** (an empty pane just fills). The green ring and “Next op opens here” show the target. **Split** or drop on an edge to open another. Two across, then two below (a 2×2). Tabs from the fifth pane. Press `1`–`4` to focus a pane.
+- **How-to** (`h`) explains what the check does, why it scores, what it changes, and how to undo it. Press `?` for the shortcut list. Full write-ups: [docs/howto/](docs/howto/).
 - On account panes, hover a row for Flag / Turn off / Turn on / Expire password. Extra columns tuck away on a narrow pane.
 
 More: [docs/SAFETY.md](docs/SAFETY.md) · [docs/OPS.md](docs/OPS.md) (every check) · [docs/howto/](docs/howto/) · [CONTRIBUTING.md](CONTRIBUTING.md)

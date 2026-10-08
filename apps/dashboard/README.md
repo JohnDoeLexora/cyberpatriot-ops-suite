@@ -21,7 +21,7 @@ Round-night steps: [TEAM-NIGHT.md](../../docs/TEAM-NIGHT.md). **Read [SAFETY.md]
 
 The Vite dev server mounts the local API (`GET /health`, `GET /ops`, `POST /ops/:id/run`) so **Run** hits practice or live engines on the same origin. If the API is unreachable, practice data still falls back to in-browser fixtures. Live mode will not.
 
-How-to explainers open from the pane **How to** button, the header **How-to** control, or `?`. Markdown copies live in [`docs/howto/`](../../docs/howto/).
+How-to explainers open from the pane **How to** button, the header **How-to** control, or `h`. Press `?` for keyboard shortcuts (`/`, `1`–`4`, Enter, Esc). Markdown copies live in [`docs/howto/`](../../docs/howto/).
 
 ```bash
 npm run dev:api      # standalone API on :8787 if you prefer

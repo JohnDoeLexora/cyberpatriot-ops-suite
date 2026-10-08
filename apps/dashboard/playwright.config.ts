@@ -8,6 +8,14 @@ export default defineConfig({
   workers: 1,
   timeout: 30_000,
   reporter: [['list']],
+  expect: {
+    toHaveScreenshot: {
+      animations: 'disabled',
+      caret: 'hide',
+      scale: 'css',
+      maxDiffPixelRatio: 0.02,
+    },
+  },
   use: {
     baseURL: 'http://127.0.0.1:5183',
     trace: 'on-first-retry',
