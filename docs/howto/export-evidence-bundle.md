@@ -19,6 +19,14 @@ Assembles a redacted local pack: user inventory (no hashes), listeners, services
 
 Forensics questions and team handoff need artifacts. A redacted bundle is faster than screenshots and stays inside the rules.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 After major passes (users, firewall, files) and before you submit forensics answers. Also at the end of the round.
@@ -28,6 +36,7 @@ After major passes (users, firewall, files) and before you submit forensics answ
 1. Run the op in demo or live read mode — it does not mutate.
 2. Skim the bundle: counts, top findings, checksums.
 3. Copy only what you need into the forensics notepad. Do not add shadow or id_rsa files by hand.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Bundle contains inventories and checksums, not secrets.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ After major passes (users, firewall, files) and before you submit forensics answ
 
 - Read-only. Still: do not zip private keys into the pack.
 - Not off-image exfiltration and not a scoring-server upload.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

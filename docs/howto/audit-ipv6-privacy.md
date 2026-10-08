@@ -19,6 +19,14 @@ Reads use_tempaddr, accept_ra, forwarding, disable_ipv6. Default is audit-only. 
 
 IPv6 forwarding/RA on a workstation is a sysctl cousin finding. Disabling IPv6 entirely is a README call — some images need it.
 
+## What it changes
+
+Nothing - read-only audit unless disableIPv6 is true (Linux CP_DISABLE_IPV6=1). In that case it writes /etc/sysctl.d/99-cp-ipv6-disable.conf and reloads sysctl so IPv6 is off.
+
+## How to undo
+
+Nothing to undo when you only audited. If IPv6 was disabled, if a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/. Otherwise delete 99-cp-ipv6-disable.conf and run sysctl --system.
+
 ## When to run it
 
 Linux kernel pass with audit-sysctl. Leave disableIPv6 false unless the README forbids IPv6.
@@ -28,6 +36,7 @@ Linux kernel pass with audit-sysctl. Leave disableIPv6 false unless the README f
 1. Run with defaults (audit-only). Note accept_ra + forwarding.
 2. If the README says disable IPv6, re-run with disableIPv6:true dryRun:true, then confirm:true.
 3. If the README requires IPv6, do not disable — pair with harden-sysctl instead.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Privacy extensions on or IPv6 disabled, matching the README.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Linux kernel pass with audit-sysctl. Leave disableIPv6 false unless the README f
 
 - Default is read-only. Live disableIPv6 requires confirm:true.
 - Disabling IPv6 can break dual-stack required services. Check the README.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

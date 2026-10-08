@@ -19,6 +19,14 @@ Sets PointAndPrint RestrictDriverInstallationToAdministrators, turns off no-warn
 
 Remote printer driver install (PrintNightmare-class) is a staple Windows finding. Scoring wants remote print locked down even when a local printer stays.
 
+## What it changes
+
+Sets RestrictDriverInstallationToAdministrators to 1, NoWarningNoElevationOnInstall to 0, and UpdatePromptSettings to 0 under PointAndPrint policy, and sets RegisterSpoolerRemoteRpcEndPoint to 2 with RPC privacy on.
+
+## How to undo
+
+If a backup was made, restore from %ProgramData%\CyberPatriotOps\backups\<ts>\. Delete those PointAndPrint and Printers policy values to return to the previous remote-print behavior.
+
 ## When to run it
 
 Windows services pass with disable-remote-registry and audit-smb, after you know whether printing is required.
@@ -39,6 +47,7 @@ Windows services pass with disable-remote-registry and audit-smb, after you know
 
 - Mutation. Live requires confirm:true (or dryRun:true to preview).
 - Do not stop Spooler on an image that scores a printer. Authorized-image only.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

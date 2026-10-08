@@ -19,6 +19,14 @@ Inventories Samba share options and Windows SMB share ACLs. Flags guest/Everyone
 
 Guest + Everyone Full on a public share is a high finding even when SMB is required. ACL dumps show who can write, not just that the share exists.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 With audit-shared-folders and audit-smb, after you know whether sharing is required.
@@ -40,6 +48,7 @@ With audit-shared-folders and audit-smb, after you know whether sharing is requi
 
 - Read-only. Does not modify ACLs or enumerate other machines.
 - Removing a required share costs points — README names matter.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

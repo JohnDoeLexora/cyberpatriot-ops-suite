@@ -19,6 +19,14 @@ Verifies /etc/passwd, shadow, gshadow, group, sudoers, ssh host keys, crontab. s
 
 World-readable shadow and 0666 sudoers are high findings. The check is permissions, not hash dumping.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Linux files pass, early — these files are also forensics-critical.
@@ -28,6 +36,7 @@ Linux files pass, early — these files are also forensics-critical.
 1. Run the op. Anything on shadow/sudoers/ssh keys that is world-readable or writable is urgent.
 2. Fix modes on the image (e.g. shadow 640, sudoers 440, host keys 600).
 3. Re-run. Pair with audit-sudoers if sudoers was writable.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: shadow not world-readable, sudoers not writable by others, ssh host keys 600.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Linux files pass, early — these files are also forensics-critical.
 
 - Read-only. Never cat shadow into notes or tickets.
 - Wrong chmod on ssh host keys can break sshd — keep sshd running if required.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

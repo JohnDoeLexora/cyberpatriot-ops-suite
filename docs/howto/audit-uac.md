@@ -19,6 +19,14 @@ Reads EnableLUA, ConsentPromptBehaviorAdmin, and PromptOnSecureDesktop. UAC disa
 
 EnableLUA=0 is a common Windows plant. Scoring checks the registry values.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Windows auth pass, with disable-guest-account and audit-rdp.
@@ -28,6 +36,7 @@ Windows auth pass, with disable-guest-account and audit-rdp.
 1. Run the op. If EnableLUA is 0, UAC is off — that is the finding.
 2. This op is read-only; turn UAC back on with the Windows settings / registry using a confirmed team procedure.
 3. Re-run until EnableLUA=1 and the admin prompt is not ‘elevate without asking.’
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: EnableLUA=1.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ Windows auth pass, with disable-guest-account and audit-rdp.
 
 - Read-only.
 - Do not disable UAC to ‘make scripts easier.’
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

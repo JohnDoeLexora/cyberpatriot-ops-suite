@@ -19,6 +19,14 @@ Runs aa-enforce for apache2/mysqld/ntpd/named/dhcpd/ping/tcpdump when apparmor-u
 
 Permissive/complain MAC is a finding on images that shipped with profiles. Enforcing the stock profiles is the kosher fix.
 
+## What it changes
+
+Runs aa-enforce for apache2, httpd, mysqld, ntpd, named, dhcpd, ping, and tcpdump when those profiles exist. If aa-enforce is missing, it changes nothing.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/. aa-complain on the same profile names returns them to log-only mode.
+
 ## When to run it
 
 After audit-mac-enforcement, once you know AppArmor is the MAC on this image.
@@ -28,6 +36,7 @@ After audit-mac-enforcement, once you know AppArmor is the MAC on this image.
 1. Run audit-mac-enforcement. If SELinux is the MAC, stop — this op is AppArmor-only.
 2. dryRun:true, then live confirm:true.
 3. Re-run audit-mac-enforcement. Complain profiles for common daemons should drop.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: aa-status shows apache2/mysqld/sshd in enforce if those packages exist.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ After audit-mac-enforcement, once you know AppArmor is the MAC on this image.
 
 - Mutation. Live requires confirm:true.
 - Enforcing a broken profile can take down a README-required service — snapshot first.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

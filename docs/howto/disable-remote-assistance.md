@@ -19,6 +19,14 @@ Sets fAllowToGetHelp=0 and fAllowFullControl=0 under HKLM Remote Assistance. Com
 
 Remote Assistance is a separate Windows scoring checkbox from RDP and is almost never authorized.
 
+## What it changes
+
+Sets fAllowToGetHelp and fAllowFullControl to 0 under HKLM\SYSTEM\CurrentControlSet\Control\Remote Assistance.
+
+## How to undo
+
+If a backup was made, restore from %ProgramData%\CyberPatriotOps\backups\<ts>\. Set fAllowToGetHelp back to 1 only if the README requires Remote Assistance.
+
 ## When to run it
 
 With disable-rdp and disable-remote-registry.
@@ -28,6 +36,7 @@ With disable-rdp and disable-remote-registry.
 1. Read the README. If a help-desk Remote Assistance item is required (rare), stop.
 2. dryRun:true, then live confirm:true.
 3. System Properties → Remote should show Remote Assistance unchecked.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: fAllowToGetHelp=0.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ With disable-rdp and disable-remote-registry.
 
 - Mutation. Live requires confirm:true.
 - This is not an attack against another team’s Remote Assistance.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

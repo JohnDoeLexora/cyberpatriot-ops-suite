@@ -19,6 +19,14 @@ Sets anonymous_enable=NO, write_enable=NO, and anon_upload_enable=NO. If vsftpd 
 
 This is the mutate that closes audit-anonymous-ftp. Anonymous write is a critical finding even when FTP stays.
 
+## What it changes
+
+Sets anonymous_enable, write_enable, anon_upload_enable, and anon_mkdir_write_enable to NO in /etc/vsftpd.conf or /etc/vsftpd/vsftpd.conf, reloads vsftpd, and disables the service unless config/required-services.txt lists vsftpd.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/. Restore the previous vsftpd.conf from the backup. If the service was disabled and the README needs FTP, systemctl enable --now vsftpd after anonymous login stays NO.
+
 ## When to run it
 
 After audit-anonymous-ftp, once you know whether the README requires FTP.
@@ -39,6 +47,7 @@ After audit-anonymous-ftp, once you know whether the README requires FTP.
 
 - Mutation. Live requires confirm:true.
 - Disabling a README-required FTP service costs points — harden anonymous instead.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

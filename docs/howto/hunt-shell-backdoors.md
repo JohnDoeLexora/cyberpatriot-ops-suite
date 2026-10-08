@@ -19,6 +19,14 @@ Read-only scan of /etc/profile, bashrc, profile.d, user rc files, and Windows Po
 
 A sudo alias or profile wget|sh is a persistence plant that survives user lock. Public kits grep these files; this op ranks the hits.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Files pass with audit-persistence-deep and hunt-sysprep-leftovers.
@@ -28,6 +36,7 @@ Files pass with audit-persistence-deep and hunt-sysprep-leftovers.
 1. Run the op. Open each hit path on the image and snapshot before deleting the plant line.
 2. Do not bash -x the rc file — just edit out the plant.
 3. Re-run. Pair with audit-ssh-authorized-keys.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No alias sudo/ls/passwd in rc files.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Files pass with audit-persistence-deep and hunt-sysprep-leftovers.
 
 - Read-only. Deleting a line is a manual edit (or a later mutate).
 - Do not execute untrusted rc files to ‘see what they do’.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

@@ -19,6 +19,14 @@ Read-only mode/ACL check for /etc/shadow, gshadow, sudoers, ssh host keys, and W
 
 World-readable shadow or a 0666 sudoers file is a classic plant. Scoring checks modes; hashes must never leave the box.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Linux/Windows files pass with check-sensitive-file-perms.
@@ -28,6 +36,7 @@ Linux/Windows files pass with check-sensitive-file-perms.
 1. Run the op. Treat 0644 shadow, 0666 sudoers, or Everyone:(R) on SAM as fire.
 2. Fix modes on the image (typically shadow 000/640 root:shadow, sudoers 440, host keys 600). This op does not mutate.
 3. Re-run. Pair with find-world-writable so a writable sudoers.d file does not sneak back.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: shadow/gshadow not world-readable.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ Linux/Windows files pass with check-sensitive-file-perms.
 
 - Read-only. Never dump SAM, shadow hashes, or private keys into notes.
 - chmod of /usr host keys is fine; do not chmod -R /etc blindly.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

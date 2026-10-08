@@ -19,6 +19,14 @@ Aggregates suspicion across users, services, ports, and files. Higher means more
 
 It does not score you on CCS. It helps the team pick the next fire. Treating it as the scoreboard is a mistake.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Anytime you need a single number for huddle, plus at the end to sanity-check leftovers.
@@ -28,6 +36,7 @@ Anytime you need a single number for huddle, plus at the end to sanity-check lef
 1. Run the op. Read top drivers (UID 0, port 31337, telnet, empty Guest) not just the integer.
 2. Work those drivers with the matching ops.
 3. Re-run; the remaining-work index should fall. If it does not, you fixed the wrong thing.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Top drivers match what you already found in specialized ops.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Anytime you need a single number for huddle, plus at the end to sanity-check lef
 
 - Read-only heuristic. Not CCS. Not a scoring-server client.
 - Do not optimize the number by hiding logs or deleting evidence.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

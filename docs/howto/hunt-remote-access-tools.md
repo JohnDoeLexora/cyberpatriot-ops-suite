@@ -19,6 +19,14 @@ Looks for TeamViewer, AnyDesk, VNC, Chrome Remote Desktop, RustDesk and similar 
 
 Unauthorized remote-access tools are a frequent software finding and a persistence path. README-required remote support is the exception; everything else goes.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Software pass with find-prohibited-software, and again after persistence cleanup.
@@ -41,6 +49,7 @@ Software pass with find-prohibited-software, and again after persistence cleanup
 - Read-only discovery. Removal is a separate confirm:true mutate.
 - Do not dump extension source or attack other hosts.
 - Do not keep a RAT ‘for testing’ on the scoring image.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

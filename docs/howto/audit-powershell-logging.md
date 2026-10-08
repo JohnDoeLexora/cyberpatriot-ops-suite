@@ -19,6 +19,14 @@ Reads PowerShell logging policy. Enabling these is kosher evidence collection on
 
 ScriptBlockLogging off is a Windows logging finding and hurts your own forensics notes.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Windows logging pass with audit-logging.
@@ -28,6 +36,7 @@ Windows logging pass with audit-logging.
 1. Run the op. Note which of the three are off.
 2. Enable them via local policy/registry on the image (this op is read-only).
 3. Re-run. Transcription path should be a local directory, not a remote share you do not control.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Script Block Logging on.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ Windows logging pass with audit-logging.
 
 - Read-only here.
 - Do not ship transcripts off-image. This is not unconstrained attack scripting.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

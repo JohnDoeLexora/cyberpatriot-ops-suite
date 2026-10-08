@@ -19,6 +19,14 @@ Checks smbd/nmbd/LanmanServer, guest/anonymous, SMBv1, and shares. Guest shares 
 
 Open SMB with Everyone Full and SMBv1 are large Windows/Linux findings. Even if sharing is required, guest and v1 usually are not.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 With audit-shared-folders and audit-listening-ports (139/445).
@@ -28,6 +36,7 @@ With audit-shared-folders and audit-listening-ports (139/445).
 1. Run the op. Split findings: service running, SMBv1, guest map, dangerous shares.
 2. If SMB is not required, disable-service / disable-smbv1 as appropriate.
 3. If SMB is required: disable SMBv1, turn off guest, tighten share ACLs (see audit-shared-folders).
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: SMBv1 off.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ With audit-shared-folders and audit-listening-ports (139/445).
 
 - Read-only.
 - Disabling LanmanServer on a Windows image that needs shares will cost points — README first.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

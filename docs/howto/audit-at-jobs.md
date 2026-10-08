@@ -19,6 +19,14 @@ Lists at/batch jobs. Reports the command; does not execute it.
 
 at is easier to miss than cron. A zygote python job is a typical plant.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Right after audit-cron on Linux.
@@ -28,6 +36,7 @@ Right after audit-cron on Linux.
 1. Run the op. If empty, good.
 2. Unexpected jobs: copy the command into notes, then atrm on the image.
 3. Investigate the user who queued it (flag-suspicious-users).
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No unexpected at jobs.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Right after audit-cron on Linux.
 
 - Read-only. The reverse-looking command is reported, not executed.
 - Do not ‘test’ the job.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

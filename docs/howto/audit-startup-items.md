@@ -19,6 +19,14 @@ Lists systemd enabled units, rc.local, Windows Run keys, and Startup folder entr
 
 rc.local calling /tmp/.kworker or HKCU Run \update.exe is persistence the service list can miss.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Persistence pass on both platforms, with cron/tasks and hidden executables.
@@ -28,6 +36,7 @@ Persistence pass on both platforms, with cron/tasks and hidden executables.
 1. Run the op. Keep required services (sshd) in the enabled list.
 2. Remove planted rc.local lines, Run keys, and Startup shortcuts on the image.
 3. Delete the payload files after snapshotting.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: sshd/required units still enabled.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Persistence pass on both platforms, with cron/tasks and hidden executables.
 
 - Read-only.
 - Disabling a required enabled unit here (by later mutate) costs points — README.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

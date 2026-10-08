@@ -19,6 +19,14 @@ Sets EnableMulticast=0 (LLMNR), SetTcpipNetbios 2 (disable), and WPAD AutoDetect
 
 LLMNR/NBT-NS/WPAD spoofing is a classic Windows plant. Workstations do not need these name-resolution shortcuts.
 
+## What it changes
+
+Sets EnableMulticast to 0 under DNSClient policy, sets each adapter's NetBIOS to disabled, sets AutoDetect to 0, sets DisableWpad to 1, and disables the WinHttpAutoProxySvc service.
+
+## How to undo
+
+If a backup was made, restore from %ProgramData%\CyberPatriotOps\backups\<ts>\. Remove those policy values and set WinHttpAutoProxySvc back to Manual only if the README requires WPAD or NetBIOS.
+
 ## When to run it
 
 Windows network pass with disable-smbv1 and audit-hosts-file. dryRun first to see current state.
@@ -40,6 +48,7 @@ Windows network pass with disable-smbv1 and audit-hosts-file. dryRun first to se
 - Mutation. Live requires confirm:true.
 - If a dinosaur README required NetBIOS browsing, stop. Otherwise disable it.
 - Local image only — this does not attack LLMNR on other hosts.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

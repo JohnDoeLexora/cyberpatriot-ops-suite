@@ -19,6 +19,14 @@ Read-only checklist that points at existing ops in a sensible order. It does not
 
 Other kits ship a giant .bat that does everything at once (and sometimes cheats). We sequence the legal work so the team does not forget forensics or the firewall while hunting SUID.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 First five minutes, and again whenever the huddle needs a next step.
@@ -28,6 +36,7 @@ First five minutes, and again whenever the huddle needs a next step.
 1. Run this op (demo or live read). Sort fail/warn first.
 2. Open each related op in order: skim-forensics-readme, sync-authorized-users, enforce-password-policy, enable-firewall, apply-security-updates, find-prohibited-software.
 3. Mutations still need confirm:true on those ops. Re-run the wizard; remaining fails should shrink.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Six sequenced rows, each with a related catalog id.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ First five minutes, and again whenever the huddle needs a next step.
 
 - Read-only. It will not disable users or enable the firewall for you.
 - Not the official scoreboard. Do not query scoring endpoints.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

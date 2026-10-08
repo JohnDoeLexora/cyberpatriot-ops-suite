@@ -19,6 +19,14 @@ Disable-WindowsOptionalFeature -NoRestart for names in config/windows/optional-f
 
 Telnet Client, TFTP, Simple TCP, and SMB1 are classic leftover features on Windows images.
 
+## What it changes
+
+Runs Disable-WindowsOptionalFeature -Online -NoRestart for each name in the features file (or TelnetClient, TelnetServer, TFTP, SMB1Protocol, and SimpleTCP if the file is missing).
+
+## How to undo
+
+If a backup was made, restore from %ProgramData%\CyberPatriotOps\backups\<ts>\. Enable-WindowsOptionalFeature for a single feature only if the README requires that feature.
+
 ## When to run it
 
 Windows services/features pass after audit-ftp-telnet and audit-smb.
@@ -28,6 +36,7 @@ Windows services/features pass after audit-ftp-telnet and audit-smb.
 1. Skim config/windows/optional-features.txt. Remove any name the README requires (IIS-FTP if FTP is scored).
 2. dryRun:true, then live confirm:true.
 3. Reboot later if DISM says so — this op does not reboot.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: TelnetClient/TFTP/SMB1Protocol/SimpleTCP Disabled.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Windows services/features pass after audit-ftp-telnet and audit-smb.
 
 - Mutation. Live requires confirm:true.
 - Do not disable a README-required web/FTP feature. Edit the list first.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

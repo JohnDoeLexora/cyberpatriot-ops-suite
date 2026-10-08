@@ -19,6 +19,14 @@ Reads Firefox/Chrome/Edge/IE homepage, proxy/PAC, and extension directory *ids*.
 
 A planted homepage or system proxy to a contest box is a common extras item and how images phone home. Extension ids tell you what to remove without copying payloads.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 With audit-browser-baseline and hunt-remote-access-tools, after users/firewall.
@@ -28,6 +36,7 @@ With audit-browser-baseline and hunt-remote-access-tools, after users/firewall.
 1. Run the op. Note unexpected homepages (10.x, pwn) and system proxies.
 2. Fix policies.json / IE settings on the image (this op is read-only). Remove leftover extension directories after a snapshot.
 3. Confirm cookies and passwords are absent from the result.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Homepage is about:blank or a README page. No 10.x proxy.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ With audit-browser-baseline and hunt-remote-access-tools, after users/firewall.
 
 - Read-only. Do not dump cookies or saved passwords into the coach packet.
 - Authorized-image only.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

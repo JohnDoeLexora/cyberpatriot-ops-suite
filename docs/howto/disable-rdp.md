@@ -19,6 +19,14 @@ Sets fDenyTSConnections=1 and stops TermService if RDP is not a required service
 
 When the README is silent on RDP, off is the scoring answer.
 
+## What it changes
+
+Sets HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server fDenyTSConnections to 1 and stops TermService.
+
+## How to undo
+
+If a backup was made, restore from %ProgramData%\CyberPatriotOps\backups\<ts>\. Set fDenyTSConnections back to 0 and start TermService only if the README requires Remote Desktop.
+
 ## When to run it
 
 After audit-rdp says enabled and the README does not require RDP.
@@ -28,6 +36,7 @@ After audit-rdp says enabled and the README does not require RDP.
 1. Confirm you have console or another admin path.
 2. dryRun:true, then live confirm:true.
 3. Re-run audit-rdp and audit-listening-ports (3389).
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: fDenyTSConnections=1
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ After audit-rdp says enabled and the README does not require RDP.
 
 - Mutation. Live requires confirm:true.
 - Will refuse to be your only remote path if you still need it — README first.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

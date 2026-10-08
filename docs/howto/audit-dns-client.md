@@ -19,6 +19,14 @@ Lists DnsClientServerAddress, DoH, and NRPT. Flags 10.x/bogus servers. Complemen
 
 A planted DNS server or hosts sinkhole is how images break Windows Update and Defender. Seeing the adapter list is the check.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Windows network pass with audit-hosts-file and clear-suspicious-hosts.
@@ -28,6 +36,7 @@ Windows network pass with audit-hosts-file and clear-suspicious-hosts.
 1. Run the op. Note unexpected 10.x/RFC1918 DNS servers.
 2. If hosts-file poisoning is also present, run audit-hosts-file / clear-suspicious-hosts next.
 3. Do not nslookup the scoring server or other teams. Local config only.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: DNS servers match the README or a normal ISP/AD resolver.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Windows network pass with audit-hosts-file and clear-suspicious-hosts.
 
 - Read-only. Changing DNS is a separate admin action.
 - Do not probe other hosts or the CCS. Authorized-image only.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

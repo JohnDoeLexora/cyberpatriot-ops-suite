@@ -19,6 +19,14 @@ Reads journald.conf Storage, /var/log/journal presence, and rsyslog active state
 
 Volatile journald loses forensics evidence across reboot. Scoring and your own write-ups both need logs that stick.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Linux logging pass with audit-logging and check-auditd.
@@ -28,6 +36,7 @@ Linux logging pass with audit-logging and check-auditd.
 1. Run the op. Storage=volatile or missing /var/log/journal is the finding.
 2. Set Storage=persistent in journald.conf on the image (this op is read-only) and mkdir /var/log/journal.
 3. Do not ship logs off-image or to the CCS.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: journald Storage=persistent (or /var/log/journal present) and rsyslog active.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Linux logging pass with audit-logging and check-auditd.
 
 - Read-only. Editing journald.conf is a separate action.
 - Do not upload the journal to a coach laptop that is not the authorized image.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

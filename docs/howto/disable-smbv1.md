@@ -19,6 +19,14 @@ Disables SMB1Protocol (optional feature / registry). Standard in-scope Windows h
 
 SMBv1 is a high Windows finding even when SMB itself is required.
 
+## What it changes
+
+Runs Disable-WindowsOptionalFeature for SMB1Protocol with no restart.
+
+## How to undo
+
+If a backup was made, restore from %ProgramData%\CyberPatriotOps\backups\<ts>\. Re-enable SMB1 only if a README you trust still requires it: Enable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol. That is rare.
+
 ## When to run it
 
 After audit-smb, whether or not file sharing stays on.
@@ -28,6 +36,7 @@ After audit-smb, whether or not file sharing stays on.
 1. Run audit-smb so you know SMBv1 is actually on.
 2. dryRun:true, then live confirm:true.
 3. Re-run audit-smb. SMBv2/3 can remain if shares are required.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: SMB1Protocol disabled.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ After audit-smb, whether or not file sharing stays on.
 
 - Mutation. Live requires confirm:true.
 - If a dinosaur README required SMBv1 (almost never), stop. Otherwise disable it.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

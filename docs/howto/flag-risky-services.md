@@ -19,6 +19,14 @@ Flags telnet, rsh, anonymous FTP, SMBv1, RemoteRegistry, and similar unless the 
 
 Insecure remote services are a large, predictable point block. A single flagged list is faster than reading every unit name.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Immediately after list-services.
@@ -28,6 +36,7 @@ Immediately after list-services.
 1. Run the op. For each flag, open the README: is this service a scored requirement?
 2. If not required, use the specific disable op (disable-telnet, disable-legacy-r-services, disable-smbv1) or disable-service.
 3. If required, document why you left it on and harden around it (firewall, no anonymous, etc.).
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Flags remaining are only README-required services.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Immediately after list-services.
 
 - Read-only. Disabling is a mutate with confirm:true.
 - Local image only — never a network vulnerability scan of other teams.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

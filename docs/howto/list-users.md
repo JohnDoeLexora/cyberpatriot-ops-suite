@@ -19,6 +19,14 @@ Lists local users with UID/SID, home/profile, shell, groups, lock state, and las
 
 CyberPatriot images almost always hide extra accounts, leftover vendor users, or a second root. You cannot lock or demote what you have not found, and README-required users that are missing are findings too.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 First five minutes of the round, then again after you disable or lock anyone so the inventory matches reality.
@@ -42,6 +50,7 @@ First five minutes of the round, then again after you disable or lock anyone so 
 - Read-only: this op does not disable or delete anyone.
 - Service accounts (www-data, sshd, daemon) are supposed to exist — do not treat them as backdoors just because they are not in the README.
 - Authorized-image inventory only. Never point this at another team’s host.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

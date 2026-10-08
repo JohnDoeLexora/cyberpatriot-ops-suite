@@ -19,6 +19,14 @@ Reads /etc/sudoers and sudoers.d. Does not execute sudo as other users.
 
 NOPASSWD: ALL for a random user is a planted privilege path. World-writable sudoers is even worse because anyone can add themselves.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 With list-admin-users on Linux. Before you demote users.
@@ -29,6 +37,7 @@ With list-admin-users on Linux. Before you demote users.
 2. Compare sudoers names to the README admins.
 3. World-writable sudoers files: fix permissions with check-sensitive-file-perms follow-up; do not leave 0666.
 4. Unexpected NOPASSWD users: remove-user-from-admins or edit sudoers via visudo on the image (not this read op).
+5. How to verify: run this check again and compare the output to the image README. You are done when this is true: Only README admins have sudo.
 
 ## What “good” looks like
 
@@ -40,6 +49,7 @@ With list-admin-users on Linux. Before you demote users.
 
 - Read-only. A syntax error in sudoers can lock out sudo — use visudo if you edit by hand.
 - This is not a privilege-escalation cookbook.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

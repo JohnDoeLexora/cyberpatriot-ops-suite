@@ -19,6 +19,14 @@ Inspects common-auth / system-auth for pam_pwquality, pam_tally2/faillock, pam_u
 
 nullok means empty passwords are allowed at the PAM layer even if shadow looks fine. Missing lockout means password-guessing on the local console is unlimited.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Linux auth pass, before enable-account-lockout and enforce-password-policy.
@@ -28,6 +36,7 @@ Linux auth pass, before enable-account-lockout and enforce-password-policy.
 1. Run the op. Treat nullok as fire — it must go.
 2. Note missing pwquality and faillock; those are the mutate ops.
 3. Do not hand-edit PAM as your first move unless you know the distro; prefer the suite’s mutate ops.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No nullok.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ Linux auth pass, before enable-account-lockout and enforce-password-policy.
 
 - Read-only. A broken PAM file can lock everyone out — that is why mutate ops exist.
 - This is not a guide to bypass PAM.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

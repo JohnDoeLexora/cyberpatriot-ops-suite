@@ -19,6 +19,14 @@ Finds ~/.ssh/authorized_keys (and odd paths). Reports fingerprints and comments,
 
 A planted key on root is silent remote access. Scoring and persistence hunts both care.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 With ssh-hardening-audit, after you know which users should exist.
@@ -28,6 +36,7 @@ With ssh-hardening-audit, after you know which users should exist.
 1. Run the op. Root should have no random keys unless the README says so.
 2. Remove unexpected public keys on the image (delete the line or the file). Snapshot comments into notes first.
 3. Investigate authorized_keys living in /var/tmp or /tmp — that is persistence.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Only keys you can justify from the README/coach.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ With ssh-hardening-audit, after you know which users should exist.
 
 - Read-only.
 - Deleting the only authorized key can lock SSH if passwords are also off — have console.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

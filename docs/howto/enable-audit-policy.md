@@ -19,6 +19,14 @@ Calls auditpol for Account Logon, Account Management, Logon/Logoff, Policy Chang
 
 ‘Audit policy not configured’ is a common Windows scoring item and you want those events for your own forensics notes.
 
+## What it changes
+
+Runs auditpol /set /success:enable /failure:enable for Account Logon, Account Management, Logon/Logoff, Policy Change, Privilege Use, and System.
+
+## How to undo
+
+If a backup was made, restore from %ProgramData%\CyberPatriotOps\backups\<ts>\. Set a category back with auditpol /set /category:<name> /success:disable /failure:disable only if the README forbids that category.
+
 ## When to run it
 
 Windows logging pass with audit-logging, after apply-security-template or instead of it if you only need auditpol.
@@ -28,6 +36,7 @@ Windows logging pass with audit-logging, after apply-security-template or instea
 1. Run with dryRun:true to see the six categories.
 2. Live confirm:true.
 3. Do not export or upload the Security log off-image.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Those six categories show Success and Failure.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Windows logging pass with audit-logging, after apply-security-template or instea
 
 - Mutation. Live requires confirm:true.
 - This is not a remote audit and not a CCS query.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

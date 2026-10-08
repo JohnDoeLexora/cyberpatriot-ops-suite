@@ -19,6 +19,14 @@ Runs snap list / flatpak list and flags steam, discord, anydesk, vlc, wine, and 
 
 Unnecessary snaps/flatpaks are prohibited-software cousins on Ubuntu images. Knowing the name feeds remove-package.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Linux packages pass with find-prohibited-software and hunt-remote-access-tools.
@@ -28,6 +36,7 @@ Linux packages pass with find-prohibited-software and hunt-remote-access-tools.
 1. Run the op. Note suspicious snap/flatpak names.
 2. Confirm they are not README-required, then remove-package (confirm) or `snap remove` on the image.
 3. core/snapd/gtk-common-themes are ignored on purpose.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No steam/discord/anydesk/vlc leftovers, or they are README-required.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Linux packages pass with find-prohibited-software and hunt-remote-access-tools.
 
 - Read-only. Removal is a mutate op with confirm:true.
 - Do not remove snapd itself unless the README says so.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

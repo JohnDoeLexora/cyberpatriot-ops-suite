@@ -19,6 +19,14 @@ Disables telnetd / TlntSvr / telnet.socket and adds a local deny for tcp/23.
 
 Telnet is almost never required and almost always scored. Combining unit disable + firewall is belt and suspenders.
 
+## What it changes
+
+On Linux the live runner disables telnet.socket (or the service name you pass). On Windows it stops TlntSvr and sets its startup type to Disabled. This op does not add a firewall rule by itself.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/ on Linux or %ProgramData%\CyberPatriotOps\backups\<ts>\ on Windows. Re-enable only if the README requires Telnet: Linux systemctl enable --now telnet.socket, Windows Set-Service TlntSvr -StartupType Manual.
+
 ## When to run it
 
 As soon as audit-ftp-telnet or flag-risky-services shows Telnet and the README does not require it.
@@ -28,6 +36,7 @@ As soon as audit-ftp-telnet or flag-risky-services shows Telnet and the README d
 1. Confirm README does not require Telnet (it shouldn’t).
 2. dryRun:true, then live confirm:true.
 3. Re-run audit-ftp-telnet and audit-listening-ports.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Telnet unit disabled.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ As soon as audit-ftp-telnet or flag-risky-services shows Telnet and the README d
 
 - Mutation. Live requires confirm:true.
 - Local image only; this does not scan or block other teams.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

@@ -19,6 +19,14 @@ Writes /etc/cron.allow and /etc/at.allow with root (plus allowed-admins) and rem
 
 World-usable cron/at is how plants persist. Restricting the scheduler to root is a CAMS staple.
 
+## What it changes
+
+Writes root as the only line in /etc/cron.allow and /etc/at.allow, sets those files to mode 600, and deletes /etc/cron.deny and /etc/at.deny.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/. Restore the previous allow and deny files from the backup. If you need a README user to have cron, add that name to cron.allow.
+
 ## When to run it
 
 After audit-cron / audit-at-jobs, once you have copied any required user cron aside.
@@ -28,6 +36,7 @@ After audit-cron / audit-at-jobs, once you have copied any required user cron as
 1. Run audit-cron and snapshot any README-required user crontab.
 2. dryRun:true, then live confirm:true.
 3. Re-run audit-cron. Unauthorized users should no longer be able to crontab -e.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: cron.allow and at.allow contain root.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ After audit-cron / audit-at-jobs, once you have copied any required user cron as
 
 - Mutation. Live requires confirm:true.
 - If a README user must have a crontab, add them to cron.allow after — do not leave deny-open.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

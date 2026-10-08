@@ -19,6 +19,14 @@ Compares SUID/SGID files to a small expected set (passwd, sudo, su, newgrp, ping
 
 A SUID bash in /tmp is a planted root shell. Expected SUID like /usr/bin/passwd is fine.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Linux files pass, with find-hidden-executables and find-backdoor-binaries.
@@ -28,6 +36,7 @@ Linux files pass, with find-hidden-executables and find-backdoor-binaries.
 1. Run the op. Ignore the known-good set unless the path is wrong.
 2. Anything under /tmp, /home, /opt, /var: snapshot for notes, then remove the SUID bit or the file per team policy.
 3. Re-run until only expected system binaries remain.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Expected: passwd, sudo, su, ping, newgrp in /usr.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Linux files pass, with find-hidden-executables and find-backdoor-binaries.
 
 - Read-only. This is not a guide to using SUID bash.
 - Removing SUID from /usr/bin/passwd will break password changes — only touch unexpected paths.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

@@ -19,6 +19,14 @@ Compares lastlog / LastLogon for interactive accounts against the allowlist. Ser
 
 Competition images frequently include a never-used admin or a ‘flag’ user waiting for you. Never-logged-in is a cheap, high-signal filter.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Right after list-users; pair with flag-suspicious-users.
@@ -28,6 +36,7 @@ Right after list-users; pair with flag-suspicious-users.
 1. Run the op. Ignore nologin system UIDs.
 2. If a never-logged-in name is not on the README, disable or lock it.
 3. If it is on the README, it may still be fine — some authorized users simply have not logged in yet.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Remaining never-logged-in humans are README-authorized.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Right after list-users; pair with flag-suspicious-users.
 
 - Read-only.
 - A required user who has not logged in yet is not automatically a backdoor.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

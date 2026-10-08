@@ -19,6 +19,14 @@ Removes packages/AppX names in config/games-samples.txt (aisleriot, solitaire, X
 
 Games and sample galleries are a frequent ‘prohibited software / sample content’ scoring item. A list beats hunting Add/Remove by hand.
 
+## What it changes
+
+On Linux it apt-get removes packages from config/games-samples.txt that are actually installed. On Windows it Remove-AppxPackage for Xbox, Solitaire, Zune Music, and Candy Crush when those packages are present.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/ on Linux or %ProgramData%\CyberPatriotOps\backups\<ts>\ on Windows. Reinstall a package only if the README says it is required, using the distro or the Microsoft Store. Do not add a random game back.
+
 ## When to run it
 
 After find-prohibited-software and a forensics glance — a README question might name a game.
@@ -40,6 +48,7 @@ After find-prohibited-software and a forensics glance — a README question migh
 - Mutation. Live requires confirm:true.
 - Blind purge can destroy a forensics exhibit — snapshot names first.
 - wine/steam may be in the list; confirm they are not a required scored app.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

@@ -19,6 +19,14 @@ Writes a LightDM drop-in (allow-guest=false, autologin-user empty) and sets GDM 
 
 Ubuntu images often ship guest sessions and autologin. CAMS-style checklists call this out separately from the Guest account.
 
+## What it changes
+
+Writes /etc/lightdm/lightdm.conf.d/99-cp-hardening.conf with allow-guest, greeter-allow-guest, and autologin-guest false and autologin-user empty. If GDM is installed it sets AutomaticLoginEnable=false in custom.conf.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/. Delete the LightDM drop-in and restore the previous GDM custom.conf from the backup.
+
 ## When to run it
 
 Linux auth pass with disable-guest-account.
@@ -28,6 +36,7 @@ Linux auth pass with disable-guest-account.
 1. dryRun:true to see current allow-guest / AutomaticLoginEnable.
 2. Live confirm:true.
 3. Also run disable-guest-account so the Guest user itself is off.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No guest session on the greeter.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Linux auth pass with disable-guest-account.
 
 - Mutation. Live requires confirm:true.
 - If the README requires autologin for a kiosk account, stop — that is rare on CP.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

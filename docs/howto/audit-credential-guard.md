@@ -19,6 +19,14 @@ Reads Win32_DeviceGuard: Credential Guard, Configurable TCB, VBS status. Informa
 
 VBS/Credential Guard is a Windows extras item on Server/Win10+ images that shipped with it. Knowing it is off tells you whether to enable it from the README.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 With audit-lsa-protection and audit-secure-boot. Skip enabling CG if the image cannot boot with VBS.
@@ -28,6 +36,7 @@ With audit-lsa-protection and audit-secure-boot. Skip enabling CG if the image c
 1. Run the op. Note SecurityServicesRunning and VirtualizationBasedSecurityStatus.
 2. If CG is off and the README requires it, enable via local policy/msinfo — this op will not flip it.
 3. If the image is a VM without nested VBS, leave it off and document that.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Status matches the README.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ With audit-lsa-protection and audit-secure-boot. Skip enabling CG if the image c
 
 - Read-only. Forcing CG on a VM that cannot run VBS can brick the round — snapshot first.
 - Authorized-image only. Not a remote attestation of other hosts.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

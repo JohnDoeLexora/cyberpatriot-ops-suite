@@ -19,6 +19,14 @@ Reads /etc/crontab, cron.d, cron.*, and user crontabs. Flags nc/wget|sh, curl-to
 
 Cron is the usual persistence for planted bash in /tmp. World-writable cron.d is a finding even before you read the command.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Linux persistence pass with audit-at-jobs, audit-startup-items, and find-hidden-executables.
@@ -40,6 +48,7 @@ Linux persistence pass with audit-at-jobs, audit-startup-items, and find-hidden-
 
 - Read-only. Do not run the cron command ‘to see what it does.’
 - Deleting distro logrotate/cron can break logging — only remove plants.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

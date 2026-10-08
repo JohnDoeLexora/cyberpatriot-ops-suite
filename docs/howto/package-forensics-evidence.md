@@ -19,6 +19,14 @@ Builds a redacted forensics pack with user/service/port inventories, persistence
 
 Forensics questions often want persistence and ACL evidence, not just a user list. One redacted pack beats ad-hoc screenshots.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 After the first persistence and files pass, and again before you submit forensics answers.
@@ -28,6 +36,7 @@ After the first persistence and files pass, and again before you submit forensic
 1. Run the op in demo or live read mode — it does not mutate.
 2. Skim persistence, share ACLs, and perm-drift sections. Copy only what a forensics question needs.
 3. Do not add shadow, SAM, or id_rsa files by hand. Keep the pack on the image.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Pack has inventories, ACLs, perm drift, and checksums — not secrets.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ After the first persistence and files pass, and again before you submit forensic
 
 - Read-only. Still: do not zip private keys or hashes into the pack.
 - Not off-image exfiltration and not a scoring-server upload.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

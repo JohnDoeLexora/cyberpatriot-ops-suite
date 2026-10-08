@@ -19,6 +19,14 @@ Searches Desktop/homes/README/forensics/question text on the authorized image fo
 
 Forensics questions are answered from the image README and planted files. A keyword skim is faster than opening every Desktop txt, and it stays inside the rules because it never talks to the scoring server.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 First ten minutes (README on the desktop) and again when a forensics question cites a filename. Optional searchRoot for a folder you already found.
@@ -29,6 +37,7 @@ First ten minutes (README on the desktop) and again when a forensics question ci
 2. Read the hit lines. They are hints, not CCS answers. Copy into team notes.
 3. Follow up with find-media-files, list-users, or package-forensics-evidence as the hits suggest.
 4. Never paste a CCS URL into searchRoot. Never fetch the scoring site.
+5. How to verify: run this check again and compare the output to the image README. You are done when this is true: Hits from local README files only.
 
 ## What “good” looks like
 
@@ -41,6 +50,7 @@ First ten minutes (README on the desktop) and again when a forensics question ci
 - Read-only. Still: do not copy password values from unattend files into chat.
 - This is not a scoring-server scrape and not a search of other teams’ shares.
 - searchRoot must be a local path, never a URL.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

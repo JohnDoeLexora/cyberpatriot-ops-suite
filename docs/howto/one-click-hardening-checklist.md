@@ -19,6 +19,14 @@ Covers users, admins, guest, password policy, firewall, telnet/ftp, listening po
 
 This is the ‘what is left’ view so the team does not forget Guest or the firewall while hunting SUID. It is not a CCS cheat.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Start of the round (baseline), whenever you need a huddle, and near the end.
@@ -28,6 +36,7 @@ Start of the round (baseline), whenever you need a huddle, and near the end.
 1. Run the op. Sort fail/warn first.
 2. Open the linked mutate/read op from each failing row and follow that how-to.
 3. Re-run the checklist; remaining fails should shrink.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Required services still pass.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Start of the round (baseline), whenever you need a huddle, and near the end.
 
 - Read-only. Fixes still need confirm:true on the mutate ops.
 - Not the official scoreboard. Do not query scoring endpoints.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

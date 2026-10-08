@@ -19,6 +19,14 @@ Reads inet_interfaces, mynetworks, disable_vrfy_command, and Dovecot plaintext a
 
 An open relay or unused MTA is a high Linux finding. Knowing which knob is wrong tells you whether to harden or disable the daemon.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Linux services pass with audit-web-server and audit-snmp, after flag-risky-services.
@@ -28,6 +36,7 @@ Linux services pass with audit-web-server and audit-snmp, after flag-risky-servi
 1. Run the op. If mail is absent, you are done.
 2. Read the README: is mail a required service? If not, plan disable-service postfix/exim4.
 3. If mail stays, set mynetworks to local-only and disable_vrfy_command=yes on the image (this op is read-only).
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No mynetworks 0.0.0.0/0. VRFY disabled. Or the MTA is not installed.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Linux services pass with audit-web-server and audit-snmp, after flag-risky-servi
 
 - Read-only. Do not send mail to other hosts as a ‘test’.
 - Authorized-image only.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

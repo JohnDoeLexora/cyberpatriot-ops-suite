@@ -19,6 +19,14 @@ Enumerates local groups and members. Highlights sudo, wheel, Administrators, Hyp
 
 docker or Remote Desktop Users can be as powerful as Administrators. Extra membership is a scored misconfiguration.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 With list-admin-users; whenever you suspect a user has rights without being in sudo.
@@ -28,6 +36,7 @@ With list-admin-users; whenever you suspect a user has rights without being in s
 1. Run the op and scan privileged groups first.
 2. Compare members to the README (admins vs standard vs none).
 3. Unexpected docker/RDP/Hyper-V members: demote with remove-user-from-admins or the OS group tool; this op is read-only.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Privileged groups match the README.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ With list-admin-users; whenever you suspect a user has rights without being in s
 
 - Read-only.
 - Do not delete built-in groups. Changing membership is a mutate you should confirm against the README.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

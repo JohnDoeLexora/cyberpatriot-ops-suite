@@ -19,6 +19,14 @@ Checks logging services and common log files. Disabled logging is a finding beca
 
 Images often ship with rsyslog stopped or Security log tiny. You also need logs for forensics questions.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Early-middle of the round, before you need evidence, and as part of the checklist.
@@ -28,6 +36,7 @@ Early-middle of the round, before you need evidence, and as part of the checklis
 1. Run the op. If rsyslog/journald/EventLog is inactive, enable it on the image (this op is read-only).
 2. Note tiny log sizes and missing auditd (see check-auditd).
 3. Do not wipe logs to ‘hide’ your work — that is the opposite of CP.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Logging service running.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Early-middle of the round, before you need evidence, and as part of the checklis
 
 - Read-only.
 - Do not send logs off-image to random collectors.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

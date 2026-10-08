@@ -19,6 +19,14 @@ Read-only checklist on local apache2/httpd/nginx config: Options Indexes, Server
 
 Directory listings and ServerTokens OS are easy Apache points. Weak TLS is a common leftover. A checklist beats grepping five conf files.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 When apache2/nginx/httpd is a required service (or running). After list-services.
@@ -28,6 +36,7 @@ When apache2/nginx/httpd is a required service (or running). After list-services
 1. Confirm the README still wants the web server. If not, disable-service instead of hardening.
 2. Run the op. Fix failing rows on the image (Options -Indexes, ServerTokens Prod, autoindex off, modern SSLProtocol).
 3. Re-run. Do not turn off apache2 if it is scored.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No directory listings, ServerTokens Prod / server_tokens off, no SSLv3/TLSv1.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ When apache2/nginx/httpd is a required service (or running). After list-services
 
 - Read-only. Conf edits are a separate action on the image.
 - A wrong SSLProtocol line can break a required HTTPS site — test locally.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

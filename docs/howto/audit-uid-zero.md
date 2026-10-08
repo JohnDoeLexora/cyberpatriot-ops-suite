@@ -19,6 +19,14 @@ Reads passwd for UID 0. Extra UID 0 names (toor, sync-with-shell, etc.) are clas
 
 A second UID 0 user is root. Scoring engines love this plant. It is one of the highest-priority user findings on Linux images.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 In the first pass of user audits, before you spend time on media files.
@@ -40,6 +48,7 @@ In the first pass of user audits, before you spend time on media files.
 - Read-only. Disabling the extra account is a separate mutate op (confirm:true).
 - Do not delete root. Do not experiment with usermod -u 0 on other users.
 - This is an inventory, not a privilege-escalation recipe.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

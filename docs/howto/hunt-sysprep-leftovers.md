@@ -19,6 +19,14 @@ Hunts unattend.xml, autounattend.xml, sysprep.xml, Panther, and ks.cfg. Flags Au
 
 Answer files left on disk often contain the local admin password in the clear. Scoring wants them gone; forensics may want the *path* noted first.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Files/persistence pass, early enough that you can snapshot the path for notes.
@@ -28,6 +36,7 @@ Files/persistence pass, early enough that you can snapshot the path for notes.
 1. Run the op. Record paths in team notes (not the password values).
 2. If a forensics question might reference the file, snapshot the path then remove or redact the leftover on the image.
 3. Re-run until the inventory is empty.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: No unattend.xml under Panther, Sysprep, /root, or the drive root.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Files/persistence pass, early enough that you can snapshot the path for notes.
 
 - Read-only hunt. Deleting is a separate action — snapshot first if forensics may need the path.
 - Do not paste AutoLogon passwords into chat, tickets, or CCS.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

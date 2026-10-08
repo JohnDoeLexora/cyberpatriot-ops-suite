@@ -19,6 +19,14 @@ Reports login shells. Humans should be bash/sh (or the distro default). System u
 
 A python3 or /tmp/shell login shell is a planted backdoor pattern. A system UID with /bin/bash is also a finding.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 During the Linux user pass, with audit-uid-zero and flag-suspicious-users.
@@ -28,6 +36,7 @@ During the Linux user pass, with audit-uid-zero and flag-suspicious-users.
 1. Run the op on the Linux image.
 2. For each weird shell: check the README, then disable the user or set a proper shell via the OS — this op itself is read-only.
 3. System accounts with bash: report and typically lock/nologin them if not required.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Authorized humans: /bin/bash or /bin/sh.
 
 ## What “good” looks like
 
@@ -39,6 +48,7 @@ During the Linux user pass, with audit-uid-zero and flag-suspicious-users.
 
 - Read-only. Changing shells is a separate system change; prefer disable-user if the account is unauthorized.
 - csh/zsh is not automatically evil — but on a bash CP image it is unusual; check the README.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

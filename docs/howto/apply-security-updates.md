@@ -19,6 +19,14 @@ apt-get upgrade, dnf update --security, or Start-WindowsUpdate. Long-running. Li
 
 This is the actual patching step the check-pending-updates finding wants.
 
+## What it changes
+
+On Linux it runs apt-get update and apt-get upgrade -y, or dnf update. On Windows the live script does not download updates itself; it tells you to run Windows Update on the image.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/ on Linux or %ProgramData%\CyberPatriotOps\backups\<ts>\ on Windows. Package upgrades are not a single file to revert. If a backup was made, restore the packages from it, or reinstall the previous package versions from the distro cache. Do not uninstall a security update just to get the old vulnerable build back unless the image will not boot.
+
 ## When to run it
 
 When the image can reach its update service, hosts file is clean, and you can spare the time (it can be slow).
@@ -40,6 +48,7 @@ When the image can reach its update service, hosts file is clean, and you can sp
 - Mutation. Live requires confirm:true. Can take a long time and may reboot.
 - Do not add random PPAs or third-party patch tools.
 - Authorized image only — never push updates to other teams’ hosts.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 

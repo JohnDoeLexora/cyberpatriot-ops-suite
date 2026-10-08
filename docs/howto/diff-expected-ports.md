@@ -19,6 +19,14 @@ Diffs TCP/UDP listeners on this image against config/expected-ports.txt (README-
 
 Unexpected 23/31337/445 are plants; a missing required 22/80/443 can cost service points. A baseline file is faster than eyeballing ss.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Right after audit-listening-ports, and again after disabling risky services.
@@ -41,6 +49,7 @@ Right after audit-listening-ports, and again after disabling risky services.
 - Read-only local audit. Never scans other hosts, the LAN, or the scoring server.
 - Killing a required listener costs points — identify first.
 - Bend may score the inventory on Linux live; demo never invokes Bend.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

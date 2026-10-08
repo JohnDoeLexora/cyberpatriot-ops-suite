@@ -19,6 +19,14 @@ Lists systemd/Windows services with active/enabled state and annotates them agai
 
 You cannot disable telnet if you never saw it. Extra services (ftp, cups, RemoteRegistry) and missing required ones (sshd, apache if the README says so) both score.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Early network/services pass, before you disable anything.
@@ -30,6 +38,7 @@ Early network/services pass, before you disable anything.
 3. Run the op. Sort mentally: required, risky, other.
 4. Required but stopped: start/enable via the OS (this op is read-only).
 5. Risky and not required: hand to disable-service / disable-telnet.
+6. How to verify: run this check again and compare the output to the image README. You are done when this is true: Every README-required service is running and enabled.
 
 ## What “good” looks like
 
@@ -40,6 +49,7 @@ Early network/services pass, before you disable anything.
 
 - Read-only.
 - Stopping a required scored service costs points — always README-check before disable-service.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

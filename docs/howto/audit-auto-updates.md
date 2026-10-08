@@ -19,6 +19,14 @@ Reads APT Periodic / 50unattended-upgrades or Windows AUOptions / wuauserv. Comp
 
 Unattended-upgrades off and wuauserv disabled are plants that keep the image unpatched. Scoring wants the update channel on even before you finish applying patches.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 With check-pending-updates and audit-hosts-file (so Windows Update is not sinkholed).
@@ -28,6 +36,7 @@ With check-pending-updates and audit-hosts-file (so Windows Update is not sinkho
 1. Run the op. APT::Periodic::Unattended-Upgrade should not be 0; wuauserv should not be disabled; AUOptions should not be ‘never check’.
 2. Fix hosts-file blocks of windowsupdate first (audit-hosts-file).
 3. Enable the channel on the image, then apply-security-updates with confirm:true.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Unattended-upgrades enabled, or Windows Update service automatic and AUOptions checking.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ With check-pending-updates and audit-hosts-file (so Windows Update is not sinkho
 
 - Read-only. Installing patches is apply-security-updates with confirm:true.
 - Stays on the image’s configured update channels — no off-host targeting.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

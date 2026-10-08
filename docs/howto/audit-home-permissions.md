@@ -19,6 +19,14 @@ Checks that homes are not group/world writable or owned by another user. Mode 77
 
 Open homes leak keys and answers. Root-owned /home/alice can also block the user — both get dinged.
 
+## What it changes
+
+Nothing - read-only audit
+
+## How to undo
+
+Nothing to undo
+
 ## When to run it
 
 Linux files pass with check-sensitive-file-perms.
@@ -28,6 +36,7 @@ Linux files pass with check-sensitive-file-perms.
 1. Run the op. Note 0777 homes, root-owned user homes, and homes in /tmp.
 2. Fix ownership/mode on the image (typically 750/700, user:user).
 3. Homes in /tmp for planted UID 0 users: disable the user rather than ‘fixing’ a /tmp home.
+4. How to verify: run this check again and compare the output to the image README. You are done when this is true: Each authorized user’s home is owned by that user, not world-writable.
 
 ## What “good” looks like
 
@@ -38,6 +47,7 @@ Linux files pass with check-sensitive-file-perms.
 
 - Read-only.
 - chmod 700 on a required shared home could break a scored app — README first.
+- Common mistake: treating this read-only result as already fixed, or changing the computer before the findings are copied into Team notes.
 
 ## Related ops
 

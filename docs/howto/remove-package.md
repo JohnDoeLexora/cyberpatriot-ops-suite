@@ -19,6 +19,14 @@ apt-get remove --purge / dnf remove / Uninstall-Package. Refuses packages that l
 
 This is the fix for find-prohibited-software. Confirmed, one name at a time, beats a reckless autoremove.
 
+## What it changes
+
+On Linux it runs apt-get remove -y or dnf remove -y for that package name. On Windows it runs Uninstall-Package. Configuration files the package manager leaves behind may remain.
+
+## How to undo
+
+If a backup was made, restore from /var/backups/cyberpatriot-ops/<ts>/ on Linux or %ProgramData%\CyberPatriotOps\backups\<ts>\ on Windows. Reinstall from the distro only if the README requires it: apt-get install or dnf install on Linux, Install-Package on Windows. Do not download a random installer.
+
 ## When to run it
 
 After find-prohibited-software, for each banned package the README does not require.
@@ -40,6 +48,7 @@ After find-prohibited-software, for each banned package the README does not requ
 - Mutation. Live requires confirm:true.
 - force=true can remove a scored service.
 - Purging may remove config you wanted for forensics — snapshot first if unsure.
+- Common mistake: confirming the live change before the account, service, or file matches the image README, or skipping the dry-run preview.
 
 ## Related ops
 
