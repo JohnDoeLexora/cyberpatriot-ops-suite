@@ -17,5 +17,21 @@ for p in paths:
         })
     except FileNotFoundError:
         pass
-print(json.dumps({"ok": True, "files": files}, indent=2))
+n = len(files)
+ww = sum(1 for item in files if item["worldWritable"])
+if n == 0:
+    summary = "No sensitive files were found to check"
+    tone = "empty"
+else:
+    summary = f"Checked {n} sensitive files; {ww} are world-writable"
+    tone = "urgent" if ww else "clear"
+print(json.dumps({
+    "ok": True,
+    "summary": summary,
+    "files": files,
+    "report": {"tone": tone, "facts": [
+        {"label": "Checked", "value": str(n)},
+        {"label": "World-writable", "value": str(ww)},
+    ]},
+}, indent=2))
 PY

@@ -18,5 +18,27 @@ checks = [
     ("autoindex", "nginx autoindex on", bool(re.search(r"autoindex\s+on", blob, re.I))),
 ]
 findings = [{"id": i, "severity": "medium", "title": t} for i, t, bad in checks if bad]
-print(json.dumps({"ok": True, "extra": {"files": files}, "findings": findings}))
+n = len(findings)
+if not files:
+    summary = "No Apache or nginx config found"
+    tone = "empty"
+elif n == 1:
+    summary = "Web server config has 1 issue"
+    tone = "watch"
+elif n:
+    summary = f"Web server config has {n} issues"
+    tone = "watch"
+else:
+    summary = "Web server config looks locked down"
+    tone = "clear"
+print(json.dumps({
+    "ok": True,
+    "summary": summary,
+    "extra": {"files": files},
+    "findings": findings,
+    "report": {"tone": tone, "facts": [
+        {"label": "Config files", "value": str(len(files))},
+        {"label": "Issues", "value": str(n)},
+    ]},
+}))
 PY

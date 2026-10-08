@@ -21,5 +21,24 @@ if home and re.search(r"10\.|192\.168\.|pwn|hack", home.group(1), re.I):
     findings.append({"id":"home","severity":"high","title":"Unexpected browser homepage","detail":home.group(1)})
 if proxy:
     findings.append({"id":"proxy","severity":"high","title":f"Browser proxy {proxy.group(1)}"})
-print(json.dumps({"ok": True, "findings": findings, "extra": {"note": "Cookies/passwords not dumped"}}))
+n = len(findings)
+if n:
+    summary = "Browser policy has 1 unexpected setting" if n == 1 else f"Browser policy has {n} unexpected settings"
+    tone = "urgent"
+elif not blob.strip():
+    summary = "No browser policy files found (cookies not dumped)"
+    tone = "empty"
+else:
+    summary = "Browser homepage and proxy look normal (cookies not dumped)"
+    tone = "clear"
+print(json.dumps({
+    "ok": True,
+    "summary": summary,
+    "findings": findings,
+    "extra": {"note": "Cookies/passwords not dumped"},
+    "report": {"tone": tone, "facts": [
+        {"label": "Issues", "value": str(n)},
+        {"label": "Cookies", "value": "not dumped"},
+    ]},
+}))
 PY

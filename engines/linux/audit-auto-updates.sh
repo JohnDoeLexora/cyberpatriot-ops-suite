@@ -6,12 +6,34 @@ set -Eeuo pipefail
 python3 - <<'PY'
 import json, os, re
 text = ""
-for p in ["/etc/apt/apt.conf.d/20auto-upgrades", "/etc/apt/apt.conf.d/10periodic"]:
-    if os.path.isfile(p):
-        text += open(p, encoding="utf-8", errors="replace").read() + "\n"
-m = re.search(r'Unattended-Upgrade\s+"?(\d+)"?', text)
+for path in ["/etc/apt/apt.conf.d/20auto-upgrades", "/etc/apt/apt.conf.d/10periodic"]:
+    if os.path.isfile(path):
+        text += open(path, encoding="utf-8", errors="replace").read() + "\n"
+match = re.search(r'Unattended-Upgrade\s+"?(\d+)"?', text)
+value = match.group(1) if match else None
 findings = []
-if not m or m.group(1) == "0":
+if value != "1":
     findings.append({"id": "uu", "severity": "medium", "title": "unattended-upgrades not enabled", "remediationOpId": "apply-security-updates"})
-print(json.dumps({"ok": True, "extra": {"unattendedUpgrade": m.group(1) if m else None}, "findings": findings}))
+if value == "1":
+    summary = "Unattended upgrades are on"
+    tone = "clear"
+elif value == "0":
+    summary = "Unattended upgrades are off"
+    tone = "watch"
+else:
+    summary = "Unattended upgrades are not configured"
+    tone = "watch"
+print(json.dumps({
+    "ok": True,
+    "status": "ok",
+    "summary": summary,
+    "extra": {"unattendedUpgrade": value},
+    "findings": findings,
+    "report": {
+        "tone": tone,
+        "facts": [
+            {"label": "Unattended-Upgrade", "value": value if value is not None else "unset"},
+        ],
+    },
+}))
 PY

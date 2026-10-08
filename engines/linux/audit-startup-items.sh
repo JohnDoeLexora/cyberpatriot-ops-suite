@@ -19,5 +19,28 @@ findings = []
 if any(tok in rc for tok in ("/tmp/", "python3 -c", "python -c")):
     findings.append({"id": "rclocal", "severity": "high", "title": "Suspicious /etc/rc.local", "detail": "Looks like a temp-path or interpreter plant."})
 enabled = [ln for ln in sys.argv[1].splitlines() if ln.strip()][:80]
-print(json.dumps({"ok": True, "status": "ok", "summary": "Enabled units and rc.local.", "extra": {"enabled": enabled, "rcLocal": rc[:1500]}, "findings": findings}, indent=2))
+suspicious = bool(findings)
+if suspicious:
+    summary = "Startup items include a suspicious rc.local"
+    tone = "urgent"
+elif enabled:
+    summary = f"{len(enabled)} units enabled at boot"
+    tone = "info"
+else:
+    summary = "No enabled units were listed; rc.local was checked"
+    tone = "info"
+print(json.dumps({
+    "ok": True,
+    "status": "ok",
+    "summary": summary,
+    "extra": {"enabled": enabled, "rcLocal": rc[:1500]},
+    "findings": findings,
+    "report": {
+        "tone": tone,
+        "facts": [
+            {"label": "Enabled units", "value": str(len(enabled))},
+            {"label": "rc.local", "value": "suspicious" if suspicious else "present" if rc.strip() else "absent"},
+        ],
+    },
+}, indent=2))
 PY

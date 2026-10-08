@@ -12,5 +12,23 @@ for p in ["/etc/snmp/snmpd.conf", "/etc/snmpd.conf"]:
         break
 comms = re.findall(r"(?im)^\s*(?:rocommunity|rwcommunity|com2sec)\s+(\S+)", cfg)
 findings = [{"id": f"comm:{c}", "severity": "critical" if c.lower()=="private" else "high", "title": f"SNMP community {c}"} for c in comms if c.lower() in {"public", "private", "snmp"}]
-print(json.dumps({"ok": True, "extra": {"communities": comms}, "findings": findings}))
+if not cfg:
+    summary = "No SNMP config found"
+    tone = "empty"
+elif findings:
+    summary = "SNMP uses a default community"
+    tone = "urgent"
+else:
+    summary = "SNMP config has no public or private community"
+    tone = "clear"
+print(json.dumps({
+    "ok": True,
+    "summary": summary,
+    "extra": {"communities": comms},
+    "findings": findings,
+    "report": {"tone": tone, "facts": [
+        {"label": "Communities", "value": str(len(comms))},
+        {"label": "Default names", "value": str(len(findings))},
+    ]},
+}))
 PY

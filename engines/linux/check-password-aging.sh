@@ -30,5 +30,27 @@ for s in entries:
         "neverExpires": s.sp_max in (-1, 99999),
     })
 never = [r for r in rows if r["neverExpires"] and not r["locked"]]
-print(json.dumps({"ok": True, "status": "ok", "summary": f"{len(never)} unlocked accounts with password aging disabled (hashes omitted).", "extra": {"neverExpires": never[:40]}}, indent=2))
+names = ", ".join(row["name"] for row in never[:12]) or "none"
+if len(never) == 0:
+    summary = "No unlocked accounts have password aging disabled (hashes omitted)."
+    tone = "clear"
+elif len(never) == 1:
+    summary = "1 unlocked account has password aging disabled (hashes omitted)."
+    tone = "watch"
+else:
+    summary = f"{len(never)} unlocked accounts have password aging disabled (hashes omitted)."
+    tone = "watch"
+print(json.dumps({
+    "ok": True,
+    "status": "ok",
+    "summary": summary,
+    "extra": {"neverExpires": [row["name"] for row in never[:40]]},
+    "report": {
+        "tone": tone,
+        "facts": [
+            {"label": "Unlocked without aging", "value": str(len(never))},
+            {"label": "Accounts", "value": names},
+        ],
+    },
+}, indent=2))
 PY

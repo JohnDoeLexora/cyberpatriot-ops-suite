@@ -32,8 +32,10 @@ for p in paths:
 if nopasswd:
     findings.append({"id": "nopasswd", "severity": "high", "title": "NOPASSWD in sudoers", "detail": "Review /etc/sudoers. The rules are not dumped."})
 summary = "Audited sudoers permissions and NOPASSWD (no full dump of rules)."
+tone = "urgent" if findings else "clear"
 if unreadable and not nopasswd:
     summary = "Audited sudoers modes. The file was not readable, so NOPASSWD was not checked and the rules were not dumped."
+    tone = "watch"
 print(json.dumps({
     "ok": True,
     "status": "ok",
@@ -41,5 +43,13 @@ print(json.dumps({
     "files": files,
     "findings": findings,
     "extra": {"nopasswdPresent": nopasswd, "unreadable": unreadable},
+    "report": {
+        "tone": tone,
+        "facts": [
+            {"label": "Files", "value": str(len(files))},
+            {"label": "NOPASSWD", "value": "present" if nopasswd else "not found"},
+            {"label": "Unreadable", "value": ", ".join(unreadable) if unreadable else "none"},
+        ],
+    },
 }, indent=2))
 PY

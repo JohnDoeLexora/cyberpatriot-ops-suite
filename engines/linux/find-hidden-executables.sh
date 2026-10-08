@@ -31,5 +31,25 @@ for base in roots:
                 break
         if len(hits) >= 40:
             break
-print(json.dumps({"ok": True, "status": "ok", "summary": f"{len(hits)} hidden executables.", "files": hits}, indent=2))
+scope = ", ".join(base for base in roots if base) or "the scan roots"
+n = len(hits)
+if n == 0:
+    summary = f"No hidden executables under {scope}"
+    tone = "empty"
+elif n == 1:
+    summary = "1 hidden executable."
+    tone = "watch"
+else:
+    summary = f"{n} hidden executables."
+    tone = "watch"
+print(json.dumps({
+    "ok": True,
+    "status": "ok",
+    "summary": summary,
+    "files": hits,
+    "report": {"tone": tone, "facts": [
+        {"label": "Checked", "value": scope},
+        {"label": "Found", "value": str(n)},
+    ]},
+}, indent=2))
 PY

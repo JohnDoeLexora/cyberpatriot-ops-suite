@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Audit IPv6 privacy knobs. Disables IPv6 only with CP_DISABLE_IPV6=1 and --confirm.
-# Read-only. Re-running is safe. CP_DRY_RUN=1 changes nothing. CP_ROOT redirects /etc paths in tests.
+# Read-only unless that flag is set. CP_DRY_RUN=1 changes nothing.
 set -Eeuo pipefail
 # shellcheck source=_lib.sh
 . "$(cd "$(dirname "$0")" && pwd)/_lib.sh"
@@ -23,7 +23,42 @@ if extra["use_tempaddr"] == "0":
     findings.append({"id": "privacy", "severity": "low", "title": "IPv6 use_tempaddr=0"})
 if extra["accept_ra"] == "1" and extra["forwarding"] == "1":
     findings.append({"id": "ra", "severity": "medium", "title": "accept_ra=1 and forwarding=1"})
-print(json.dumps({"ok": True, "status": "ok", "summary": "IPv6 privacy snapshot.", "findings": findings, "extra": extra}))
+temp = extra["use_tempaddr"]
+if temp is None and extra["disable_ipv6"] is None:
+    summary = "IPv6 sysctl knobs are unreadable"
+    tone = "watch"
+elif extra["disable_ipv6"] == "1":
+    summary = "IPv6 is disabled"
+    tone = "info"
+elif temp in {None, ""}:
+    summary = "IPv6 temporary addresses are unset"
+    tone = "watch"
+elif temp == "0":
+    summary = "IPv6 temporary addresses are off"
+    tone = "watch"
+else:
+    summary = "IPv6 temporary addresses are on"
+    tone = "clear"
+if extra["accept_ra"] == "1" and extra["forwarding"] == "1":
+    tone = "urgent"
+def show(value):
+    return "unreadable" if value is None else value
+print(json.dumps({
+    "ok": True,
+    "status": "ok",
+    "summary": summary,
+    "findings": findings,
+    "extra": extra,
+    "report": {
+        "tone": tone,
+        "facts": [
+            {"label": "Temporary addresses", "value": show(extra["use_tempaddr"])},
+            {"label": "Accept router ads", "value": show(extra["accept_ra"])},
+            {"label": "Forwarding", "value": show(extra["forwarding"])},
+            {"label": "Disabled", "value": show(extra["disable_ipv6"])},
+        ],
+    },
+}))
 PY
 if [[ "${CP_DISABLE_IPV6:-0}" != "1" ]]; then
   exit 0

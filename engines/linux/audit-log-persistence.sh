@@ -14,5 +14,28 @@ journal = os.path.isdir("/var/log/journal")
 findings = []
 if storage.lower() == "volatile" or (not journal and storage.lower() == "auto"):
     findings.append({"id":"volatile","severity":"high","title":f"journald Storage={storage}"})
-print(json.dumps({"ok": True, "findings": findings, "extra": {"journaldStorage": storage, "journalDir": journal}}))
+persistent = storage.lower() not in {"volatile"} and (journal or storage.lower() == "persistent")
+if findings:
+    summary = f"Journald storage is {storage} and may not persist"
+    tone = "urgent"
+elif storage.lower() == "persistent" or journal:
+    summary = f"Journald storage is {storage}"
+    tone = "clear"
+else:
+    summary = f"Journald storage is {storage}"
+    tone = "info"
+print(json.dumps({
+    "ok": True,
+    "status": "ok",
+    "summary": summary,
+    "findings": findings,
+    "extra": {"journaldStorage": storage, "journalDir": journal},
+    "report": {
+        "tone": tone,
+        "facts": [
+            {"label": "Storage", "value": storage},
+            {"label": "Persistent directory", "value": "present" if journal else "absent"},
+        ],
+    },
+}))
 PY

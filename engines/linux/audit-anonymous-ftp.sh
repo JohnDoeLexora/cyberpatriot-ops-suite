@@ -18,5 +18,25 @@ if (cfg.get("anonymous_enable") or "").lower() in {"yes", "on", "1"}:
     findings.append({"id": "anon", "severity": "high", "title": "anonymous_enable=YES", "remediationOpId": "harden-vsftpd"})
 if (cfg.get("anon_upload_enable") or "").lower() in {"yes", "on", "1"}:
     findings.append({"id": "anonup", "severity": "critical", "title": "anon_upload_enable=YES", "remediationOpId": "harden-vsftpd"})
-print(json.dumps({"ok": True, "extra": {"vsftpd": cfg, "files": files}, "findings": findings}))
+anon = (cfg.get("anonymous_enable") or "").lower() in {"yes", "on", "1"}
+if not files:
+    summary = "No vsftpd or proftpd config found"
+    tone = "empty"
+elif anon or findings:
+    summary = "Anonymous FTP is on"
+    tone = "urgent"
+else:
+    summary = "Anonymous FTP is off"
+    tone = "clear"
+print(json.dumps({
+    "ok": True,
+    "summary": summary,
+    "extra": {"vsftpd": cfg, "files": files},
+    "findings": findings,
+    "report": {"tone": tone, "facts": [
+        {"label": "anonymous_enable", "value": cfg.get("anonymous_enable") or "unset"},
+        {"label": "anon_upload_enable", "value": cfg.get("anon_upload_enable") or "unset"},
+        {"label": "Config files", "value": str(len(files))},
+    ]},
+}))
 PY

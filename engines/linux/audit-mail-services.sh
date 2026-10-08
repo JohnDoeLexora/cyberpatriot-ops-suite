@@ -18,5 +18,25 @@ if re.search(r"disable_vrfy_command\s*=\s*no", postfix):
     findings.append({"id":"vrfy","severity":"medium","title":"disable_vrfy_command=no"})
 if re.search(r"disable_plaintext_auth\s*=\s*no", dovecot):
     findings.append({"id":"plain","severity":"high","title":"Dovecot plaintext auth allowed"})
-print(json.dumps({"ok": True, "findings": findings, "extra": {"postfix": bool(postfix)}}))
+n = len(findings)
+if n:
+    summary = "Mail checks found 1 issue" if n == 1 else f"Mail checks found {n} issues"
+    tone = "urgent" if any(item["severity"] in {"critical", "high"} for item in findings) else "watch"
+elif not postfix and not dovecot.strip():
+    summary = "No postfix or dovecot config found"
+    tone = "empty"
+else:
+    summary = "Mail relay settings look locked down"
+    tone = "clear"
+print(json.dumps({
+    "ok": True,
+    "summary": summary,
+    "findings": findings,
+    "extra": {"postfix": bool(postfix)},
+    "report": {"tone": tone, "facts": [
+        {"label": "Postfix", "value": "present" if postfix else "absent"},
+        {"label": "Dovecot", "value": "present" if dovecot.strip() else "absent"},
+        {"label": "Issues", "value": str(n)},
+    ]},
+}))
 PY

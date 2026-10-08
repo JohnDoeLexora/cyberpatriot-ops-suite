@@ -41,6 +41,46 @@ for key, value in policy.items():
             "detail": "From /etc/ssh/sshd_config. The rest of the file is not dumped.",
             "remediationOpId": "harden-sshd",
         })
-summary = "Parsed sshd_config." if text else "sshd_config is missing."
-print(json.dumps({"ok": True, "status": "ok", "summary": summary, "policy": policy, "checklist": checklist, "findings": findings}, indent=2))
+def phrase_root(value):
+    low = value.lower()
+    if low in {"no", "prohibit-password", "forced-commands-only", "without-password"}:
+        return "SSH root login is disabled"
+    if low == "yes":
+        return "SSH root login is enabled"
+    if low == "unset":
+        return "SSH root login is unset"
+    return f"SSH root login is {value}"
+
+def phrase_password(value):
+    low = value.lower()
+    if low == "yes":
+        return "password auth is on"
+    if low == "no":
+        return "password auth is off"
+    if low == "unset":
+        return "password auth is unset"
+    return f"password auth is {value}"
+
+if not p.exists():
+    summary = "sshd_config is missing."
+    tone = "watch"
+elif not text:
+    summary = "sshd_config could not be read."
+    tone = "watch"
+else:
+    summary = f"{phrase_root(policy['PermitRootLogin'])}; {phrase_password(policy['PasswordAuthentication'])}"
+    root_open = policy["PermitRootLogin"].lower() == "yes"
+    empty = policy["PermitEmptyPasswords"].lower() == "yes"
+    passwords = policy["PasswordAuthentication"].lower() == "yes"
+    tone = "urgent" if root_open or empty else "watch" if passwords or policy["PermitRootLogin"].lower() == "unset" else "clear"
+facts = [{"label": key, "value": value} for key, value in policy.items()]
+print(json.dumps({
+    "ok": True,
+    "status": "ok",
+    "summary": summary,
+    "policy": policy,
+    "checklist": checklist,
+    "findings": findings,
+    "report": {"tone": tone, "facts": facts},
+}, indent=2))
 PY
