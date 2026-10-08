@@ -1,23 +1,31 @@
 #requires -Version 5.1
 <#
 .SYNOPSIS
-  Windows smoke driver for the disposable GitHub-hosted runner.
+  Windows smoke driver for a disposable VM or a GitHub-hosted runner.
 .DESCRIPTION
   Parses every PowerShell file, runs PSScriptAnalyzer, dry-runs every op,
-  live-reads Windows ops, applies a small mutate set, then restores it.
-  Never targets a scoring / CCS service. Live mutation belongs on this VM only.
+  and live-reads Windows ops. Live mutate and undo run only when
+  GITHUB_ACTIONS is true, or when -IUnderstandThisIsADisposableVM is set
+  on a Windows host. Never targets a scoring / CCS service. Never prints
+  password hashes or Wi-Fi keys.
+.PARAMETER IUnderstandThisIsADisposableVM
+  Allow live-mutate and undo on this Windows host. Pass it only on a
+  disposable VM you have snapshotted and can throw away.
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [string]$RepoRoot,
-    [Parameter(Mandatory = $true)]
-    [string]$OutDir
+    [string]$OutDir,
+    [switch]$IUnderstandThisIsADisposableVM
 )
 
 $ErrorActionPreference = 'Stop'
 if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
     $PSNativeCommandUseErrorActionPreference = $false
+}
+if (-not $OutDir) {
+    $OutDir = Join-Path $RepoRoot 'smoke-out'
 }
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
@@ -47,6 +55,31 @@ $FeatureSkip = @{
     'disable-guest-account'   = @{ Pattern = 'Guest is not present|account Guest is not|does not exist'; Reason = 'Guest is not a local account on this image' }
 }
 
+function Test-CpWindowsHost {
+    $flag = Get-Variable -Name IsWindows -ErrorAction SilentlyContinue
+    if ($null -ne $flag) { return [bool]$flag.Value }
+    return $env:OS -eq 'Windows_NT'
+}
+
+function Test-CpMutateAuthorized {
+    if (-not (Test-CpWindowsHost)) { return $false }
+    if ($env:GITHUB_ACTIONS -eq 'true') { return $true }
+    if ($IUnderstandThisIsADisposableVM) { return $true }
+    return $false
+}
+
+function Protect-CpSecretText {
+    param([string]$Text)
+    if (-not $Text) { return '' }
+    $clean = [string]$Text
+    $clean = [regex]::Replace($clean, '(?i)\b[0-9a-f]{64}\b', '[redacted-hash]')
+    $clean = [regex]::Replace($clean, '(?i)\b[0-9a-f]{40}\b', '[redacted-hash]')
+    $clean = [regex]::Replace($clean, '(?i)\b[0-9a-f]{32}\b', '[redacted-hash]')
+    $clean = [regex]::Replace($clean, '(?im)(key\s*content\s*[:=]\s*).+$', '${1}[redacted]')
+    $clean = [regex]::Replace($clean, '(?im)((?:keymaterial|shared\s*key|pre-shared\s*key|wi-?fi\s*key|wlan\s*key|psk)\s*[:=]\s*).+$', '${1}[redacted]')
+    return $clean
+}
+
 function Add-Row {
     param(
         [string]$OpId,
@@ -60,7 +93,7 @@ function Add-Row {
             phase    = $Phase
             exitCode = $ExitCode
             pass     = $Pass
-            reason   = $Reason
+            reason   = (Protect-CpSecretText -Text $Reason)
         })
 }
 
@@ -216,6 +249,11 @@ function Invoke-Analyzer {
         return $false
     }
     if (-not (Get-Command Invoke-ScriptAnalyzer -ErrorAction SilentlyContinue)) {
+        if (Get-Module -ListAvailable -Name PSScriptAnalyzer) {
+            Import-Module PSScriptAnalyzer
+        }
+    }
+    if (-not (Get-Command Invoke-ScriptAnalyzer -ErrorAction SilentlyContinue)) {
         Add-Row -OpId 'PSScriptAnalyzer' -Phase 'dryrun' -ExitCode 1 -Pass $false -Reason 'PSScriptAnalyzer is not installed.'
         return $false
     }
@@ -269,6 +307,11 @@ Revision=1
 
 function Invoke-SmokeMutation {
     param([string]$RestoreScript)
+    foreach ($fixture in @('cp-test-svc', 'cp-test-alice', 'cp-test-mallory')) {
+        if (Test-CpCcsName -Name $fixture) {
+            throw "Refusing to touch '$fixture'. The scoring service must stay untouched."
+        }
+    }
     $setup = Join-Path $work 'mutate-setup'
     New-Item -ItemType Directory -Force -Path $setup | Out-Null
 
@@ -362,6 +405,7 @@ function Invoke-SmokeMutation {
     }
 
     # Throwaway service. Not a scoring name.
+    if (Test-CpCcsName -Name 'cp-test-svc') { throw "Refusing to touch 'cp-test-svc'. The scoring service must stay untouched." }
     & sc.exe create cp-test-svc 'binPath= C:\Windows\System32\cmd.exe' 'start= demand' | Out-Null
     if ($LASTEXITCODE -ne 0 -and -not (Get-Service -Name 'cp-test-svc' -ErrorAction SilentlyContinue)) {
         Add-Row -OpId 'disable-service' -Phase 'live-mutate' -ExitCode 1 -Pass $false -Reason 'sc.exe create cp-test-svc failed'
@@ -383,12 +427,16 @@ function Invoke-SmokeMutation {
         } else {
             Add-Row -OpId 'disable-service' -Phase 'undo' -ExitCode 3 -Pass $false -Reason 'mutate did not pass, so undo was not attempted'
         }
+        if (Test-CpCcsName -Name 'cp-test-svc') { throw "Refusing to touch 'cp-test-svc'. The scoring service must stay untouched." }
         & sc.exe delete cp-test-svc | Out-Null
     }
 
     # Allowlist sync. Alice is allowed and becomes an admin. Mallory already exists and must stay off Administrators.
     Set-BlankPasswordAllowed -Dir $setup
     try {
+        foreach ($fixture in @('cp-test-alice', 'cp-test-mallory')) {
+            if (Test-CpCcsName -Name $fixture) { throw "Refusing to touch '$fixture'. The scoring service must stay untouched." }
+        }
         $existingAlice = Get-LocalUser -Name 'cp-test-alice' -ErrorAction SilentlyContinue
         if ($existingAlice) { Remove-LocalUser -Name 'cp-test-alice' }
         if (-not (Get-LocalUser -Name 'cp-test-mallory' -ErrorAction SilentlyContinue)) {
@@ -425,6 +473,9 @@ function Invoke-SmokeMutation {
             Add-Row -OpId 'sync-authorized-users' -Phase 'undo' -ExitCode 3 -Pass $false -Reason 'mutate did not pass, so undo was not attempted'
         }
     } finally {
+        foreach ($fixture in @('cp-test-alice', 'cp-test-mallory')) {
+            if (Test-CpCcsName -Name $fixture) { throw "Refusing to touch '$fixture'. The scoring service must stay untouched." }
+        }
         $left = Get-LocalUser -Name 'cp-test-mallory' -ErrorAction SilentlyContinue
         if ($left) { Remove-LocalUser -Name 'cp-test-mallory' -ErrorAction SilentlyContinue }
         $aliceLeft = Get-LocalUser -Name 'cp-test-alice' -ErrorAction SilentlyContinue
@@ -456,7 +507,8 @@ function Invoke-CpWrappedRestore {
 }
 
 function Write-SmokeSummary {
-    $rows = @($script:Rows)
+    # @($genericList) throws "Argument types do not match" on PowerShell 7.
+    $rows = @($script:Rows.ToArray())
     $phases = @('dryrun', 'live-read', 'live-mutate', 'undo')
     $lines = New-Object System.Collections.Generic.List[string]
     $lines.Add('# Windows smoke')
@@ -494,28 +546,49 @@ function Write-SmokeSummary {
 
 $restoreScript = Join-Path $RepoRoot 'engines\windows\Restore-CpBackup.ps1'
 $analyzerOk = Invoke-Analyzer
-$catalog = @(Get-CpCatalog)
-if ($catalog.Count -lt 100) { throw "Catalog parse returned $($catalog.Count) ops." }
+$onWindows = Test-CpWindowsHost
+$mutateOk = Test-CpMutateAuthorized
 
-foreach ($op in $catalog) {
-    $dryArgs = @('-DryRun') + @(Get-DryRunArgument -OpId $op.Id)
-    Invoke-Recorded -OpId $op.Id -Phase 'dryrun' -ArgumentList $dryArgs | Out-Null
-}
+if (-not $onWindows) {
+    Add-Row -OpId 'windows-host' -Phase 'dryrun' -ExitCode 3 -Pass $true -Reason 'expected-skip: this host is not Windows. Per-op dry-run was not started.'
+    Add-Row -OpId 'windows-host' -Phase 'live-read' -ExitCode 3 -Pass $true -Reason 'expected-skip: this host is not Windows. Live reads were not started.'
+    $mutateReason = 'expected-skip: this host is not Windows. Live mutations were not started.'
+    if ($IUnderstandThisIsADisposableVM -or ($env:GITHUB_ACTIONS -eq 'true')) {
+        $mutateReason = 'expected-skip: this host is not Windows. -IUnderstandThisIsADisposableVM and GITHUB_ACTIONS do not enable mutations here.'
+    }
+    Add-Row -OpId 'windows-host' -Phase 'live-mutate' -ExitCode 2 -Pass $true -Reason $mutateReason
+    Add-Row -OpId 'windows-host' -Phase 'undo' -ExitCode 3 -Pass $true -Reason 'expected-skip: this host is not Windows. Undo was not started.'
+} else {
+    $catalog = @(Get-CpCatalog)
+    if ($catalog.Count -lt 100) { throw "Catalog parse returned $($catalog.Count) ops." }
 
-$reads = @($catalog | Where-Object { $_.Risk -eq 'read' -and $_.Platform -ne 'linux' })
-foreach ($op in $reads) {
-    Invoke-Recorded -OpId $op.Id -Phase 'live-read' -ArgumentList @() | Out-Null
-}
+    foreach ($op in $catalog) {
+        $dryArgs = @('-DryRun') + @(Get-DryRunArgument -OpId $op.Id)
+        Invoke-Recorded -OpId $op.Id -Phase 'dryrun' -ArgumentList $dryArgs | Out-Null
+    }
 
-. "$RepoRoot\engines\windows\lib\CpReliability.ps1"
-try {
-    Invoke-SmokeMutation -RestoreScript $restoreScript
-} catch {
-    $msg = $_.Exception.Message
-    if (-not $msg) { $msg = "$_" }
-    Add-Row -OpId 'live-mutate' -Phase 'live-mutate' -ExitCode 1 -Pass $false -Reason $msg
+    $reads = @($catalog | Where-Object { $_.Risk -eq 'read' -and $_.Platform -ne 'linux' })
+    foreach ($op in $reads) {
+        Invoke-Recorded -OpId $op.Id -Phase 'live-read' -ArgumentList @() | Out-Null
+    }
+
+    if (-not $mutateOk) {
+        Add-Row -OpId 'live-mutate' -Phase 'live-mutate' -ExitCode 2 -Pass $true -Reason 'expected-skip: live-mutate was not started. On a disposable Windows VM pass -IUnderstandThisIsADisposableVM. GitHub Actions sets GITHUB_ACTIONS=true.'
+        Add-Row -OpId 'undo' -Phase 'undo' -ExitCode 2 -Pass $true -Reason 'expected-skip: undo was not started because live-mutate did not run.'
+    } else {
+        . "$RepoRoot\engines\windows\lib\CpReliability.ps1"
+        try {
+            Invoke-SmokeMutation -RestoreScript $restoreScript
+        } catch {
+            $msg = $_.Exception.Message
+            if (-not $msg) { $msg = "$_" }
+            Add-Row -OpId 'live-mutate' -Phase 'live-mutate' -ExitCode 1 -Pass $false -Reason $msg
+        }
+    }
 }
 Write-SmokeSummary
+Write-Output "Smoke results: $(Join-Path $OutDir 'results.json')"
+Write-Output "Smoke summary: $(Join-Path $OutDir 'summary.md')"
 
 $failedCount = @($script:Rows | Where-Object { -not $_.pass }).Count
 if (-not $analyzerOk -or $failedCount -gt 0) { exit 1 }

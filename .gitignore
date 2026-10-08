@@ -15,5 +15,6 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+smoke-out/
 apps/dashboard/test-results/
 apps/dashboard/playwright-report/
