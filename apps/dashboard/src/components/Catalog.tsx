@@ -30,7 +30,7 @@ export function Catalog() {
   const favOps = ws.favorites.map((id) => OPS_BY_ID[id]).filter(Boolean)
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-sidebar" data-testid="ops-catalog">
+    <nav className="flex h-full min-h-0 flex-col bg-sidebar" data-testid="ops-catalog" aria-label="Checks">
       <div className="border-b border-line px-4 py-3.5">
         <div className="mb-2.5 flex items-baseline justify-between px-0.5">
           <span className="text-[14px] font-medium text-ink">Checks</span>
@@ -43,14 +43,15 @@ export function Catalog() {
           <input
             ref={ws.searchRef}
             data-testid="catalog-search"
+            aria-label="Search checks"
             value={ws.query}
             onChange={(e) => ws.setQuery(e.target.value)}
             placeholder="Search checks…"
             className="w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-faint"
           />
         </label>
-        <p className="mt-2 px-0.5 text-[12px] leading-5 text-faint">
-          Click replaces the focused pane. Split, or drop on an edge, to open another.
+        <p className="mt-2 px-0.5 text-[12.5px] leading-5 text-mute">
+          Click replaces the focused pane — the one that says “Next op opens here”.
         </p>
       </div>
 
@@ -98,7 +99,7 @@ export function Catalog() {
           </div>
         )}
       </div>
-    </div>
+    </nav>
   )
 }
 
@@ -167,6 +168,7 @@ function CatalogRow({
       <button
         type="button"
         title={starred ? 'Unpin' : 'Pin'}
+        aria-label={starred ? `Unpin ${op.title}` : `Pin ${op.title}`}
         className="mt-0.5 text-faint hover:text-warn"
         onClick={(e) => {
           e.stopPropagation()

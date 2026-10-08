@@ -15,12 +15,13 @@
   --color-line-strong: #d6d4cf;
   --color-ink: #1c1b19;
   --color-mute: #5c5955;
-  --color-faint: #8a8781;
+  /* Dark enough for WCAG AA on #f6f5f3 and white. */
+  --color-faint: #5f5c56;
   --color-accent: #2f6b56;
   --color-accent-dim: #e7f3ec;
-  --color-warn: #9a671c;
+  --color-warn: #7a4e0f;
   --color-warn-dim: #f7f0e2;
-  --color-crit: #b04038;
+  --color-crit: #9d342e;
   --color-crit-dim: #f7e8e6;
   --color-ok: #2f6b4a;
   --color-ok-dim: #e5f1e9;
@@ -65,8 +66,9 @@ button {
   cursor: pointer;
 }
 
-:focus-visible {
-  outline: 2px solid color-mix(in oklab, var(--color-accent) 65%, transparent);
+:focus-visible,
+[data-dialog-initial]:focus {
+  outline: 3px solid var(--color-accent);
   outline-offset: 2px;
 }
 
@@ -171,11 +173,32 @@ button {
   box-shadow: var(--shadow-card);
 }
 
+.focus-badge {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+/* cp-15's explainer stays fully in the DOM (tests read every field) but clamps
+   in a quarter pane so the summary and table stay on screen at 1280×800. */
+[data-testid='op-explainer'] {
+  gap: 0.35rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+[data-testid='op-explainer'] dd {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .pane-frame:has([data-active="true"]) {
-  border-color: color-mix(in oklab, var(--color-accent) 28%, var(--color-line));
+  border-color: var(--color-accent);
   box-shadow:
     var(--shadow-card),
-    0 0 0 3px color-mix(in oklab, var(--color-accent) 12%, transparent);
+    0 0 0 3px color-mix(in oklab, var(--color-accent) 55%, transparent);
 }
 
 .pane-cq {
@@ -220,4 +243,76 @@ button {
 [data-beginner="true"] .op-blurb {
   font-size: 15px;
   line-height: 1.6;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1px;
+}
+
+[data-testid='user-table'] {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+}
+
+[data-testid='user-table'] th:last-child,
+[data-testid='user-table'] td:last-child {
+  width: 9.5rem;
+  max-width: 9.5rem;
+  overflow: hidden;
+  vertical-align: top;
+}
+
+.user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  width: 9rem;
+  max-width: 100%;
+  gap: 1px;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #ecebe8 25%, #f7f6f4 50%, #ecebe8 75%);
+  background-size: 200% 100%;
+  animation: skeleton 1.2s ease-in-out infinite;
+}
+
+@keyframes skeleton {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .skeleton {
+    animation: none;
+    background: #ecebe8;
+  }
 }

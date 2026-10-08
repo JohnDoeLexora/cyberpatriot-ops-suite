@@ -25,19 +25,33 @@ export function Header() {
         </kbd>
         <span>search</span>
         <span className="text-faint">·</span>
-        <span>two across, then two below</span>
+        <kbd className="rounded-md border border-line-strong bg-elev px-1.5 py-0.5 font-mono text-[12px] text-ink">
+          1–4
+        </kbd>
+        <span>panes</span>
         <span className="text-faint">·</span>
         <kbd className="rounded-md border border-line-strong bg-elev px-1.5 py-0.5 font-mono text-[12px] text-ink">
           ?
         </kbd>
-        <span>how-to</span>
+        <span>shortcuts</span>
       </div>
 
       <div className="ml-auto flex items-center gap-2">
         <button
           type="button"
+          data-testid="shortcuts-open"
+          aria-label="Keyboard shortcuts"
+          title="Keyboard shortcuts (?)"
+          onClick={() => ws.setShortcutsOpen(true)}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-line-strong bg-elev font-mono text-[14px] text-ink shadow-sm hover:bg-hover"
+        >
+          ?
+        </button>
+        <button
+          type="button"
           data-testid="howto-open"
           title="Search how-to guides"
+          aria-label="Open how-to guides"
           onClick={() => ws.openHowto()}
           className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong bg-elev px-3 py-1.5 text-[13.5px] text-mute shadow-sm hover:bg-hover hover:text-ink"
         >

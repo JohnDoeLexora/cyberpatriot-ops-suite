@@ -1,5 +1,9 @@
 import type { Finding, OpResult, Severity } from '../catalog/types'
+import { summarizeOpResult } from '../lib/adapt-result'
 import { cn } from '../lib/cn'
+import { useWorkspace } from '../state/workspace'
+import { ResultSummary } from './ResultSummary'
+import { RowActions, tableRowActions } from './RowActions'
 
 const sev: Record<Severity, string> = {
   ok: 'text-ok bg-ok-dim',
@@ -15,97 +19,135 @@ const sevLabel: Record<Severity, string> = {
   crit: 'urgent',
 }
 
-export function OutputView({ output }: { output: OpResult }) {
+export function OutputView({
+  output,
+  paneId,
+  showSummary = true,
+}: {
+  output: OpResult
+  paneId: string
+  showSummary?: boolean
+}) {
+  const ws = useWorkspace()
+  const summary = summarizeOpResult(output)
+  const showEngineLine = output.summary.trim() && output.summary.trim() !== summary.headline
+
   return (
-    <div className="space-y-4 p-5" data-testid="op-output">
-      <p className="text-[15px] leading-7 text-ink">{output.summary}</p>
-      {output.meta && (
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(output.meta).map(([k, v]) => (
-            <span key={k} className="rounded-md border border-line bg-elev px-2 py-0.5 text-[12.5px] text-mute">
-              {k}={v}
-            </span>
-          ))}
-        </div>
+    <div className="max-w-full space-y-3 overflow-x-hidden p-4" data-testid="op-output">
+      {showSummary && <ResultSummary output={output} />}
+      {showEngineLine && (
+        <p className="line-clamp-2 text-[14.5px] leading-6 text-mute" title={output.summary}>
+          {output.summary}
+        </p>
       )}
       {output.findings.length > 0 && (
-        <ul className="space-y-2.5">
-          {output.findings.map((f) => (
-            <FindingRow key={f.id} finding={f} />
+        <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-elev">
+          {output.findings.map((finding) => (
+            <FindingRow key={finding.id} finding={finding} />
           ))}
         </ul>
       )}
       {output.checklist && (
-        <div className="overflow-auto rounded-xl border border-line">
-          {output.checklist.map((c) => (
-            <div key={c.id} className="flex items-start gap-3 border-b border-line px-4 py-3 last:border-b-0">
+        <div className="overflow-hidden rounded-xl border border-line">
+          {output.checklist.map((item) => (
+            <div key={item.id} className="flex items-start gap-3 border-b border-line px-3 py-2.5 last:border-b-0">
               <span
                 className={cn(
-                  'mt-0.5 w-14 shrink-0 rounded-md text-center text-[11px] font-medium uppercase',
-                  c.status === 'pass' && 'bg-ok-dim text-ok',
-                  c.status === 'fail' && 'bg-crit-dim text-crit',
-                  c.status === 'warn' && 'bg-warn-dim text-warn',
-                  c.status === 'na' && 'bg-elev text-mute',
+                  'mt-0.5 w-14 shrink-0 rounded-md text-center text-[11px] font-semibold uppercase',
+                  item.status === 'pass' && 'bg-ok-dim text-ok',
+                  item.status === 'fail' && 'bg-crit-dim text-crit',
+                  item.status === 'warn' && 'bg-warn-dim text-warn',
+                  item.status === 'na' && 'bg-sidebar text-mute',
                 )}
               >
-                {c.status}
+                {item.status}
               </span>
               <div className="min-w-0">
-                <div className="text-[15px] leading-6">{c.label}</div>
-                {c.note && <div className="mt-0.5 text-[13.5px] leading-6 text-mute">{c.note}</div>}
+                <div className="truncate text-[14.5px] leading-6" title={item.label}>
+                  {item.label}
+                </div>
+                {item.note && (
+                  <div className="truncate text-[13px] leading-5 text-mute" title={item.note}>
+                    {item.note}
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </div>
       )}
-      {output.tables?.map((t) => (
-        <div key={t.title} className="overflow-auto rounded-xl border border-line">
-          <div className="border-b border-line bg-sidebar px-4 py-2 text-[12.5px] font-medium text-faint">
-            {t.title}
-          </div>
-          <table className="w-full text-left text-[14px]">
+      {output.tables?.map((table) => (
+        <div key={table.title} className="max-w-full overflow-hidden rounded-xl border border-line">
+          <div className="border-b border-line bg-sidebar px-3 py-2 text-[13px] font-medium text-mute">{table.title}</div>
+          <table className="w-full table-fixed text-left text-[14px]">
             <thead>
               <tr>
-                {t.columns.map((c) => (
-                  <th key={c.key} className="px-4 py-2 text-[12.5px] font-medium text-mute">
-                    {c.label}
+                {table.columns.map((column) => (
+                  <th key={column.key} className="px-3 py-2 text-[12.5px] font-medium text-mute">
+                    {column.label}
                   </th>
                 ))}
+                <th className="w-[7.75rem] px-2 py-2 text-right text-[12.5px] font-medium text-mute">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {t.rows.map((row, i) => (
-                <tr key={i} className="border-t border-line/80">
-                  {t.columns.map((c) => (
-                    <td key={c.key} className={cn('px-4 py-2', c.mono && 'font-mono text-[13px] text-mute')}>
-                      {row[c.key]}
+              {table.rows.map((row, index) => {
+                const actions = tableRowActions(table.title, row, ws.demoMode)
+                return (
+                  <tr key={index} className="group border-t border-line/80" data-testid={`result-row-${index}`}>
+                    {table.columns.map((column) => {
+                      const value = row[column.key] ?? ''
+                      return (
+                        <td key={column.key} className="overflow-hidden px-3 py-2 align-middle">
+                          <span
+                            className={cn('block truncate', column.mono && 'font-mono text-[13px] text-mute')}
+                            title={value || undefined}
+                          >
+                            {value}
+                          </span>
+                        </td>
+                      )
+                    })}
+                    <td className="px-1 py-1 align-middle">
+                      {actions ? (
+                        <RowActions paneId={paneId} {...actions} />
+                      ) : (
+                        <span className="sr-only">No row actions</span>
+                      )}
                     </td>
-                  ))}
-                </tr>
-              ))}
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
       ))}
-      {output.logs && (
-        <pre className="overflow-auto rounded-xl border border-line bg-elev p-4 font-mono text-[13px] leading-6">
-          {output.logs.map((l, i) => (
-            <div key={i}>
-              <span className="text-faint">{l.ts}</span>{' '}
-              <span
-                className={cn(
-                  l.level === 'ERROR' && 'text-crit',
-                  l.level === 'WARN' && 'text-warn',
-                  l.level === 'AUTH' && 'text-info',
-                  l.level === 'INFO' && 'text-ok',
-                )}
-              >
-                {l.level}
-              </span>{' '}
-              {l.msg}
+      {(output.logs?.length || (output.meta && Object.keys(output.meta).length > 0)) && (
+        <details className="rounded-xl border border-line bg-elev px-3 py-2">
+          <summary className="cursor-pointer text-[13.5px] font-medium text-ink">More details</summary>
+          {output.meta && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {Object.entries(output.meta).map(([key, value]) => (
+                <span
+                  key={key}
+                  className="max-w-full truncate rounded-md border border-line bg-sidebar px-2 py-0.5 text-[12.5px] text-mute"
+                  title={`${key}=${value}`}
+                >
+                  {key}={value}
+                </span>
+              ))}
             </div>
-          ))}
-        </pre>
+          )}
+          {output.logs && (
+            <pre className="mt-2 overflow-hidden whitespace-pre-wrap break-words font-mono text-[12.5px] leading-5 text-mute">
+              {output.logs.map((line, index) => (
+                <div key={index}>
+                  <span className="text-faint">{line.ts}</span> {line.level} {line.msg}
+                </div>
+              ))}
+            </pre>
+          )}
+        </details>
       )}
     </div>
   )
@@ -113,17 +155,24 @@ export function OutputView({ output }: { output: OpResult }) {
 
 function FindingRow({ finding }: { finding: Finding }) {
   return (
-    <li className="flex flex-wrap items-start gap-3 rounded-xl border border-line bg-elev px-4 py-3 shadow-sm">
-      <span className={cn('h-fit rounded-md px-2 py-0.5 text-[11px] font-medium uppercase', sev[finding.severity])}>
-        {sevLabel[finding.severity]}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="text-[15px] font-medium leading-6">{finding.title}</div>
-        <div className="mt-1 text-[14px] leading-6 text-mute">{finding.detail}</div>
-        {finding.remediation && (
-          <div className="mt-1.5 text-[13.5px] leading-6 text-accent">Next: {finding.remediation}</div>
-        )}
+    <li className="px-3 py-2.5">
+      <div className="flex min-w-0 items-center gap-2">
+        <span className={cn('shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold uppercase', sev[finding.severity])}>
+          {sevLabel[finding.severity]}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[14.5px] font-medium" title={finding.title}>
+          {finding.title}
+        </span>
       </div>
+      {(finding.detail || finding.remediation) && (
+        <details className="mt-1.5 pl-1">
+          <summary className="cursor-pointer text-[13px] font-medium text-mute">Details</summary>
+          {finding.detail && <p className="mt-1 text-[14px] leading-6 text-mute">{finding.detail}</p>}
+          {finding.remediation && (
+            <p className="mt-1 text-[13.5px] leading-6 text-accent">Next: {finding.remediation}</p>
+          )}
+        </details>
+      )}
     </li>
   )
 }

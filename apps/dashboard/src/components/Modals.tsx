@@ -3,6 +3,7 @@ import { liveUsers } from '../lib/users'
 import { cn } from '../lib/cn'
 import { useWorkspace } from '../state/workspace'
 import { AllowlistEditor } from './AllowlistEditor'
+import { useFocusTrap } from './focus-trap'
 
 export function OverlayLayer() {
   return (
@@ -11,8 +12,61 @@ export function OverlayLayer() {
       <ConfirmDialog />
       <PasswordDialog />
       <UserDetails />
+      <ShortcutsModal />
       <AllowlistEditor />
     </>
+  )
+}
+
+const SHORTCUTS: { keys: string; what: string }[] = [
+  { keys: '/  or  Ctrl+K', what: 'Search the check list' },
+  { keys: '1 – 4', what: 'Focus that pane' },
+  { keys: 'Alt + arrows', what: 'Move focus between panes' },
+  { keys: 'Enter', what: 'Run the focused check' },
+  { keys: 'h', what: 'Open the how-to for the focused check' },
+  { keys: '?', what: 'Show or hide this cheat sheet' },
+  { keys: 'Esc', what: 'Close the dialog or drawer' },
+]
+
+function ShortcutsModal() {
+  const ws = useWorkspace()
+  const ref = useFocusTrap(ws.shortcutsOpen)
+  if (!ws.shortcutsOpen) return null
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25" onClick={() => ws.setShortcutsOpen(false)}>
+      <div
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shortcuts-title"
+        className="w-[min(440px,calc(100vw-2rem))] rounded-2xl border border-line-strong bg-panel p-6 shadow-[0_18px_50px_rgba(28,27,25,0.16)]"
+        onClick={(e) => e.stopPropagation()}
+        data-testid="shortcuts-modal"
+      >
+        <h2 id="shortcuts-title" className="font-display text-[22px] font-semibold tracking-tight">
+          Keyboard shortcuts
+        </h2>
+        <p className="mt-1 text-[14px] leading-6 text-mute">These stay quiet while you are typing in a field.</p>
+        <dl className="mt-4 divide-y divide-line">
+          {SHORTCUTS.map((row) => (
+            <div key={row.keys} className="flex items-baseline justify-between gap-4 py-2">
+              <dt className="font-mono text-[13px] text-ink">{row.keys}</dt>
+              <dd className="text-right text-[14px] text-mute">{row.what}</dd>
+            </div>
+          ))}
+        </dl>
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            data-dialog-initial
+            className="rounded-lg border border-line-strong px-3.5 py-2 text-[14px] hover:bg-hover"
+            onClick={() => ws.setShortcutsOpen(false)}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -104,6 +158,7 @@ function ContextMenu() {
 function ConfirmDialog() {
   const ws = useWorkspace()
   const [home, setHome] = useState(false)
+  const ref = useFocusTrap(Boolean(ws.confirm))
   useEffect(() => {
     setHome(false)
   }, [ws.confirm])
@@ -112,12 +167,23 @@ function ConfirmDialog() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25" onClick={() => ws.cancelConfirm()}>
       <div
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
         className="w-[min(440px,calc(100vw-2rem))] rounded-2xl border border-line-strong bg-panel p-6 shadow-[0_18px_50px_rgba(43,38,31,0.16)]"
         onClick={(e) => e.stopPropagation()}
         data-testid="confirm-dialog"
       >
-        <div className="font-display text-[22px] font-semibold tracking-tight">{c.title}</div>
+        <h2 id="confirm-title" className="font-display text-[22px] font-semibold tracking-tight">{c.title}</h2>
         <p className="mt-2 text-[15px] leading-7 text-mute">{c.body}</p>
+        {/* cp-13 dry-run preview slot. Hidden until confirm.preview is set. */}
+        <div
+          data-testid="confirm-dry-run"
+          className={c.preview ? 'mt-3 rounded-xl border border-line bg-sidebar px-3 py-2.5 text-[13.5px] leading-6 text-ink' : 'hidden'}
+        >
+          {c.preview}
+        </div>
         {c.extraHome && (
           <label className="mt-3 flex items-center gap-2 text-[14px] text-ink">
             <input type="checkbox" checked={home} onChange={(e) => setHome(e.target.checked)} />
@@ -127,6 +193,7 @@ function ConfirmDialog() {
         <div className="mt-5 flex justify-end gap-2">
           <button
             type="button"
+            data-dialog-initial
             className="rounded-lg border border-line-strong px-3.5 py-2 text-[14px] hover:bg-hover"
             onClick={() => ws.cancelConfirm()}
           >
@@ -155,6 +222,7 @@ function ConfirmDialog() {
 function PasswordDialog() {
   const ws = useWorkspace()
   const [value, setValue] = useState('')
+  const ref = useFocusTrap(Boolean(ws.passwordModal))
   useEffect(() => {
     if (ws.passwordModal) setValue(genPassword())
   }, [ws.passwordModal])
@@ -163,17 +231,23 @@ function PasswordDialog() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25" onClick={() => ws.setPasswordModal(null)}>
       <div
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="password-title"
         className="w-[min(440px,calc(100vw-2rem))] rounded-2xl border border-line-strong bg-panel p-6 shadow-[0_18px_50px_rgba(43,38,31,0.16)]"
         onClick={(e) => e.stopPropagation()}
         data-testid="password-dialog"
       >
-        <div className="font-display text-[22px] font-semibold tracking-tight">Expire password — {name}</div>
+        <h2 id="password-title" className="font-display text-[22px] font-semibold tracking-tight">Expire password — {name}</h2>
         <p className="mt-2 text-[15px] leading-7 text-mute">
           {ws.demoMode
             ? 'Practice only: a suggested password is written to the change log, not the operating system.'
             : 'On this computer, prefer the Expire password check with confirmation. This dialog only notes the intent.'}
         </p>
         <input
+          data-dialog-initial
+          aria-label={`Suggested note for ${name}`}
           className="mt-3 w-full rounded-lg border border-line-strong bg-elev px-3 py-2 font-mono text-[14px]"
           value={value}
           onChange={(e) => setValue(e.target.value)}
@@ -205,6 +279,7 @@ function PasswordDialog() {
 
 function UserDetails() {
   const ws = useWorkspace()
+  const ref = useFocusTrap(Boolean(ws.detailsUserId))
   if (!ws.detailsUserId) return null
   const user =
     liveUsers(ws.users).find((u) => u.id === ws.detailsUserId) ?? ws.users.find((u) => u.id === ws.detailsUserId)
@@ -227,11 +302,15 @@ function UserDetails() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25" onClick={() => ws.setDetailsUserId(null)}>
       <div
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="user-details-title"
         className="w-[min(480px,calc(100vw-2rem))] rounded-2xl border border-line-strong bg-panel p-6 shadow-[0_18px_50px_rgba(43,38,31,0.16)]"
         onClick={(e) => e.stopPropagation()}
         data-testid="user-details"
       >
-        <div className="font-display text-[22px] font-semibold tracking-tight">{user.name}</div>
+        <h2 id="user-details-title" className="font-display text-[22px] font-semibold tracking-tight">{user.name}</h2>
         <dl className="mt-4 grid grid-cols-[140px_1fr] gap-y-2 text-[14px]">
           {rows.map(([k, v]) => (
             <div key={k} className="contents">
@@ -243,6 +322,7 @@ function UserDetails() {
         <div className="mt-5 flex justify-end">
           <button
             type="button"
+            data-dialog-initial
             className="rounded-lg border border-line-strong px-3.5 py-2 text-[14px] hover:bg-hover"
             onClick={() => ws.setDetailsUserId(null)}
           >
