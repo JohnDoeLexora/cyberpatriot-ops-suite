@@ -29,8 +29,13 @@ try {
         $result | Add-Member -NotePropertyName summary -NotePropertyValue $(if ($result.ok -eq $false) { 'The check failed. Read the message, then re-run on the authorized image.' } else { 'Completed.' }) -Force
     }
     ConvertTo-CpJson $result
-    if ($null -ne $result -and ($result.PSObject.Properties.Name -contains 'ok') -and $result.ok -eq $false) { exit 1 }
-    exit 0
+    $cpExit = 0
+    if ($null -ne $result -and ($result.PSObject.Properties.Name -contains 'status')) {
+        if ([string]$result.status -eq 'skipped') { $cpExit = 3 }
+        elseif ([string]$result.status -eq 'refused') { $cpExit = 2 }
+    }
+    if ($cpExit -eq 0 -and $null -ne $result -and ($result.PSObject.Properties.Name -contains 'ok') -and $result.ok -eq $false) { $cpExit = 1 }
+    exit $cpExit
 } catch {
     $msg = $_.Exception.Message
     if (-not $msg) { $msg = "$_" }

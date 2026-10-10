@@ -532,7 +532,42 @@ function Invoke-CpOp {
             }
             return [pscustomobject]@{ ok = $true; extra = @{ hits = $hits; ccsContacted = $false; note = "Local files only. CCS not contacted." } }
         }
+        "audit-password-policy" {
+            $text = (& net.exe accounts 2>&1 | Out-String)
+            $policy = [ordered]@{}
+            foreach ($pair in @(
+                    @{ Key = 'minpwage'; Label = 'Minimum password age \(days\):' },
+                    @{ Key = 'maxpwage'; Label = 'Maximum password age \(days\):' },
+                    @{ Key = 'minpwlen'; Label = 'Minimum password length:' },
+                    @{ Key = 'uniquepw'; Label = 'Length of password history maintained:' },
+                    @{ Key = 'lockoutthreshold'; Label = 'Lockout threshold:' },
+                    @{ Key = 'lockoutduration'; Label = 'Lockout duration \(minutes\):' },
+                    @{ Key = 'lockoutwindow'; Label = 'Lockout observation window \(minutes\):' }
+                )) {
+                $pattern = '(?m)^' + $pair.Label + '\s+(.+?)\s*$'
+                if ($text -match $pattern) { $policy[$pair.Key] = $Matches[1].Trim() }
+            }
+            $findings = @()
+            $minLen = 0
+            if ($policy.minpwlen -match '^\d+$') { $minLen = [int]$policy.minpwlen }
+            if ($minLen -gt 0 -and $minLen -lt 14) {
+                $findings += [pscustomobject]@{
+                    id = 'minlen'; severity = 'high'; title = "Minimum password length is $minLen"
+                    detail = 'Typical CP baseline is at least 14.'; remediationOpId = 'enforce-password-policy'
+                }
+            }
+            return [pscustomobject]@{
+                ok       = $true
+                status   = 'ok'
+                summary  = 'Read net accounts (no hashes).'
+                policy   = $policy
+                findings = @($findings)
+            }
+        }
         "run-sfc-scan" {
+            if ($DryRun) {
+                return New-CpResult -Ok $true -Status 'preview' -Summary 'Preview: would run sfc /verifyonly. Nothing was repaired.' -Preview @('sfc /verifyonly')
+            }
             $out = sfc /verifyonly 2>&1 | Out-String
             return [pscustomobject]@{
                 ok    = $true
@@ -806,7 +841,7 @@ function Invoke-CpOp {
                 "audit-ipv6-privacy", "audit-log-persistence"
             )
             if ($OpId -in $linuxOnly) {
-                return [pscustomobject]@{ ok = $true; extra = @{ note = "Linux-only op; run engines/linux on a Linux image." } }
+                return New-CpResult -Ok $false -Status 'skipped' -Summary "Skipped: $OpId is Linux-only. Run engines/linux/${OpId}.sh on a Linux image."
             }
             if ($OpId -in @(
                     "disable-user", "lock-user", "remove-user-from-admins", "disable-guest-account",
